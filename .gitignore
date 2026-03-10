@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Bảo vệ biến môi trường thật – dùng Actions Secrets thay thế
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
