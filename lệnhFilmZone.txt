@@ -1,0 +1,276 @@
+dotnet ef migrations add AuthV1 --context AuthDbContext
+dotnet ef database update AuthV1 --context AuthDbContext
+
+dotnet ef migrations add MovieV4 --context MovieDbContext
+dotnet ef database update MovieV4 --context MovieDbContext
+
+
+//Lưu video: PeerTube
+
+// deploy postgres: neon
+//deploy server: koyeb
+//deploy OpenSearch : bonsai
+uptash
+
+
+axios.get('https://api.example.com/user/profile', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+})
+axios.get('https://api.example.com/user', {
+    withCredentials: true // Bắt buộc dòng này
+});
+
+===================lệnh backup DB neon================== 
+"C:\Program Files\PostgreSQL\18\bin\pg_dump.exe" "chuỗi-kết-nối-cũ" -O -x -f D:\backup_clean.sql
+
+===================lệnh import DB vào neon===============
+"C:\Program Files\PostgreSQL\18\bin\psql.exe" "chuỗi-kết-nối" -f D:\backup_clean.sql
+
+//lấy accessToken youtube
+https://developers.google.com/oauthplayground/?code=4/0AVGzR1A9kP65d_eWJnTCWhbaSZr7AN1ZSMmGZDYjdgWofhE1Ung0Lxd_9XCWboVzTPDvCw&scope=https://www.googleapis.com/auth/youtube.readonly%20https://www.googleapis.com/auth/youtube.upload
+
+//lấy file mdf
+docker cp c5e5da03a958:/var/opt/mssql/data/BarberManageV1.mdf E:/DatabaseBackup/BarberManageV1.mdf
+
+fly.io
+docker exec -it redis-container redis-cli FLUSHALL
+docker exec -it cd11a9550769  redis-cli DEL blog:4
+Ngân hàng: NCB
+Số thẻ: 9704198526191432198
+Tên chủ thẻ:NGUYEN VAN A
+Ngày phát hành:07/15
+Mật khẩu OTP: 123456
+
+https://dbdiagram.io/d/Barber-Man-67d0526875d75cc844ae4d88
+
+
+///sql Servcer
+docker run -d --name sqlserver 	-e "ACCEPT_EULA=Y" -e "SA_PASSWORD=NguyenXuanThuong12a1@gmail.com" -p 1335:1433 -v sqlserver:/var/opt/mssql --restart on-failure emyeuaidayy/sqlserver:latest
+
+"SA_PASSWORD='NguyenXuanThuong12a1@gmail.com'" 
+
+//redis
+docker run -d --name redis -p 6379:6379 -v redis-data:/data --restart on-failure redis:latest
+
+//redis withpassword
+docker run -d --name redis -p 6379:6379 --restart on-failure redis:latest --requirepass YourPassword
+"Redis": {
+  "ConnectionString": "localhost:6379,password=YourPassword"
+}
+//upstash free deploy redis free
+
+result pattern
+mail password : dwzr yxcq tcln gesf
+
+docker build -t sm-webapi .
+docker run -d -p 8080:8080 -p 8081:8081 --name my-sm-webapi sm-webapi
+
+docker tag smwebapi emyeuaidayy/smwebapi:latest
+docker push emyeuaidayy/smwebapi:latest
+
+docker tag mcr.microsoft.com/mssql/server:2019-CU15-ubuntu-20.04 emyeuaidayy/sqlserver:latest
+docker push emyeuaidayy/sqlserver:latest
+
+docker run -v /var/run/docker:sock:/var/run/docker.sock -v $(which docker):$(which docker) -v `pwd`/data:var/jenkins_home -p 8080:8080 --user 1000:999 --name jenkins-server -d jenkins/jenkins:lts
+
+docker run -d --name jenkins-v3 -p 8080:8080 -p 50000:50000 -v "D:\Học tập\Server nâng cao\DoAn\server nâng cao\Jenkins-V3":/var/jenkins_home jenkins/jenkins:lts
+
+
+docker run -d --name jenkins-V2 ^
+  -p 8080:8080 ^
+  -p 50000:50000 ^
+  -v "D:\Học tập\Server nâng cao\DoAn\server nâng cao\Jenkins-V2:/var/jenkins_home" ^
+  -v //./pipe/docker_engine://./pipe/docker_engine ^
+  jenkins/jenkins:lts
+
+
+
+docker run --rm -v smwebapi_sqlvolume:/volume -v "%cd%":/backup busybox tar cvf /backup/sqlvolume_backup.tar /volume
+
+docker exec -it <container-id> /bin/bash
+docker exec -u root -it <container_id> bash
+ usermod -aG docker jenkins
+ chmod 666 /var/run/docker.sock
+
+apt-get update && sudo apt-get install -y docker.io
+
+ls /app
+
+apijenkin 11e180417393afed56aaefbe606f1bc785
+
+dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\aspnetapp.pfx" -p NguyenXuanThuong12a1
+dotnet dev-certs https --trust
+
+dotnet dev-certs https --clean
+
+NguyenXuanThuong12a1@gmail.com
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=NguyenXuanThuong12a1@gmail.com" -p 1336:1433 -v sqlserver:/var/opt/mssql --name sqlserver2 -d mcr.microsoft.com/mssql/server:2019-CU15-ubuntu-20.04
+neql kcvk nqqd dbtz
+
+dotnet user-secrets init -p "D:\Học tập\Server nâng cao\DoAn\DevVersion\backend\SM.WebAPI\SM.WebAPI\SM.WebAPI.csproj"
+dotnet user-secrets -p "D:\Học tập\Server nâng cao\DoAn\DevVersion\backend\SM.WebAPI\SM.WebAPI\SM.WebAPI.csproj" set "Kestrel:Certificates:Development:Password" "NguyenXuanThuong12a1"
+
+
+
+jira : https://huce-team-hlqsk3kr.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog
+tai khoan thuong0220766@huce.edu.vn
+
+docker run --rm -it -p 8000:80 -p 8001:443 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORTS=8001 -e ASPNETCORE_Kestrel__Certificates__Default__Password="NguyenXuanThuong12a1" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx -v %USERPROFILE%\.aspnet\https:/https/ mcr.microsoft.com/dotnet/samples:aspnetapp
+
+
+version: '3.4'
+
+services:
+  sm.webapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+    - "8080:8080"
+    - "8081:8081"
+    depends_on:
+      - sqlserver
+    networks :
+      - sm
+    restart: on-failure
+ 
+
+  sqlserver:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    environment:
+      SA_PASSWORD: "NguyenXuanThuong12a1@gmail.com"
+      ACCEPT_EULA: "Y"
+    ports:
+    - "1335:1335"
+    networks :
+      - sm
+    restart: on-failure
+    volumes:
+      - sqlvolume:/var/opt/mssl
+networks:
+  sm: 
+volumes:
+  sqlvolume:
+
+
+
+
+
+services:
+  sm.webapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_URLS="https://+;http://+"
+      - ASPNETCORE_HTTPS_PORTS=8001
+      - ASPNETCORE_Kestrel__Certificates__Default__Password="NguyenXuanThuong12a1"
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - "8080:8080"   # Chỉnh lại ánh xạ cổng
+      - "8001:8081"
+    volumes:
+      - "${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro"
+      - "${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro"
+      - "${USERPROFILE}/.aspnet/https:/https/"
+
+
+
+dotnet ef migrations add AuthV1 --context AuthDbContext
+dotnet ef database update AuthV1 --context AuthDbContext
+
+dotnet ef migrations add BookingV1 --context BookingDbContext
+dotnet ef database update BookingV1 --context BookingDbContext
+
+dotnet ef migrations add SocialV1 --context SocialDbContext
+dotnet ef database update SocialV1 --context SocialDbContext
+
+docker run -d --name sqlserverver2 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=NguyenXuanThuong12a1@gmail.com" -p 1336:1433 -v sqlserver2:/var/opt/mssql --restart on-failure emyeuaidayy/sqlserver:latest
+
+
+"SA_PASSWORD=NguyenXuanThuong12a1@gmail.com" 
+
+
+
+flyctl deploy --app filmzone-api --image docker.io/emyeuaidayy/filmzone:latest --remote-only --strategy immediate
+
+
+
+# 1) TẮT path conversion của MSYS
+export MSYS_NO_PATHCONV=1
+# (hoặc) export MSYS2_ARG_CONV_EXCL='*'
+
+# 2) Tạo cert tự ký (OK trong Git Bash sau khi tắt path conv)
+openssl req -x509 -newkey rsa:2048 -nodes \
+  -keyout key.pem -out cert.pem -days 365 \
+  -subj "/CN=filmzone.fly.dev"
+
+# 3) Đóng gói .pfx
+openssl pkcs12 -export -out server.pfx -inkey key.pem -in cert.pem \
+  -passout pass:changeit
+
+# 4) Base64 (Git Bash hỗ trợ -w0)
+base64 -w0 server.pfx > server.pfx.b64
+
+# 5) Đẩy vào Fly secrets
+flyctl secrets set \
+  KESTREL_PFX_BASE64="$(cat server.pfx.b64)" \
+  KESTREL_PFX_PASSWORD="changeit" \
+  -a filmzone-api
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
