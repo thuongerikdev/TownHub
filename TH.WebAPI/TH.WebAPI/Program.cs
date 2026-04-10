@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using TH.Auth.ApplicationService.StartUp;
+using TH.Base.ApplicationService.StartUp;
 
 namespace TH.WebAPI
 {
@@ -72,6 +73,7 @@ namespace TH.WebAPI
 
             // === 3) Modules (đăng ký DbContext sẽ đọc từ Configuration ở trên) ===
             builder.ConfigureAuth(typeof(Program).Namespace);
+            builder.ConfigureBase(typeof(Program).Namespace);
             //builder.ConfigureMovie(typeof(Program).Namespace);
             builder.Services.AddHealthChecks();
 

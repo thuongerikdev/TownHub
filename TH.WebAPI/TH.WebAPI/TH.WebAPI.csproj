@@ -29,6 +29,10 @@
     <ProjectReference Include="..\Service\Auth\TH.Auth.Domain\TH.Auth.Domain.csproj" />
     <ProjectReference Include="..\Service\Auth\TH.Auth.Dtos\TH.Auth.Dtos.csproj" />
     <ProjectReference Include="..\Service\Auth\TH.Auth.Infrastructure\TH.Auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.ApplicationService\TH.Base.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.Domain\TH.Base.Domain.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.Dtos\TH.Base.Dtos.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.Infrastructure\TH.Base.Infrastructure.csproj" />
     <ProjectReference Include="..\Service\Shared\TH.Constant\TH.Constant.csproj" />
     <ProjectReference Include="..\Service\Shared\TH.Shared.ApplicationService\TH.Shared.ApplicationService.csproj" />
   </ItemGroup>

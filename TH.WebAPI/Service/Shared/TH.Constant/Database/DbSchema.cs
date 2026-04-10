@@ -12,5 +12,7 @@ namespace TH.Constant.Database
         public const string Default = "dbo";
         public const string Auth = "auth";
         public const string Movie = "movie";
+
+        public const string TownHub = "townhub";
     }
 }

@@ -1,8 +1,8 @@
 dotnet ef migrations add AuthV1 --context AuthDbContext
 dotnet ef database update AuthV1 --context AuthDbContext
 
-dotnet ef migrations add MovieV4 --context MovieDbContext
-dotnet ef database update MovieV4 --context MovieDbContext
+dotnet ef migrations add AssetV1 --context AssetDbContext
+dotnet ef database update AssetV1 --context AssetDbContext
 
 
 //Lưu video: PeerTube

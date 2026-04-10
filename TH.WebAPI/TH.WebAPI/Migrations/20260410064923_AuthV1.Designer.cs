@@ -12,7 +12,7 @@ using TH.Auth.Infrastructure;
 namespace TH.WebAPI.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    [Migration("20260225034856_AuthV1")]
+    [Migration("20260410064923_AuthV1")]
     partial class AuthV1
     {
         /// <inheritdoc />
