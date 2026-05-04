@@ -1,8 +1,8 @@
 dotnet ef migrations add AuthV1 --context AuthDbContext
 dotnet ef database update AuthV1 --context AuthDbContext
 
-dotnet ef migrations add AssetV1 --context AssetDbContext
-dotnet ef database update AssetV1 --context AssetDbContext
+dotnet ef migrations add TownHubV1 --context TownHubDbContext 
+dotnet ef database update TownHubV1 --context TownHubDbContext 
 
 
 //Lưu video: PeerTube
