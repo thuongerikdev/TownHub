@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\DATN\\\\datn\" -Recurse -Filter \"*.ts\" -o Name)",
+      "Bash(Get-ChildItem -Path \"d:\\\\DATN\\\\datn\" -Directory)",
+      "Bash(Select-Object Name)"
+    ]
+  }
+}
