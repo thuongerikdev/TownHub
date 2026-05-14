@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { icon: BellRing,        label: "Trung tâm thông báo",    path: "/notifications" },
   { icon: Shield,          label: "Phân quyền",             path: "/roles" },
   { icon: ClipboardList,   label: "Audit Log",              path: "/audit-logs" },
-  { icon: FileText,        label: "Xuất báo cáo",           path: "/reports" },
+  // { icon: FileText,        label: "Xuất báo cáo",           path: "/reports" },
   { icon: Settings,        label: "Cấu hình hệ thống",      path: "/settings" },
 ];
 

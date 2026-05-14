@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"upload\\\\|download\\\\|file\\\\|FileStorage\")",
+      "Bash(xargs grep -l \"dashboard\\\\|Dashboard\\\\|report\\\\|Report\\\\|export\\\\|Export\")",
+      "Bash(xargs grep -l \"external\\\\|provider\\\\|oauth\\\\|identity\")",
+      "Bash(dotnet build *)"
+    ]
+  }
+}

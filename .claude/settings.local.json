@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\DATN\\\\TownHub\\\\TH.WebAPI\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(grep -E \"\\\\.cs$\")"
+    ]
+  }
+}
