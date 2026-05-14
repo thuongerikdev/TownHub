@@ -4,6 +4,12 @@ dotnet ef database update AuthV1 --context AuthDbContext
 dotnet ef migrations add TownHubV1 --context TownHubDbContext 
 dotnet ef database update TownHubV1 --context TownHubDbContext 
 
+Thông tin kết nối db test:
+--db_user="odoo13_lacviet"
+--db_password="odoo13_lacviet"
+--db_host=124.158.7.60
+--db_port="18002"
+--db-filter="lacviet_test
 
 //Lưu video: PeerTube
 
