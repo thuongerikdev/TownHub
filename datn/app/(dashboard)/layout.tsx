@@ -71,13 +71,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen bg-[#050505] text-zinc-300 overflow-hidden font-sans">
       {/* Mock mode banner */}
-      {mockMode && (
+      {/* {mockMode && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 text-center">
           <p className="text-xs text-amber-400 font-medium">
             ⚠ Đang dùng dữ liệu mẫu (mock) — Server chưa kết nối được
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Overlay mobile */}
       {isSidebarOpen && (
