@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Users as UsersIcon,
   Search,
@@ -14,7 +14,8 @@ import {
   UserX,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { users, type GetUserResponse } from "@/lib/api";
+import { users, roles as rolesApi, type GetUserResponse, type Role } from "@/lib/api";
+import UserRoleModal from "@/components/UserRoleModal";
 
 function fullName(u: GetUserResponse) {
   const first = u.profile?.firstName?.trim() ?? "";
@@ -45,6 +46,8 @@ export default function UsersPage() {
   const [userList, setUserList] = useState<GetUserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userRolesMap, setUserRolesMap] = useState<Record<number, Role[]>>({});
+  const [roleTarget, setRoleTarget] = useState<GetUserResponse | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -53,6 +56,15 @@ export default function UsersPage() {
       const res = await users.getAll();
       if (res.errorCode === 200 && res.data) {
         setUserList(res.data);
+        // Load roles for each user
+        const rolesPromises = res.data.map(async (u) => {
+          const rolesRes = await rolesApi.getByUser(u.userID);
+          if (rolesRes.errorCode === 200 && rolesRes.data) {
+            setUserRolesMap((prev) => ({ ...prev, [u.userID]: rolesRes.data }));
+          }
+          return { userId: u.userID, roles: rolesRes };
+        });
+        await Promise.all(rolesPromises);
       } else {
         setError(res.errorMessage || "Không tải được danh sách người dùng");
       }
@@ -165,6 +177,7 @@ export default function UsersPage() {
                   <th className="px-6 py-4 font-medium tracking-wider">Username</th>
                   <th className="px-6 py-4 font-medium tracking-wider">Email xác thực</th>
                   <th className="px-6 py-4 font-medium tracking-wider">Trạng thái</th>
+                  <th className="px-6 py-4 font-medium tracking-wider">Roles</th>
                   <th className="px-6 py-4 font-medium tracking-wider text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -206,10 +219,36 @@ export default function UsersPage() {
                         {statusLabel(user.status)}
                       </span>
                     </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {(userRolesMap[user.userID] || []).slice(0, 2).map((role) => (
+                          <span key={role.roleID} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[10px] text-blue-400 font-mono">
+                            {role.roleName}
+                          </span>
+                        ))}
+                        {(userRolesMap[user.userID] || []).length > 2 && (
+                          <span className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 rounded text-[10px] text-zinc-400">
+                            +{(userRolesMap[user.userID] || []).length - 2}
+                          </span>
+                        )}
+                        {(userRolesMap[user.userID] || []).length === 0 && (
+                          <span className="text-xs text-zinc-600 italic">Chưa có role</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setRoleTarget(user)}
+                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          title="Quản lý Roles"
+                        >
+                          <Shield className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -235,6 +274,16 @@ export default function UsersPage() {
           </div>
         )}
       </motion.div>
+
+      <AnimatePresence>
+        {roleTarget && (
+          <UserRoleModal
+            user={{ userID: roleTarget.userID, userName: roleTarget.userName, email: roleTarget.email, status: roleTarget.status, isEmailVerified: roleTarget.isEmailVerified, profile: roleTarget.profile }}
+            onClose={() => setRoleTarget(null)}
+            onSaved={fetchUsers}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

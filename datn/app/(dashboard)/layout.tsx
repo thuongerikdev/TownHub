@@ -10,23 +10,21 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { isMockMode } from "@/lib/api";
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Tổng quan",              path: "/" },
-  { icon: Users,           label: "Tài khoản & Phân quyền", path: "/users" },
+  { icon: Users,           label: "Tài khoản",              path: "/users" },
   { icon: Building2,       label: "Định danh căn hộ",       path: "/apartments" },
-  { icon: BellRing,        label: "Trung tâm thông báo",    path: "/notifications" },
-  { icon: Shield,          label: "Phân quyền",             path: "/roles" },
-  { icon: ClipboardList,   label: "Audit Log",              path: "/audit-logs" },
-  // { icon: FileText,        label: "Xuất báo cáo",           path: "/reports" },
+  { icon: BellRing,        label: "Thông báo",              path: "/notifications" },
+  { icon: Shield,          label: "Permissions",            path: "/permissions" },
+  { icon: ClipboardList,   label: "Vai trò & Gán quyền",    path: "/roles" },
+  { icon: FileText,        label: "Audit Log",              path: "/audit-logs" },
   { icon: Settings,        label: "Cấu hình hệ thống",      path: "/settings" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [mockMode, setMockMode] = useState(false);
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const router = useRouter();
@@ -34,14 +32,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [loading, user, router]);
-
-  // Poll mock mode status
-  useEffect(() => {
-    const check = () => setMockMode(isMockMode());
-    check();
-    const id = setInterval(check, 3000);
-    return () => clearInterval(id);
-  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -70,15 +60,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-[#050505] text-zinc-300 overflow-hidden font-sans">
-      {/* Mock mode banner */}
-      {/* {mockMode && (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 text-center">
-          <p className="text-xs text-amber-400 font-medium">
-            ⚠ Đang dùng dữ liệu mẫu (mock) — Server chưa kết nối được
-          </p>
-        </div>
-      )} */}
-
       {/* Overlay mobile */}
       {isSidebarOpen && (
         <motion.div
@@ -92,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <motion.aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0a0a0a] border-r border-white/5 flex flex-col transition-transform duration-300 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${mockMode ? "pt-8" : ""}`}
+        }`}
       >
         {/* Logo */}
         <div className="flex items-center h-16 px-5 border-b border-white/5 flex-shrink-0">
@@ -170,7 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </motion.aside>
 
       {/* Main */}
-      <main className={`flex-1 flex flex-col min-w-0 ${mockMode ? "pt-8" : ""}`}>
+      <main className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-5 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -187,12 +168,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {mockMode && (
-              <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-xs text-amber-400 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Mock
-              </span>
-            )}
             <Link href="/notifications" className="relative p-2 text-zinc-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
               <BellRing className="w-4 h-4" />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />

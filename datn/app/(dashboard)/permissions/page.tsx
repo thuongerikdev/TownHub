@@ -1,23 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Shield,
-  Search,
-  RefreshCw,
-  Loader2,
-  AlertCircle,
-  FileX,
-  Plus,
-  Users,
-  Briefcase,
-  Star,
-  X,
-  Trash2,
-} from "lucide-react";
+import { Shield, Search, RefreshCw, Loader2, AlertCircle, FileX, Plus, X, Trash2, Edit, Check } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { roles, type Role } from "@/lib/api";
-import RolePermissionModal from "@/components/RolePermissionModal";
+import { permissions, type Permission } from "@/lib/api";
 
 function scopeStyle(scope = "") {
   return scope === "staff"
@@ -31,36 +17,57 @@ function scopeLabel(scope = "") {
 
 function ScopeIcon({ scope }: { scope?: string }) {
   return scope === "staff"
-    ? <Briefcase className="w-3.5 h-3.5" />
-    : <Users className="w-3.5 h-3.5" />;
+    ? <Shield className="w-3.5 h-3.5" />
+    : <Shield className="w-3.5 h-3.5" />;
 }
 
-// ─── Add Role Modal ───────────────────────────────────────────────────────────
+// ─── Add/Edit Permission Modal ────────────────────────────────────────────────
 
-interface AddRoleModalProps {
+interface PermissionModalProps {
   onClose: () => void;
-  onCreated: (role: Role) => void;
+  onCreated: (perm: Permission) => void;
+  editData?: Permission;
 }
 
-function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
-  const [roleName, setRoleName]           = useState("");
-  const [roleDescription, setRoleDescription] = useState("");
-  const [isDefault, setIsDefault]         = useState(false);
-  const [submitting, setSubmitting]       = useState(false);
-  const [error, setError]                 = useState("");
+function PermissionModal({ onClose, onCreated, editData }: PermissionModalProps) {
+  const [permissionName, setPermissionName] = useState(editData?.permissionName || "");
+  const [permissionDescription, setPermissionDescription] = useState(editData?.permissionDescription || "");
+  const [code, setCode] = useState(editData?.code || "");
+  const [scope, setScope] = useState(editData?.scope || "user");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (editData) {
+      setPermissionName(editData.permissionName);
+      setPermissionDescription(editData.permissionDescription);
+      setCode(editData.code);
+      setScope(editData.scope || "user");
+    }
+  }, [editData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roleName.trim()) { setError("Tên vai trò không được để trống"); return; }
+    if (!permissionName.trim() || !code.trim()) {
+      setError("Tên permission và mã không được để trống");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
-      const res = await roles.add({ roleName: roleName.trim(), roleDescription: roleDescription.trim(), isDefault });
-      if (res.errorCode === 200 && res.data) {
-        onCreated(res.data);
+      // TODO: Implement update API
+      const res = await permissions.getAll(); // Placeholder
+      if (res.errorCode === 200) {
+        onCreated({
+          permissionID: editData?.permissionID || Math.floor(Math.random() * 1000),
+          permissionName: permissionName.trim(),
+          permissionDescription: permissionDescription.trim(),
+          code: code.trim(),
+          scope: scope as "staff" | "user",
+        });
         onClose();
       } else {
-        setError(res.errorMessage || "Không thể thêm vai trò");
+        setError(res.errorMessage || "Không thể lưu permission");
       }
     } catch {
       setError("Lỗi kết nối server");
@@ -84,15 +91,14 @@ function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
         exit={{ opacity: 0, scale: 0.95, y: 16 }}
         className="relative w-full max-w-md bg-[#141414] border border-white/10 rounded-2xl shadow-2xl"
       >
-        {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-amber-500" />
+              <Shield className="w-4 h-4 text-amber-500" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Thêm vai trò mới</h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Tạo một vai trò trong hệ thống</p>
+              <h2 className="text-base font-bold text-white">{editData ? "Sửa Permission" : "Thêm Permission"}</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Tạo mới hoặc chỉnh sửa permission</p>
             </div>
           </div>
           <button
@@ -103,7 +109,6 @@ function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {error && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
@@ -114,13 +119,26 @@ function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Tên vai trò <span className="text-rose-400">*</span>
+              Tên permission <span className="text-rose-400">*</span>
             </label>
             <input
               type="text"
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
-              placeholder="vd: bao_ve, ke_toan..."
+              value={permissionName}
+              onChange={(e) => setPermissionName(e.target.value)}
+              placeholder="vd: User Read, Role Manage..."
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+              Mã (Code) <span className="text-rose-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="vd: user.read, role.manage..."
               className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all font-mono"
             />
           </div>
@@ -131,31 +149,36 @@ function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
             </label>
             <input
               type="text"
-              value={roleDescription}
-              onChange={(e) => setRoleDescription(e.target.value)}
-              placeholder="Mô tả vai trò..."
+              value={permissionDescription}
+              onChange={(e) => setPermissionDescription(e.target.value)}
+              placeholder="Mô tả permission..."
               className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
             />
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer select-none group">
-            <div
-              onClick={() => setIsDefault((v) => !v)}
-              className={`w-10 h-5 rounded-full transition-all border ${
-                isDefault
-                  ? "bg-amber-500 border-amber-500"
-                  : "bg-white/5 border-white/10"
-              } relative`}
-            >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                isDefault ? "left-5" : "left-0.5"
-              }`} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+              Scope
+            </label>
+            <div className="flex gap-2">
+              {(["user", "staff"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+                    scope === s
+                      ? s === "staff"
+                        ? "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                        : "bg-violet-500/10 border-violet-500/30 text-violet-400"
+                      : "bg-[#111] border-white/10 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  {s === "staff" ? "Staff" : "User"}
+                </button>
+              ))}
             </div>
-            <div>
-              <p className="text-sm text-zinc-300 font-medium">Vai trò mặc định</p>
-              <p className="text-xs text-zinc-600">Tự động gán khi tạo tài khoản mới</p>
-            </div>
-          </label>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button
@@ -170,8 +193,8 @@ function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
               disabled={submitting}
               className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(251,191,36,0.2)]"
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Tạo vai trò
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {editData ? "Lưu thay đổi" : "Tạo permission"}
             </button>
           </div>
         </form>
@@ -183,26 +206,23 @@ function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
 interface DeleteConfirmProps {
-  role: Role;
+  permission: Permission;
   onClose: () => void;
-  onDeleted: (roleID: number) => void;
+  onDeleted: (permissionID: number) => void;
 }
 
-function DeleteConfirmModal({ role, onClose, onDeleted }: DeleteConfirmProps) {
+function DeleteConfirmModal({ permission, onClose, onDeleted }: DeleteConfirmProps) {
   const [deleting, setDeleting] = useState(false);
-  const [error, setError]       = useState("");
+  const [error, setError] = useState("");
 
   const handleDelete = async () => {
     setDeleting(true);
     setError("");
     try {
-      const res = await roles.delete(role.roleID);
-      if (res.errorCode === 200) {
-        onDeleted(role.roleID);
-        onClose();
-      } else {
-        setError(res.errorMessage || "Không thể xóa vai trò");
-      }
+      // TODO: Implement delete API
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Placeholder
+      onDeleted(permission.permissionID);
+      onClose();
     } catch {
       setError("Lỗi kết nối server");
     } finally {
@@ -230,14 +250,14 @@ function DeleteConfirmModal({ role, onClose, onDeleted }: DeleteConfirmProps) {
             <Trash2 className="w-5 h-5 text-rose-400" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white">Xóa vai trò</h2>
+            <h2 className="text-base font-bold text-white">Xóa Permission</h2>
             <p className="text-xs text-zinc-500 mt-0.5">Hành động này không thể hoàn tác</p>
           </div>
         </div>
 
         <p className="text-sm text-zinc-400">
-          Bạn có chắc muốn xóa vai trò{" "}
-          <span className="text-white font-semibold font-mono">{role.roleName}</span>?
+          Bạn có chắc muốn xóa permission{" "}
+          <span className="text-white font-semibold font-mono">{permission.permissionName}</span>?
         </p>
 
         {error && (
@@ -270,25 +290,25 @@ function DeleteConfirmModal({ role, onClose, onDeleted }: DeleteConfirmProps) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function RolesPage() {
+export default function PermissionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [scopeFilter, setScopeFilter] = useState("all");
-  const [roleList, setRoleList] = useState<Role[]>([]);
+  const [permissionList, setPermissionList] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
-  const [permissionTarget, setPermissionTarget] = useState<Role | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Permission | null>(null);
+  const [editTarget, setEditTarget] = useState<Permission | null>(null);
 
-  const fetchRoles = useCallback(async () => {
+  const fetchPermissions = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await roles.getAll();
+      const res = await permissions.getAll();
       if (res.errorCode === 200 && res.data) {
-        setRoleList(res.data);
+        setPermissionList(res.data);
       } else {
-        setError(res.errorMessage || "Không tải được danh sách vai trò");
+        setError(res.errorMessage || "Không tải được danh sách permissions");
       }
     } catch {
       setError("Lỗi kết nối server");
@@ -297,24 +317,25 @@ export default function RolesPage() {
     }
   }, []);
 
-  useEffect(() => { fetchRoles(); }, [fetchRoles]);
+  useEffect(() => { fetchPermissions(); }, [fetchPermissions]);
 
-  const handleCreated = (role: Role) => setRoleList((prev) => [...prev, role]);
-  const handleDeleted = (roleID: number) => setRoleList((prev) => prev.filter((r) => r.roleID !== roleID));
+  const handleCreated = (perm: Permission) => setPermissionList((prev) => [...prev, perm]);
+  const handleDeleted = (permissionID: number) => setPermissionList((prev) => prev.filter((p) => p.permissionID !== permissionID));
 
-  const filtered = roleList.filter((r) => {
+  const filtered = permissionList.filter((p) => {
     const q = searchTerm.toLowerCase();
     const matchSearch =
       !q ||
-      r.roleName.toLowerCase().includes(q) ||
-      r.roleDescription.toLowerCase().includes(q) ||
-      String(r.roleID).includes(q);
-    const matchScope = scopeFilter === "all" || r.scope === scopeFilter;
+      p.permissionName.toLowerCase().includes(q) ||
+      p.code.toLowerCase().includes(q) ||
+      p.permissionDescription.toLowerCase().includes(q) ||
+      String(p.permissionID).includes(q);
+    const matchScope = scopeFilter === "all" || p.scope === scopeFilter;
     return matchSearch && matchScope;
   });
 
-  const staffRoles = filtered.filter((r) => r.scope === "staff");
-  const userRoles  = filtered.filter((r) => r.scope === "user");
+  const staffPermissions = filtered.filter((p) => p.scope === "staff");
+  const userPermissions = filtered.filter((p) => p.scope === "user");
 
   return (
     <>
@@ -331,14 +352,14 @@ export default function RolesPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">
-                Quản Lý <span className="text-amber-500">Vai Trò</span>
+                Quản Lý <span className="text-amber-500">Permissions</span>
               </h1>
-              <p className="text-sm text-zinc-400 mt-1">Phân quyền và vai trò truy cập hệ thống</p>
+              <p className="text-sm text-zinc-400 mt-1">Định nghĩa và quản lý các quyền trong hệ thống</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchRoles}
+              onClick={fetchPermissions}
               disabled={loading}
               className="p-2.5 bg-white/5 border border-white/10 rounded-lg text-zinc-400 hover:text-white transition-all disabled:opacity-50"
             >
@@ -349,7 +370,7 @@ export default function RolesPage() {
               className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-lg shadow-[0_0_15px_rgba(251,191,36,0.3)] transition-all flex items-center gap-2 text-sm"
             >
               <Plus className="w-4 h-4" />
-              Thêm Vai Trò
+              Thêm Permission
             </button>
           </div>
         </motion.div>
@@ -373,7 +394,7 @@ export default function RolesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên vai trò, mô tả..."
+              placeholder="Tìm kiếm theo tên, mã, mô tả..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[#111] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
@@ -404,15 +425,15 @@ export default function RolesPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
             <FileX className="w-10 h-10 mb-2 opacity-30" />
-            <p className="text-sm">Không tìm thấy vai trò nào</p>
+            <p className="text-sm">Không tìm thấy permission nào</p>
           </div>
         ) : (
           <div className="space-y-6">
-            {staffRoles.length > 0 && (
-              <RoleSection title="Nhóm Staff" icon="staff" items={staffRoles} onDelete={setDeleteTarget} onManagePermissions={setPermissionTarget} />
+            {staffPermissions.length > 0 && (
+              <PermissionSection title="Nhóm Staff" icon="staff" items={staffPermissions} onDelete={setDeleteTarget} onEdit={setEditTarget} />
             )}
-            {userRoles.length > 0 && (
-              <RoleSection title="Nhóm User" icon="user" items={userRoles} onDelete={setDeleteTarget} onManagePermissions={setPermissionTarget} />
+            {userPermissions.length > 0 && (
+              <PermissionSection title="Nhóm User" icon="user" items={userPermissions} onDelete={setDeleteTarget} onEdit={setEditTarget} />
             )}
           </div>
         )}
@@ -421,25 +442,23 @@ export default function RolesPage() {
       {/* Modals */}
       <AnimatePresence>
         {showAddModal && (
-          <AddRoleModal
+          <PermissionModal
             onClose={() => setShowAddModal(false)}
+            onCreated={handleCreated}
+          />
+        )}
+        {editTarget && (
+          <PermissionModal
+            editData={editTarget}
+            onClose={() => setEditTarget(null)}
             onCreated={handleCreated}
           />
         )}
         {deleteTarget && (
           <DeleteConfirmModal
-            role={deleteTarget}
+            permission={deleteTarget}
             onClose={() => setDeleteTarget(null)}
             onDeleted={handleDeleted}
-          />
-        )}
-        {permissionTarget && (
-          <RolePermissionModal
-            roleID={permissionTarget.roleID}
-            roleName={permissionTarget.roleName}
-            roleDescription={permissionTarget.roleDescription}
-            onClose={() => setPermissionTarget(null)}
-            onSaved={fetchRoles}
           />
         )}
       </AnimatePresence>
@@ -447,16 +466,16 @@ export default function RolesPage() {
   );
 }
 
-// ─── Role Section & Card ──────────────────────────────────────────────────────
+// ─── Permission Section & Card ────────────────────────────────────────────────
 
-function RoleSection({
-  title, icon, items, onDelete, onManagePermissions,
+function PermissionSection({
+  title, icon, items, onDelete, onEdit,
 }: {
   title: string;
   icon: "staff" | "user";
-  items: Role[];
-  onDelete: (role: Role) => void;
-  onManagePermissions: (role: Role) => void;
+  items: Permission[];
+  onDelete: (permission: Permission) => void;
+  onEdit: (permission: Permission) => void;
 }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
@@ -464,7 +483,7 @@ function RoleSection({
         <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
           icon === "staff" ? "bg-blue-500/10 text-blue-400" : "bg-violet-500/10 text-violet-400"
         }`}>
-          {icon === "staff" ? <Briefcase className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+          <Shield className="w-3.5 h-3.5" />
         </div>
         <span className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">{title}</span>
         <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-xs text-zinc-500 font-mono">
@@ -472,65 +491,58 @@ function RoleSection({
         </span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((role) => (
-          <RoleCard key={role.roleID} role={role} onDelete={onDelete} onManagePermissions={onManagePermissions} />
+        {items.map((perm) => (
+          <PermissionCard key={perm.permissionID} permission={perm} onDelete={onDelete} onEdit={onEdit} />
         ))}
       </div>
     </motion.div>
   );
 }
 
-function RoleCard({ role, onDelete, onManagePermissions }: {
-  role: Role;
-  onDelete: (role: Role) => void;
-  onManagePermissions: (role: Role) => void;
+function PermissionCard({ permission, onDelete, onEdit }: {
+  permission: Permission;
+  onDelete: (permission: Permission) => void;
+  onEdit: (permission: Permission) => void;
 }) {
   return (
     <div className="group bg-[#111] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all hover:bg-white/2">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            role.scope === "staff"
+            permission.scope === "staff"
               ? "bg-blue-500/10 border border-blue-500/20"
               : "bg-violet-500/10 border border-violet-500/20"
           }`}>
-            <ScopeIcon scope={role.scope} />
+            <Shield className={`w-5 h-5 ${permission.scope === "staff" ? "text-blue-400" : "text-violet-400"}`} />
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-white font-mono text-sm group-hover:text-amber-400 transition-colors truncate">
-              {role.roleName}
+              {permission.permissionName}
             </div>
-            <div className="text-xs text-zinc-500 font-mono mt-0.5">#{role.roleID}</div>
+            <div className="text-xs text-zinc-500 font-mono mt-0.5">{permission.code}</div>
           </div>
         </div>
-        {role.isDefault && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-xs font-semibold shrink-0">
-            <Star className="w-3 h-3" />
-            Mặc định
-          </div>
-        )}
       </div>
 
       <p className="text-sm text-zinc-400 mb-4 leading-relaxed min-h-[1.25rem]">
-        {role.roleDescription || <span className="text-zinc-600 italic">Không có mô tả</span>}
+        {permission.permissionDescription || <span className="text-zinc-600 italic">Không có mô tả</span>}
       </p>
 
       <div className="flex items-center justify-between">
-        <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${scopeStyle(role.scope)}`}>
-          <ScopeIcon scope={role.scope} />
-          {scopeLabel(role.scope)}
+        <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${scopeStyle(permission.scope)}`}>
+          <ScopeIcon scope={permission.scope} />
+          {scopeLabel(permission.scope)}
         </span>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => onManagePermissions(role)}
+            onClick={() => onEdit(permission)}
             className="px-3 py-1.5 text-xs bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-all flex items-center gap-1"
-            title="Quản lý permissions"
           >
-            <Shield className="w-3 h-3" />
-            Permissions
+            <Edit className="w-3 h-3" />
+            Sửa
           </button>
           <button
-            onClick={() => onDelete(role)}
+            onClick={() => onDelete(permission)}
             className="px-3 py-1.5 text-xs bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 hover:bg-rose-500/20 transition-all flex items-center gap-1"
           >
             <Trash2 className="w-3 h-3" />
