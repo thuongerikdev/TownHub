@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const d = res.data;
 
-        if (d.requiresMfa) {
+        if (d.requiresMFA) {
           return { requiresMfa: true, mfaTicket: d.mfaTicket };
         }
 
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const completeMfa = useCallback(
     async (mfaTicket: string, code: string) => {
       try {
-        const res = await auth.verifyMfa(mfaTicket, code);
+        const res = await auth.verifyMFA(mfaTicket, code);
 
         if (res.errorCode !== 200 || !res.data) {
           return { error: res.errorMessage || "Mã MFA không đúng hoặc đã hết hạn" };

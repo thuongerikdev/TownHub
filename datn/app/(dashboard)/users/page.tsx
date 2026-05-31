@@ -278,7 +278,7 @@ export default function UsersPage() {
       <AnimatePresence>
         {roleTarget && (
           <UserRoleModal
-            user={{ userID: roleTarget.userID, userName: roleTarget.userName, email: roleTarget.email, status: roleTarget.status, isEmailVerified: roleTarget.isEmailVerified, profile: roleTarget.profile }}
+            user={{ userID: roleTarget.userID, userName: roleTarget.userName, email: roleTarget.email, profile: roleTarget.profile }}
             onClose={() => setRoleTarget(null)}
             onSaved={fetchUsers}
           />

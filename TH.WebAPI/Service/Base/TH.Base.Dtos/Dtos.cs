@@ -48,10 +48,14 @@ namespace TH.TownHub.Dtos
         public DateTime? dateOfBirth { get; set; }
         public string? gender { get; set; }
         public int? apartmentId { get; set; }
+        // UC: unit_id — FK đến units (uuid) trong schema asset
+        public Guid? unitId { get; set; }
         public bool isOwner { get; set; } = false;
         public DateTime? moveInDate { get; set; }
         public string? avatarUrl { get; set; }
         public int? authUserId { get; set; }
+        // UC: userId (Guid) — liên kết AuthUser khi dùng uuid
+        public Guid? userId { get; set; }
     }
 
     public class UpdateResidentRequestDto : CreateResidentRequestDto
@@ -71,11 +75,13 @@ namespace TH.TownHub.Dtos
         public string? gender { get; set; }
         public int? apartmentId { get; set; }
         public string? apartmentCode { get; set; }
+        public Guid? unitId { get; set; }
         public bool isOwner { get; set; }
         public DateTime? moveInDate { get; set; }
         public DateTime? moveOutDate { get; set; }
         public string? avatarUrl { get; set; }
         public int? authUserId { get; set; }
+        public Guid? userId { get; set; }
         public DateTime createdAt { get; set; }
     }
 
@@ -122,6 +128,14 @@ namespace TH.TownHub.Dtos
         public int? templateId { get; set; }
         public DateTime? scheduledAt { get; set; }
         public int createdByAuthUserId { get; set; }
+
+        // ── Individual notification fields (UC63) ──
+        // Dùng khi push tới 1 người cụ thể (không bắt buộc với broadcast)
+        public Guid? recipientId { get; set; }
+        public string? referenceType { get; set; }  // TICKET | WORK_ORDER | INVOICE…
+        public Guid? referenceId { get; set; }
+        public string? body { get; set; }           // nội dung chi tiết
+        public string sendStatus { get; set; } = "PENDING"; // PENDING | SENT | FAILED
     }
 
     public class UpdateNotificationRequestDto : CreateNotificationRequestDto
@@ -143,6 +157,16 @@ namespace TH.TownHub.Dtos
         public DateTime? scheduledAt { get; set; }
         public DateTime? sentAt { get; set; }
         public int createdByAuthUserId { get; set; }
+
+        // Individual notification fields
+        public Guid? recipientId { get; set; }
+        public string? referenceType { get; set; }
+        public Guid? referenceId { get; set; }
+        public string? body { get; set; }
+        public bool isRead { get; set; }
+        public DateTime? readAt { get; set; }
+        public string sendStatus { get; set; } = "PENDING";
+
         public DateTime createdAt { get; set; }
     }
 
@@ -262,6 +286,10 @@ namespace TH.TownHub.Dtos
         public required string key { get; set; }
         public required string value { get; set; }
         public int? updatedByAuthUserId { get; set; }
+        // UC: scope — phạm vi cấu hình (GLOBAL | BUILDING | MODULE)
+        public string? scope { get; set; }
+        // UC: updatedBy (Guid) — khi cần trace cross-service bằng UUID
+        public Guid? updatedBy { get; set; }
     }
 
     public class SystemConfigResponse
@@ -272,6 +300,7 @@ namespace TH.TownHub.Dtos
         public string dataType { get; set; } = null!;
         public string? description { get; set; }
         public bool isPublic { get; set; }
+        public string? scope { get; set; }
         public DateTime updatedAt { get; set; }
     }
 
@@ -288,6 +317,11 @@ namespace TH.TownHub.Dtos
         public string? newData { get; set; }
         public string? ipAddress { get; set; }
         public string? userAgent { get; set; }
+
+        // ── DB-level audit fields (từ Asset module) ──
+        public string? tableName { get; set; }   // tên bảng bị thay đổi
+        public Guid? recordId { get; set; }      // UUID bản ghi
+        public Guid? changedBy { get; set; }     // UUID người thực hiện (cross-service)
     }
 
     public class AuditLogResponse
@@ -297,6 +331,9 @@ namespace TH.TownHub.Dtos
         public string action { get; set; } = null!;
         public string? targetType { get; set; }
         public int? targetId { get; set; }
+        public string? tableName { get; set; }
+        public Guid? recordId { get; set; }
+        public Guid? changedBy { get; set; }
         public string? ipAddress { get; set; }
         public DateTime createdAt { get; set; }
     }

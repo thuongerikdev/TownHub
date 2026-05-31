@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "TownHub Management",
@@ -13,11 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
-      <body className="min-h-screen bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-amber-500/30 selection:text-amber-200">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+    <html lang="vi" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground font-sans antialiased selection:bg-brand/30 selection:text-brand-foreground">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+          <Toaster richColors closeButton position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

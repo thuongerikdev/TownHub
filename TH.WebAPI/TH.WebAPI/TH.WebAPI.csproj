@@ -38,6 +38,8 @@
     <ProjectReference Include="..\Service\Base\TH.Base.Infrastructure\TH.Base.Infrastructure.csproj" />
     <ProjectReference Include="..\Service\Shared\TH.Constant\TH.Constant.csproj" />
     <ProjectReference Include="..\Service\Shared\TH.Shared.ApplicationService\TH.Shared.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Asset\TH.Asset.ApplicationService\TH.Asset.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Asset\TH.Asset.Dtos\TH.Asset.Dtos.csproj" />
   </ItemGroup>
 
 </Project>

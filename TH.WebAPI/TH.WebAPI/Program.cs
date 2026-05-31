@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using TH.Auth.ApplicationService.StartUp;
 using TH.Base.ApplicationService.StartUp;
+using TH.Asset.ApplicationService.StartUp;
 
 namespace TH.WebAPI
 {
@@ -74,6 +75,7 @@ namespace TH.WebAPI
             // === 3) Modules (đăng ký DbContext sẽ đọc từ Configuration ở trên) ===
             builder.ConfigureAuth(typeof(Program).Namespace);
             builder.ConfigureBase(typeof(Program).Namespace);
+            builder.ConfigureAsset(typeof(Program).Namespace);
             //builder.ConfigureMovie(typeof(Program).Namespace);
             builder.Services.AddHealthChecks();
 
@@ -125,6 +127,12 @@ namespace TH.WebAPI
             var app = builder.Build();
 
             await app.SeedAuthDataAsync();
+
+            // Asset module chạy migration khi khởi động CHỈ khi bật cờ ASSET_AUTO_MIGRATE=true.
+            // Mặc định tắt để không tự ý thay đổi schema trên DB dùng chung (Neon) — bật khi đã sẵn sàng.
+            // Gọi tường minh AssetStartUp để tránh nhập nhằng với BaseStartUp.SeedAssetDataAsync (trùng tên).
+            if (app.Configuration.GetValue<bool>("ASSET_AUTO_MIGRATE"))
+                await AssetStartUp.SeedAssetDataAsync(app);
 
 
             app.UseSwagger();

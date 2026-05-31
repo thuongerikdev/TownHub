@@ -53,10 +53,12 @@ namespace TH.TownHub.ApplicationService.Service
                     DateOfBirth = request.dateOfBirth,
                     Gender = request.gender,
                     ApartmentId = request.apartmentId,
+                    UnitId = request.unitId,
                     IsOwner = request.isOwner,
                     MoveInDate = request.moveInDate,
                     AvatarUrl = request.avatarUrl,
-                    AuthUserId = request.authUserId
+                    AuthUserId = request.authUserId,
+                    UserId = request.userId
                 };
 
                 _dbContext.Residents.Add(entity);
@@ -100,11 +102,13 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.DateOfBirth = request.dateOfBirth;
                 entity.Gender = request.gender;
                 entity.ApartmentId = request.apartmentId;
+                entity.UnitId = request.unitId;
                 entity.IsOwner = request.isOwner;
                 entity.MoveInDate = request.moveInDate;
                 entity.MoveOutDate = request.moveOutDate;
                 entity.AvatarUrl = request.avatarUrl;
                 entity.AuthUserId = request.authUserId;
+                entity.UserId = request.userId;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 _dbContext.Residents.Update(entity);
@@ -163,11 +167,13 @@ namespace TH.TownHub.ApplicationService.Service
                         gender = x.Gender,
                         apartmentId = x.ApartmentId,
                         apartmentCode = x.Apartment != null ? x.Apartment.Code : null,
+                        unitId = x.UnitId,
                         isOwner = x.IsOwner,
                         moveInDate = x.MoveInDate,
                         moveOutDate = x.MoveOutDate,
                         avatarUrl = x.AvatarUrl,
                         authUserId = x.AuthUserId,
+                        userId = x.UserId,
                         createdAt = x.CreatedAt
                     })
                     .ToListAsync();
@@ -199,11 +205,13 @@ namespace TH.TownHub.ApplicationService.Service
                         gender = x.Gender,
                         apartmentId = x.ApartmentId,
                         apartmentCode = x.Apartment != null ? x.Apartment.Code : null,
+                        unitId = x.UnitId,
                         isOwner = x.IsOwner,
                         moveInDate = x.MoveInDate,
                         moveOutDate = x.MoveOutDate,
                         avatarUrl = x.AvatarUrl,
                         authUserId = x.AuthUserId,
+                        userId = x.UserId,
                         createdAt = x.CreatedAt
                     })
                     .FirstOrDefaultAsync();

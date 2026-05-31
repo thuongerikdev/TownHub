@@ -212,7 +212,13 @@ namespace TH.TownHub.ApplicationService.Service
                     TemplateId = request.templateId,
                     Status = "draft",
                     ScheduledAt = request.scheduledAt,
-                    CreatedByAuthUserId = request.createdByAuthUserId
+                    CreatedByAuthUserId = request.createdByAuthUserId,
+                    // Individual notification fields (UC63)
+                    RecipientId = request.recipientId,
+                    ReferenceType = request.referenceType,
+                    ReferenceId = request.referenceId,
+                    Body = request.body,
+                    SendStatus = request.sendStatus
                 });
                 await _dbContext.SaveChangesAsync();
 
@@ -242,6 +248,12 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.Audience = request.audience;
                 entity.TemplateId = request.templateId;
                 entity.ScheduledAt = request.scheduledAt;
+                // Individual notification fields (UC63)
+                entity.RecipientId = request.recipientId;
+                entity.ReferenceType = request.referenceType;
+                entity.ReferenceId = request.referenceId;
+                entity.Body = request.body;
+                entity.SendStatus = request.sendStatus;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
@@ -305,6 +317,13 @@ namespace TH.TownHub.ApplicationService.Service
                         scheduledAt = x.ScheduledAt,
                         sentAt = x.SentAt,
                         createdByAuthUserId = x.CreatedByAuthUserId,
+                        recipientId = x.RecipientId,
+                        referenceType = x.ReferenceType,
+                        referenceId = x.ReferenceId,
+                        body = x.Body,
+                        isRead = x.IsRead,
+                        readAt = x.ReadAt,
+                        sendStatus = x.SendStatus,
                         createdAt = x.CreatedAt
                     })
                     .ToListAsync();
@@ -338,6 +357,13 @@ namespace TH.TownHub.ApplicationService.Service
                         scheduledAt = x.ScheduledAt,
                         sentAt = x.SentAt,
                         createdByAuthUserId = x.CreatedByAuthUserId,
+                        recipientId = x.RecipientId,
+                        referenceType = x.ReferenceType,
+                        referenceId = x.ReferenceId,
+                        body = x.Body,
+                        isRead = x.IsRead,
+                        readAt = x.ReadAt,
+                        sendStatus = x.SendStatus,
                         createdAt = x.CreatedAt
                     })
                     .FirstOrDefaultAsync();
@@ -867,6 +893,8 @@ namespace TH.TownHub.ApplicationService.Service
 
                 entity.Value = request.value;
                 entity.UpdatedByAuthUserId = request.updatedByAuthUserId;
+                if (request.scope != null) entity.Scope = request.scope;
+                if (request.updatedBy.HasValue) entity.UpdatedBy = request.updatedBy;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
@@ -898,6 +926,7 @@ namespace TH.TownHub.ApplicationService.Service
                         dataType = x.DataType,
                         description = x.Description,
                         isPublic = x.IsPublic,
+                        scope = x.Scope,
                         updatedAt = x.UpdatedAt
                     })
                     .ToListAsync();
@@ -925,6 +954,7 @@ namespace TH.TownHub.ApplicationService.Service
                         dataType = x.DataType,
                         description = x.Description,
                         isPublic = x.IsPublic,
+                        scope = x.Scope,
                         updatedAt = x.UpdatedAt
                     })
                     .FirstOrDefaultAsync();
@@ -969,7 +999,11 @@ namespace TH.TownHub.ApplicationService.Service
                     OldData = request.oldData,
                     NewData = request.newData,
                     IpAddress = request.ipAddress,
-                    UserAgent = request.userAgent
+                    UserAgent = request.userAgent,
+                    // DB-level audit fields (UC từ Asset module)
+                    TableName = request.tableName,
+                    RecordId = request.recordId,
+                    ChangedBy = request.changedBy
                 });
                 await _dbContext.SaveChangesAsync();
             }
@@ -1001,6 +1035,9 @@ namespace TH.TownHub.ApplicationService.Service
                         action = x.Action,
                         targetType = x.TargetType,
                         targetId = x.TargetId,
+                        tableName = x.TableName,
+                        recordId = x.RecordId,
+                        changedBy = x.ChangedBy,
                         ipAddress = x.IpAddress,
                         createdAt = x.CreatedAt
                     })
