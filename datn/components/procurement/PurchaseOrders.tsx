@@ -98,7 +98,7 @@ export default function PurchaseOrders() {
       expectedDelivery: form.expectedDelivery || undefined,
       totalAmount: form.totalAmount ? Number(form.totalAmount) : undefined,
       currency: "VND", paymentTerms: form.paymentTerms.trim() || undefined,
-      notes: form.notes.trim() || undefined, createdBy: "QL Mua sắm",
+      notes: form.notes.trim() || undefined,
     };
     setSubmitting(true);
     const res = await purchaseOrders.create(body);

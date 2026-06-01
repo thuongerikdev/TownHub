@@ -155,9 +155,11 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? warehouseId,
             [FromQuery] Guid? materialId,
-            [FromQuery] string? txnType)
+            [FromQuery] string? txnType,
+            [FromQuery] string? referenceType,
+            [FromQuery] Guid? referenceId)
         {
-            var result = await _service.GetAllAsync(warehouseId, materialId, txnType);
+            var result = await _service.GetAllAsync(warehouseId, materialId, txnType, referenceType, referenceId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
@@ -207,9 +209,12 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         }
 
         [HttpGet("get-all")]
-        public async Task<IActionResult> GetAll([FromQuery] string? status)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? status,
+            [FromQuery] Guid? ticketId,
+            [FromQuery] Guid? woId)
         {
-            var result = await _service.GetAllAsync(status);
+            var result = await _service.GetAllAsync(status, ticketId, woId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 

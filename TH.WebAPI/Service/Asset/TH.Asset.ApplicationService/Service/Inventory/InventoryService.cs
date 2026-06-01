@@ -430,7 +430,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
     public interface IInventoryTransactionService
     {
         Task<ResponseDto<bool>> CreateAsync(CreateInventoryTransactionDto request);
-        Task<ResponseDto<List<InventoryTransactionResponse>>> GetAllAsync(Guid? warehouseId = null, Guid? materialId = null, string? txnType = null);
+        Task<ResponseDto<List<InventoryTransactionResponse>>> GetAllAsync(Guid? warehouseId = null, Guid? materialId = null, string? txnType = null, string? referenceType = null, Guid? referenceId = null);
         Task<ResponseDto<InventoryTransactionResponse>> GetByIdAsync(Guid id);
     }
 
@@ -509,7 +509,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         }
 
         public async Task<ResponseDto<List<InventoryTransactionResponse>>> GetAllAsync(
-            Guid? warehouseId = null, Guid? materialId = null, string? txnType = null)
+            Guid? warehouseId = null, Guid? materialId = null, string? txnType = null,
+            string? referenceType = null, Guid? referenceId = null)
         {
             try
             {
@@ -518,9 +519,11 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     .Include(x => x.material)
                     .AsQueryable();
 
-                if (warehouseId.HasValue)          query = query.Where(x => x.warehouseId == warehouseId.Value);
-                if (materialId.HasValue)           query = query.Where(x => x.materialId  == materialId.Value);
-                if (!string.IsNullOrEmpty(txnType)) query = query.Where(x => x.txnType    == txnType);
+                if (warehouseId.HasValue)               query = query.Where(x => x.warehouseId   == warehouseId.Value);
+                if (materialId.HasValue)                query = query.Where(x => x.materialId    == materialId.Value);
+                if (!string.IsNullOrEmpty(txnType))     query = query.Where(x => x.txnType       == txnType);
+                if (!string.IsNullOrEmpty(referenceType)) query = query.Where(x => x.referenceType == referenceType);
+                if (referenceId.HasValue)               query = query.Where(x => x.referenceId   == referenceId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.performedAt)
@@ -604,7 +607,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> CreateAsync(CreatePurchaseRequestDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdatePurchaseRequestDto request);
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
-        Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null);
+        Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null);
         Task<ResponseDto<PurchaseRequestResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy);
         Task<ResponseDto<bool>> RejectAsync(Guid id, string reason);
@@ -696,7 +699,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null)
+        public async Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null)
         {
             try
             {
@@ -706,6 +709,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     .AsQueryable();
 
                 if (!string.IsNullOrEmpty(status)) query = query.Where(x => x.status == status);
+                if (ticketId.HasValue)             query = query.Where(x => x.ticketId == ticketId.Value);
+                if (woId.HasValue)                 query = query.Where(x => x.woId     == woId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.createdAt)

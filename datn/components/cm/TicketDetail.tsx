@@ -5,16 +5,20 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, MapPin, User, Clock, AlertTriangle, CheckCircle2,
-  UserPlus, TrendingUp, RefreshCw, Inbox,
+  UserPlus, TrendingUp, RefreshCw, Inbox, Package, ShoppingCart, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  tickets, slaConfigs, displayUser,
+  tickets, slaConfigs, warehouses, materials, inventoryTransactions, purchaseRequests,
+  displayUser, EMPTY_GUID,
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
   type SlaConfigResponse, type UpdateTicketInput,
+  type WarehouseResponse, type MaterialResponse,
+  type InventoryTransactionResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
 import { mockTickets, mockSlaConfigs } from "@/lib/mock/cm";
+import { mockWarehouses, mockMaterials } from "@/lib/mock/inventory";
 import {
   MockBanner, LoadingState, ErrorState, StatusBadge, PriorityBadge, SlaBadge, ToneBadge,
   EntityModal, Field, type StatusDef,
@@ -23,20 +27,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatCurrency } from "@/lib/format";
 
 const TICKET_STATUS: Record<string, StatusDef> = {
-  OPEN: { label: "Mới", tone: "info" },
-  ASSIGNED: { label: "Đã phân công", tone: "brand" },
-  IN_PROGRESS: { label: "Đang xử lý", tone: "warning" },
-  PENDING_MATERIAL: { label: "Chờ vật tư", tone: "neutral" },
-  RESOLVED: { label: "Đã xử lý", tone: "success" },
-  CLOSED: { label: "Đã đóng", tone: "neutral" },
+  NEW:              { label: "Mới tiếp nhận", tone: "info" },
+  OPEN:             { label: "Chờ phân công", tone: "info" },
+  ASSIGNED:         { label: "Đã phân công",  tone: "brand" },
+  IN_PROGRESS:      { label: "Đang xử lý",    tone: "warning" },
+  PENDING_MATERIAL: { label: "Chờ vật tư",    tone: "neutral" },
+  RESOLVED:         { label: "Đã xử lý",      tone: "success" },
+  CLOSED:           { label: "Đã đóng",       tone: "neutral" },
 };
 const CATEGORY: Record<string, string> = {
   ELECTRICAL: "Điện", PLUMBING: "Nước", HVAC: "HVAC", ELEVATOR: "Thang máy", FIRE: "PCCC", OTHER: "Khác",
 };
-const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT" };
+const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT", RECEPTION: "Lễ tân", PHONE: "Điện thoại", EMAIL: "Email", APP: "Ứng dụng" };
 
 const SLA_HOURS: Record<string, number> = { CRITICAL: 4, HIGH: 8, MEDIUM: 24, LOW: 72 };
 const isClosed = (t: TicketResponse) => t.status === "RESOLVED" || t.status === "CLOSED";
@@ -52,12 +57,23 @@ function remaining(t: TicketResponse) {
   return { overdue, text: `${h}h ${m}ph` };
 }
 
+// Luồng CM: NEW/OPEN → ASSIGNED → IN_PROGRESS ⇆ PENDING_MATERIAL → RESOLVED → CLOSED
 const NEXT_STATUS: Record<string, string[]> = {
-  ASSIGNED: ["IN_PROGRESS", "PENDING_MATERIAL"],
-  IN_PROGRESS: ["PENDING_MATERIAL", "RESOLVED"],
+  NEW:              ["ASSIGNED"],
+  OPEN:             ["ASSIGNED"],
+  ASSIGNED:         ["IN_PROGRESS", "PENDING_MATERIAL"],
+  IN_PROGRESS:      ["PENDING_MATERIAL", "RESOLVED"],
   PENDING_MATERIAL: ["IN_PROGRESS", "RESOLVED"],
-  RESOLVED: ["CLOSED"],
+  RESOLVED:         ["CLOSED"],
 };
+
+const SHOW_MATERIAL = new Set(["ASSIGNED", "IN_PROGRESS", "PENDING_MATERIAL", "RESOLVED"]);
+
+interface MatForm { warehouseId: string; materialId: string; qty: string; notes: string; }
+const emptyMat: MatForm = { warehouseId: "", materialId: "", qty: "1", notes: "" };
+
+interface PrForm { prCode: string; title: string; priority: string; requestedByName: string; justification: string; }
+const emptyPr: PrForm = { prCode: "", title: "", priority: "MEDIUM", requestedByName: "", justification: "" };
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -77,11 +93,35 @@ export default function TicketDetail() {
   );
   const slaQ = useApiList<SlaConfigResponse>(() => slaConfigs.getAll(), { mock: mockSlaConfigs });
 
+  // ── Vật tư & Mua sắm ─────────────────────────────────────────────────────────
+  const warehousesQ = useApiList<WarehouseResponse>(() => warehouses.getAll(), { mock: mockWarehouses });
+  const materialsQ  = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
+  const linkedTxnsQ = useApiList<InventoryTransactionResponse>(
+    () => inventoryTransactions.getAll({ referenceType: "TICKET", referenceId: String(id) }),
+    { deps: [id], enabled: !!t },
+  );
+  const linkedPrsQ = useApiList<PurchaseRequestResponse>(
+    () => purchaseRequests.getAll({ ticketId: String(id) }),
+    { deps: [id], enabled: !!t },
+  );
+
+  // ── Assign modal state ────────────────────────────────────────────────────────
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee, setAssignee] = useState("");
+  const [assignee,   setAssignee]   = useState("");
+
+  // ── Status change modal state ─────────────────────────────────────────────────
   const [statusOpen, setStatusOpen] = useState(false);
-  const [toStatus, setToStatus] = useState("");
-  const [note, setNote] = useState("");
+  const [toStatus,   setToStatus]   = useState("");
+  const [note,       setNote]       = useState("");
+
+  // ── Material OUT form ─────────────────────────────────────────────────────────
+  const [matForm,    setMatForm]    = useState<MatForm>(emptyMat);
+  const [matWorking, setMatWorking] = useState(false);
+
+  // ── PR inline form ────────────────────────────────────────────────────────────
+  const [prForm,     setPrForm]     = useState<PrForm>(emptyPr);
+  const [prWorking,  setPrWorking]  = useState(false);
+
   const [working, setWorking] = useState(false);
 
   const sla = useMemo(
@@ -96,10 +136,10 @@ export default function TicketDetail() {
     }
     if (!t) return [];
     const out: { status: string; at: string; by?: string; note?: string }[] = [
-      { status: "OPEN", at: t.createdAt, by: t.reportedByName ?? displayUser(t.reportedBy) },
+      { status: t.status, at: t.createdAt, by: t.reportedByName ?? displayUser(t.reportedBy) },
     ];
     if (t.resolvedAt) out.push({ status: "RESOLVED", at: t.resolvedAt, note: t.resolutionNote });
-    if (t.closedAt) out.push({ status: "CLOSED", at: t.closedAt });
+    if (t.closedAt)   out.push({ status: "CLOSED",   at: t.closedAt });
     return out;
   }, [historyQ.items, t]);
 
@@ -116,11 +156,12 @@ export default function TicketDetail() {
     if (!t) return;
     if (!assignee.trim()) { toast.error("Nhập tên KTV được phân công."); return; }
     setWorking(true);
-    // assignedTo/changedBy are GUID columns with no Auth directory — record the KTV
-    // name in the status-history note (shown in the timeline) instead.
     const res = await tickets.assign({ ticketId: t.id });
     if (res.errorCode === 200) {
-      await tickets.changeStatus({ ticketId: t.id, toStatus: "ASSIGNED", fromStatus: t.status, note: `Phân công cho ${assignee.trim()}` });
+      await tickets.changeStatus({
+        ticketId: t.id, toStatus: "ASSIGNED", fromStatus: t.status,
+        note: `Phân công cho ${assignee.trim()}`,
+      });
     }
     setWorking(false);
     if (res.errorCode === 200) {
@@ -139,7 +180,7 @@ export default function TicketDetail() {
       await tickets.update({
         ...updateBase(t), status: toStatus,
         resolvedAt: toStatus === "RESOLVED" ? new Date().toISOString() : t.resolvedAt,
-        closedAt: toStatus === "CLOSED" ? new Date().toISOString() : t.closedAt,
+        closedAt:   toStatus === "CLOSED"   ? new Date().toISOString() : t.closedAt,
         resolutionNote: note.trim() || t.resolutionNote,
       });
     }
@@ -151,12 +192,60 @@ export default function TicketDetail() {
     } else toast.error(res.errorMessage || "Cập nhật thất bại.");
   }
 
+  async function doIssueOut() {
+    if (!t) return;
+    if (!matForm.warehouseId || !matForm.materialId) { toast.error("Chọn kho và vật tư."); return; }
+    const qty = Number(matForm.qty);
+    if (!qty || qty <= 0) { toast.error("Số lượng không hợp lệ."); return; }
+    setMatWorking(true);
+    const txnCode = `OUT-${t.ticketCode}-${Date.now().toString(36).toUpperCase()}`;
+    const res = await inventoryTransactions.create({
+      txnCode,
+      warehouseId: matForm.warehouseId,
+      materialId:  matForm.materialId,
+      referenceType: "TICKET",
+      referenceId:   t.id,
+      txnType:  "OUT",
+      quantity: qty,
+      notes:    matForm.notes || `Xuất kho xử lý ${t.ticketCode}`,
+    });
+    setMatWorking(false);
+    if (res.errorCode === 200) {
+      toast.success("Đã xuất vật tư.");
+      setMatForm(emptyMat);
+      linkedTxnsQ.refetch();
+    } else toast.error(res.errorMessage || "Xuất kho thất bại.");
+  }
+
+  async function doCreatePr() {
+    if (!t) return;
+    if (!prForm.prCode.trim()) { toast.error("Nhập mã phiếu đề xuất."); return; }
+    setPrWorking(true);
+    const res = await purchaseRequests.create({
+      prCode:          prForm.prCode.trim(),
+      ticketId:        t.id,
+      requestedBy:     EMPTY_GUID,
+      requestedByName: prForm.requestedByName.trim() || t.reportedByName || "KTV",
+      title:           prForm.title.trim() || `Vật tư cho ${t.ticketCode}`,
+      priority:        prForm.priority,
+      justification:   prForm.justification.trim() || undefined,
+    });
+    setPrWorking(false);
+    if (res.errorCode === 200) {
+      toast.success("Đã tạo phiếu đề xuất mua hàng.");
+      setPrForm(emptyPr);
+      linkedPrsQ.refetch();
+    } else toast.error(res.errorMessage || "Tạo PR thất bại.");
+  }
+
   if (q.loading) return <div className="py-10"><LoadingState /></div>;
   if (!t) return <div className="py-10"><ErrorState message={q.error ?? "Không tìm thấy ticket."} onRetry={q.refetch} /></div>;
 
-  const rem = remaining(t);
-  const nexts = NEXT_STATUS[t.status] ?? [];
+  const rem    = remaining(t);
+  const nexts  = NEXT_STATUS[t.status] ?? [];
   const closed = isClosed(t);
+  const canAssign = t.status === "NEW" || t.status === "OPEN";
+  const showMaterial = SHOW_MATERIAL.has(t.status);
 
   return (
     <div>
@@ -206,6 +295,7 @@ export default function TicketDetail() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* ── Cột chính (2/3) ─────────────────────────────────────────────────── */}
         <div className="space-y-6 lg:col-span-2">
           <Section title="Thông tin sự cố">
             <div className="grid grid-cols-2 gap-4">
@@ -217,10 +307,174 @@ export default function TicketDetail() {
               <Row label="Vị trí">{[t.unitId, t.floorId].filter(Boolean).join(" · ") || "—"}</Row>
               <Row label="Loại sự cố">{CATEGORY[t.category ?? "OTHER"] ?? t.category}</Row>
               <Row label="Nguồn báo">{SOURCE[t.source] ?? t.source}</Row>
-              {t.description && <div className="col-span-2"><Row label="Mô tả chi tiết">{t.description}</Row></div>}
+              {t.description    && <div className="col-span-2"><Row label="Mô tả chi tiết">{t.description}</Row></div>}
               {t.resolutionNote && <div className="col-span-2"><Row label="Ghi chú xử lý"><span className="text-success">{t.resolutionNote}</span></Row></div>}
             </div>
           </Section>
+
+          {/* ── UC52: Vật tư & Đề xuất mua hàng (inline) ──────────────────────── */}
+          {showMaterial && (
+            <Section title="Vật tư & Đề xuất mua hàng">
+              <div className="space-y-6">
+
+                {/* Xuất vật tư từ kho */}
+                <div>
+                  <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    <Package className="size-4 text-brand" /> Xuất vật tư từ kho
+                  </h3>
+                  {!closed ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Kho</label>
+                        <Select value={matForm.warehouseId} onValueChange={(v) => setMatForm((f) => ({ ...f, warehouseId: v }))}>
+                          <SelectTrigger><SelectValue placeholder="Chọn kho" /></SelectTrigger>
+                          <SelectContent>
+                            {warehousesQ.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Vật tư</label>
+                        <Select value={matForm.materialId} onValueChange={(v) => setMatForm((f) => ({ ...f, materialId: v }))}>
+                          <SelectTrigger><SelectValue placeholder="Chọn vật tư" /></SelectTrigger>
+                          <SelectContent>
+                            {materialsQ.items.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Số lượng</label>
+                        <Input type="number" min={1} value={matForm.qty} onChange={(e) => setMatForm((f) => ({ ...f, qty: e.target.value }))} />
+                      </div>
+                      <div className="flex items-end">
+                        <Button className="w-full" size="sm" onClick={doIssueOut} disabled={matWorking}>
+                          <Plus className="size-4" /> Xuất kho
+                        </Button>
+                      </div>
+                      <div className="col-span-full">
+                        <label className="mb-1 block text-xs text-muted-foreground">Ghi chú (tuỳ chọn)</label>
+                        <Input value={matForm.notes} onChange={(e) => setMatForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Ghi chú xuất kho…" />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Ticket đã đóng — không thể xuất vật tư.</p>
+                  )}
+
+                  {/* Danh sách giao dịch đã xuất */}
+                  {linkedTxnsQ.items.length > 0 && (
+                    <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-surface-2 text-xs uppercase text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Mã GD</th>
+                            <th className="px-3 py-2 text-left">Vật tư</th>
+                            <th className="px-3 py-2 text-left">Kho</th>
+                            <th className="px-3 py-2 text-right">SL</th>
+                            <th className="px-3 py-2 text-left">Thời gian</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {linkedTxnsQ.items.map((tx) => (
+                            <tr key={tx.id} className="hover:bg-surface-2/50">
+                              <td className="px-3 py-2 font-mono text-xs">{tx.txnCode}</td>
+                              <td className="px-3 py-2">{tx.materialName ?? "—"}</td>
+                              <td className="px-3 py-2 text-muted-foreground">{tx.warehouseName ?? "—"}</td>
+                              <td className="px-3 py-2 text-right font-medium">{tx.quantity}</td>
+                              <td className="px-3 py-2 text-muted-foreground">{formatDateTime(tx.performedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-border" />
+
+                {/* Đề xuất mua hàng */}
+                <div>
+                  <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    <ShoppingCart className="size-4 text-brand" /> Đề xuất mua hàng (PR)
+                  </h3>
+                  {!closed ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất <span className="text-danger">*</span></label>
+                        <Input value={prForm.prCode} onChange={(e) => setPrForm((f) => ({ ...f, prCode: e.target.value }))} placeholder={`PR-${t.ticketCode}`} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất</label>
+                        <Input value={prForm.requestedByName} onChange={(e) => setPrForm((f) => ({ ...f, requestedByName: e.target.value }))} placeholder={t.reportedByName ?? "Tên KTV"} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Tiêu đề</label>
+                        <Input value={prForm.title} onChange={(e) => setPrForm((f) => ({ ...f, title: e.target.value }))} placeholder={`Vật tư cho ${t.ticketCode}`} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Ưu tiên</label>
+                        <Select value={prForm.priority} onValueChange={(v) => setPrForm((f) => ({ ...f, priority: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="LOW">Thấp</SelectItem>
+                            <SelectItem value="MEDIUM">Trung bình</SelectItem>
+                            <SelectItem value="HIGH">Cao</SelectItem>
+                            <SelectItem value="URGENT">Khẩn cấp</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-full">
+                        <label className="mb-1 block text-xs text-muted-foreground">Lý do / Mô tả</label>
+                        <Textarea rows={2} value={prForm.justification} onChange={(e) => setPrForm((f) => ({ ...f, justification: e.target.value }))} placeholder="Mô tả nhu cầu vật tư cần mua…" />
+                      </div>
+                      <div className="col-span-full flex justify-end">
+                        <Button size="sm" onClick={doCreatePr} disabled={prWorking}>
+                          <Plus className="size-4" /> Tạo phiếu đề xuất
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Ticket đã đóng — không thể tạo phiếu đề xuất mới.</p>
+                  )}
+
+                  {/* Danh sách PR đã liên kết */}
+                  {linkedPrsQ.items.length > 0 ? (
+                    <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-surface-2 text-xs uppercase text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Mã PR</th>
+                            <th className="px-3 py-2 text-left">Tiêu đề</th>
+                            <th className="px-3 py-2 text-left">Người đề xuất</th>
+                            <th className="px-3 py-2 text-left">Trạng thái</th>
+                            <th className="px-3 py-2 text-left">Ngày tạo</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {linkedPrsQ.items.map((pr) => (
+                            <tr key={pr.id} className="hover:bg-surface-2/50">
+                              <td className="px-3 py-2 font-mono text-xs">{pr.prCode}</td>
+                              <td className="px-3 py-2">{pr.title ?? "—"}</td>
+                              <td className="px-3 py-2 text-muted-foreground">{pr.requestedByName ?? displayUser(pr.requestedBy) ?? "—"}</td>
+                              <td className="px-3 py-2">
+                                <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${pr.status === "APPROVED" ? "bg-success/15 text-success" : pr.status === "REJECTED" ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground"}`}>{pr.status}</span>
+                              </td>
+                              <td className="px-3 py-2 text-muted-foreground">{formatDateTime(pr.createdAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    !closed && (
+                      <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Inbox className="size-4" /> Chưa có phiếu đề xuất nào liên kết với ticket này.
+                      </p>
+                    )
+                  )}
+                </div>
+              </div>
+            </Section>
+          )}
 
           <Section title="Timeline trạng thái">
             {historyQ.loading ? (
@@ -240,7 +494,7 @@ export default function TicketDetail() {
                         <StatusBadge value={ev.status} map={TICKET_STATUS} />
                         <span className="text-xs text-muted-foreground">{formatDateTime(ev.at)}</span>
                       </div>
-                      {ev.by && <p className="mt-1 text-sm text-muted-foreground">Bởi {ev.by}</p>}
+                      {ev.by   && <p className="mt-1 text-sm text-muted-foreground">Bởi {ev.by}</p>}
                       {ev.note && <p className="mt-0.5 text-sm text-foreground/90">{ev.note}</p>}
                     </div>
                   </li>
@@ -272,6 +526,7 @@ export default function TicketDetail() {
           </Section>
         </div>
 
+        {/* ── Cột phụ (1/3) ─────────────────────────────────────────────────── */}
         <div className="space-y-6">
           <Section title="SLA áp dụng">
             <div className="space-y-3 text-sm">
@@ -284,11 +539,24 @@ export default function TicketDetail() {
 
           <Section title="Thao tác">
             <div className="space-y-2">
-              {t.status === "OPEN" && (
+              {canAssign && (
                 <Button className="w-full" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công KTV</Button>
               )}
-              {nexts.length > 0 && (
-                <Button className="w-full" variant={t.status === "OPEN" ? "outline" : "default"} onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}>
+              {nexts.length > 0 && !canAssign && (
+                <Button
+                  className="w-full"
+                  variant="default"
+                  onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}
+                >
+                  <RefreshCw className="size-4" /> Cập nhật trạng thái
+                </Button>
+              )}
+              {nexts.length > 0 && canAssign && (
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}
+                >
                   <RefreshCw className="size-4" /> Cập nhật trạng thái
                 </Button>
               )}
@@ -306,9 +574,25 @@ export default function TicketDetail() {
               <Row label="Thời gian">{formatDateTime(t.createdAt)}</Row>
             </div>
           </Section>
+
+          {/* Tóm tắt vật tư */}
+          {showMaterial && (
+            <Section title="Tóm tắt vật tư">
+              <div className="space-y-2 text-sm">
+                <Row label="Giao dịch xuất kho">{linkedTxnsQ.items.length > 0 ? `${linkedTxnsQ.items.length} giao dịch` : "Chưa có"}</Row>
+                <Row label="Phiếu đề xuất (PR)">{linkedPrsQ.items.length > 0 ? `${linkedPrsQ.items.length} phiếu` : "Chưa có"}</Row>
+                <Row label="Chi phí vật tư">
+                  {linkedTxnsQ.items.reduce((s, tx) => s + (tx.totalCost ?? 0), 0) > 0
+                    ? formatCurrency(linkedTxnsQ.items.reduce((s, tx) => s + (tx.totalCost ?? 0), 0))
+                    : "—"}
+                </Row>
+              </div>
+            </Section>
+          )}
         </div>
       </div>
 
+      {/* ── Modals ─────────────────────────────────────────────────────────────── */}
       <EntityModal
         open={assignOpen}
         onOpenChange={setAssignOpen}

@@ -50,7 +50,7 @@ namespace TH.Asset.Domain.Incident
         public required string ticketCode { get; set; }
 
         [MaxLength(30)]
-        public string status { get; set; } = "NEW";
+        public string status { get; set; } = "OPEN";
 
         // Cross-service (Base) — không dùng navigation property
         public Guid buildingId { get; set; }

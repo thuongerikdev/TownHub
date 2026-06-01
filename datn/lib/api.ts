@@ -682,7 +682,7 @@ export const materials = {
   delete: (id: string) => apiFetch<boolean>(`/api/asset/material/delete/${id}`, { method: "DELETE" }),
 };
 export const inventoryTransactions = {
-  getAll: (params?: { warehouseId?: string; materialId?: string; txnType?: string }) =>
+  getAll: (params?: { warehouseId?: string; materialId?: string; txnType?: string; referenceType?: string; referenceId?: string }) =>
     apiFetch<InventoryTransactionResponse[]>(`/api/asset/inventory-transaction/get-all${qs(params)}`, {}),
   getById: (id: string) => apiFetch<InventoryTransactionResponse>(`/api/asset/inventory-transaction/get/${id}`, {}),
   create: (body: CreateInventoryTransactionInput) =>
@@ -750,7 +750,8 @@ export interface UpdateInvoiceInput extends CreateInvoiceInput {
 
 // ─── Procurement (Mua sắm): endpoints ──────────────────────────────────────────
 export const purchaseRequests = {
-  getAll: (status?: string) => apiFetch<PurchaseRequestResponse[]>(`/api/asset/purchase-request/get-all${qs({ status })}`, {}),
+  getAll: (params?: { status?: string; ticketId?: string; woId?: string }) =>
+    apiFetch<PurchaseRequestResponse[]>(`/api/asset/purchase-request/get-all${qs(params)}`, {}),
   getById: (id: string) => apiFetch<PurchaseRequestResponse>(`/api/asset/purchase-request/get/${id}`, {}),
   create: (body: CreatePurchaseRequestInput) =>
     apiFetch<boolean>(`/api/asset/purchase-request/create`, { method: "POST", body: JSON.stringify(body) }),
