@@ -100,7 +100,13 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
     items: [
       { icon: Users, label: "Tài khoản", path: "/users" },
       { icon: ClipboardList, label: "Vai trò", path: "/roles" },
-      { icon: Shield, label: "Phân quyền", path: "/permissions" },
+      {
+        icon: Shield, label: "Phân quyền", path: "/permissions",
+        children: [
+          { label: "Gán quyền theo vai trò", path: "/permissions/assign" },
+          { label: "Danh mục quyền (Actions)", path: "/permissions" },
+        ],
+      },
       { icon: BellRing, label: "Thông báo", path: "/notifications" },
       { icon: Settings, label: "Cấu hình SLA", path: "/settings/sla" },
       { icon: FileText, label: "Nhật ký (Audit)", path: "/audit-logs" },
@@ -202,6 +208,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   const isOpen = openMenus[item.path] ?? isParentActive;
 
                   if (hasChildren) {
+                    // Chỉ tô sáng child khớp cụ thể nhất (path dài nhất) để tránh
+                    // index route (vd /permissions) sáng cùng sub-route (/permissions/assign).
+                    const bestChildPath = item
+                      .children!.filter((c) => pathname === c.path || pathname.startsWith(c.path + "/"))
+                      .reduce((best, c) => (c.path.length > best.length ? c.path : best), "");
                     return (
                       <div key={item.path}>
                         <button
@@ -217,7 +228,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {isOpen && (
                           <div className="ml-7 mt-0.5 space-y-0.5 border-l border-border pl-2">
                             {item.children!.map((child) => {
-                              const isChildActive = pathname === child.path || pathname.startsWith(child.path + "/");
+                              const isChildActive = child.path === bestChildPath;
                               return (
                                 <Link
                                   key={child.path}

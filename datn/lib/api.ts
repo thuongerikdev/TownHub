@@ -228,10 +228,30 @@ export const roles = {
 };
 
 // ─── Permissions ──────────────────────────────────────────────────────────────
+export interface CreatePermissionInput {
+  permissionName: string; permissionDescription?: string; code: string; scope?: string;
+}
 export const permissions = {
   getAll: () => apiFetch<Permission[]>("/permissions/admin/getall", {}),
-  getByUser: (id: number) => apiFetch<Permission[]>(`/permissions/getbyUserID/${id}`, {}),
-  getByRole: (id: number) => apiFetch<Permission[]>(`/permissions/getbyRoleID/${id}`, {}),
+  getByUser: (id: number) => apiFetch<Permission[]>(`/permissions/admin/getbyUserID/${id}`, {}),
+  getByRole: (id: number) => apiFetch<Permission[]>(`/permissions/admin/getbyRoleID/${id}`, {}),
+  create: (body: CreatePermissionInput) =>
+    apiFetch<Permission>("/permissions/admin/addPermission", {
+      method: "POST",
+      body: JSON.stringify({ scope: "staff", ...body }),
+    }),
+  bulkCreate: (items: CreatePermissionInput[]) =>
+    apiFetch<unknown>("/permissions/admin/BulkCreate", {
+      method: "POST",
+      body: JSON.stringify(items.map((i) => ({ scope: "staff", ...i }))),
+    }),
+  update: (body: CreatePermissionInput & { permissionID: number }) =>
+    apiFetch<Permission>("/permissions/admin/updatePermission", {
+      method: "PUT",
+      body: JSON.stringify({ scope: "staff", ...body }),
+    }),
+  delete: (id: number) =>
+    apiFetch<boolean>(`/permissions/admin/delete?permissionId=${id}`, { method: "DELETE" }),
   assignToRole: (roleID: number, permissionIDs: number[]) =>
     apiFetch<boolean>("/role-permissions/admin/assign-permissions", { method: "POST", body: JSON.stringify({ roleID, permissionIDs }) }),
 };
