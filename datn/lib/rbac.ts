@@ -27,7 +27,7 @@ export interface CatalogPermission {
   actionLabel: string;
 }
 
-// Action dùng lại nhiều nơi
+// Action dùng lại nhiều nơi (suffix sau dấu chấm = phần `action` của code)
 const A = {
   view: { action: "view", label: "Xem" },
   create: { action: "create", label: "Tạo mới" },
@@ -35,32 +35,33 @@ const A = {
   delete: { action: "delete", label: "Xoá" },
 };
 
+// LƯU Ý: mọi `code` (= `${key}.${action}`) phải KHỚP TUYỆT ĐỐI với value trong
+// backend TH.Constant/PermissionConstants.cs — để RBAC thông suốt đầu-cuối:
+// seed DB → gán vai trò → claim JWT → hasPermission(code) ở FE → [Authorize] ở BE.
+// Vì vậy nhóm CORE dùng đúng các code "thật" của Auth (role.read, permission.manage,
+// audit_log.manage…) thay vì view/create/update/delete cho đồng nhất.
 export const RESOURCE_DEFS: ResourceDef[] = [
   // ───────────────── CORE ─────────────────
   {
     key: "user", label: "Tài khoản người dùng", group: "core", icon: "Users",
     actions: [
-      { ...A.view, description: "Xem danh sách & chi tiết tài khoản" },
-      { ...A.create, description: "Tạo tài khoản mới" },
-      { ...A.update, description: "Sửa thông tin, trạng thái tài khoản" },
-      { ...A.delete, description: "Vô hiệu hoá / xoá tài khoản" },
+      { action: "read_details", label: "Xem", description: "Xem danh sách & chi tiết tài khoản" },
+      { action: "delete", label: "Xoá", description: "Vô hiệu hoá / xoá tài khoản" },
     ],
   },
   {
-    key: "role", label: "Vai trò", group: "core", icon: "ClipboardList",
+    key: "role", label: "Vai trò (nhóm người dùng)", group: "core", icon: "ClipboardList",
     actions: [
-      { ...A.view, description: "Xem danh sách vai trò" },
-      { ...A.create, description: "Tạo vai trò (nhóm người dùng)" },
-      { ...A.update, description: "Sửa vai trò" },
-      { ...A.delete, description: "Xoá vai trò" },
+      { action: "read", label: "Xem", description: "Xem danh sách vai trò" },
+      { action: "manage", label: "Quản lý", description: "Tạo / sửa / xoá vai trò" },
       { action: "assign", label: "Gán cho người dùng", description: "Gán vai trò cho tài khoản" },
     ],
   },
   {
-    key: "permission", label: "Phân quyền", group: "core", icon: "Shield",
+    key: "permission", label: "Phân quyền (nhóm quyền)", group: "core", icon: "Shield",
     actions: [
-      { ...A.view, description: "Xem danh mục quyền" },
-      { action: "manage", label: "Quản lý danh mục", description: "Tạo/sửa/xoá định nghĩa quyền" },
+      { action: "read", label: "Xem", description: "Xem danh mục quyền" },
+      { action: "manage", label: "Quản lý danh mục", description: "Tạo / sửa / xoá định nghĩa quyền" },
       { action: "assign", label: "Gán quyền cho vai trò", description: "Phân quyền cho vai trò" },
     ],
   },
@@ -73,9 +74,9 @@ export const RESOURCE_DEFS: ResourceDef[] = [
     ],
   },
   {
-    key: "audit", label: "Nhật ký hệ thống", group: "core", icon: "FileText",
+    key: "audit_log", label: "Nhật ký hệ thống", group: "core", icon: "FileText",
     actions: [
-      { ...A.view, description: "Xem nhật ký truy cập & thao tác (audit log)" },
+      { action: "manage", label: "Xem & quản lý", description: "Xem nhật ký truy cập & thao tác (audit log)" },
     ],
   },
   {

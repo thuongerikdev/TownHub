@@ -199,6 +199,7 @@ namespace TH.Asset.ApplicationService.Service.Incident
         Task<ResponseDto<bool>> ChangeStatusAsync(CreateTicketStatusHistoryDto request);
         Task<ResponseDto<bool>> AssignAsync(CreateTicketAssignmentDto request);
         Task<ResponseDto<bool>> AddAttachmentAsync(CreateTicketAttachmentDto request);
+        Task<ResponseDto<List<TicketAttachmentResponse>>> GetAttachmentsAsync(Guid ticketId);
         Task<ResponseDto<bool>> RateAsync(CreateTicketRatingDto request);
         Task<ResponseDto<List<TicketStatusHistoryResponse>>> GetStatusHistoryAsync(Guid ticketId);
         Task<ResponseDto<List<SlaEscalationLogResponse>>> GetEscalationLogsAsync(Guid ticketId);
@@ -445,6 +446,30 @@ namespace TH.Asset.ApplicationService.Service.Incident
             {
                 _logger.LogError(ex, "Lỗi khi thêm tệp đính kèm ticket.");
                 return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        public async Task<ResponseDto<List<TicketAttachmentResponse>>> GetAttachmentsAsync(Guid ticketId)
+        {
+            try
+            {
+                var result = await _dbContext.TicketAttachments
+                    .Where(x => x.ticketId == ticketId)
+                    .OrderBy(x => x.id)
+                    .Select(x => new TicketAttachmentResponse
+                    {
+                        id       = x.id,
+                        ticketId = x.ticketId,
+                        fileUrl  = x.fileUrl
+                    })
+                    .ToListAsync();
+
+                return ResponseConst.Success("Lấy danh sách tệp đính kèm ticket thành công.", result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy tệp đính kèm ticket. TicketId: {Id}", ticketId);
+                return ResponseConst.Error<List<TicketAttachmentResponse>>(500, "Lỗi hệ thống: " + ex.Message);
             }
         }
 

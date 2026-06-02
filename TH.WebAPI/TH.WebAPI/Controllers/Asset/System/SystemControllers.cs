@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace TH.WebAPI.Controllers.Asset.System
         private readonly IKpiSnapshotService _service;
         public KpiSnapshotController(IKpiSnapshotService service) => _service = service;
 
+        [Authorize(Policy = "ReportKpi")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateKpiSnapshotRequestBody body)
         {
@@ -26,6 +28,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportKpi")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -35,6 +38,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportKpi")]
         [HttpGet("get-by-building/{buildingId}")]
         public async Task<IActionResult> GetByBuilding(Guid buildingId, [FromQuery] int take = 90)
         {
@@ -42,6 +46,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportKpi")]
         [HttpGet("get-by-date-range")]
         public async Task<IActionResult> GetByDateRange(
             [FromQuery] Guid buildingId,
@@ -52,6 +57,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportKpi")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -72,6 +78,7 @@ namespace TH.WebAPI.Controllers.Asset.System
         private readonly ICostTrackingService _service;
         public CostTrackingController(ICostTrackingService service) => _service = service;
 
+        [Authorize(Policy = "ReportCost")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateCostTrackingDto request)
         {
@@ -79,6 +86,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportCost")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -88,6 +96,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportCost")]
         [HttpGet("get-by-reference")]
         public async Task<IActionResult> GetByReference(
             [FromQuery] string referenceType,
@@ -97,6 +106,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportCost")]
         [HttpGet("get-by-building/{buildingId}")]
         public async Task<IActionResult> GetByBuilding(
             Guid buildingId,
@@ -108,6 +118,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportCost")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAsset(Guid assetId)
         {
@@ -117,6 +128,7 @@ namespace TH.WebAPI.Controllers.Asset.System
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ReportCost")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

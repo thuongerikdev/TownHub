@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
         private readonly IVendorService _service;
         public VendorController(IVendorService service) => _service = service;
 
+        [Authorize(Policy = "VendorCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateVendorDto request)
         {
@@ -26,6 +28,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateVendorDto request)
         {
@@ -35,6 +38,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -44,6 +48,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll([FromQuery] string? status)
         {
@@ -51,6 +56,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -60,6 +66,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpPut("blacklist/{id}")]
         public async Task<IActionResult> Blacklist(Guid id, [FromBody] BlacklistRequestBody body)
         {
@@ -69,6 +76,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpPut("activate/{id}")]
         public async Task<IActionResult> Activate(Guid id)
         {
@@ -89,6 +97,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
         private readonly IVendorContractService _service;
         public VendorContractController(IVendorContractService service) => _service = service;
 
+        [Authorize(Policy = "VendorCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateVendorContractDto request)
         {
@@ -96,6 +105,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateVendorContractDto request)
         {
@@ -105,6 +115,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -114,6 +125,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? vendorId,
@@ -124,6 +136,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -133,6 +146,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get-expiring")]
         public async Task<IActionResult> GetExpiring([FromQuery] int daysAhead = 30)
         {
@@ -151,6 +165,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
         private readonly IVendorContractServiceService _service;
         public VendorContractServiceController(IVendorContractServiceService service) => _service = service;
 
+        [Authorize(Policy = "VendorCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateVendorContractServiceDto request)
         {
@@ -158,6 +173,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateVendorContractServiceDto request)
         {
@@ -167,6 +183,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorUpdate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -176,6 +193,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get-by-contract/{contractId}")]
         public async Task<IActionResult> GetByContract(Guid contractId)
         {
@@ -196,6 +214,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
         private readonly IVendorEvaluationService _service;
         public VendorEvaluationController(IVendorEvaluationService service) => _service = service;
 
+        [Authorize(Policy = "VendorEvaluate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateVendorEvaluationDto request)
         {
@@ -203,6 +222,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -212,6 +232,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get-by-vendor/{vendorId}")]
         public async Task<IActionResult> GetByVendor(Guid vendorId)
         {
@@ -221,6 +242,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorView")]
         [HttpGet("get-by-contract/{contractId}")]
         public async Task<IActionResult> GetByContract(Guid contractId)
         {
@@ -230,6 +252,7 @@ namespace TH.WebAPI.Controllers.Asset.Vendor
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "VendorEvaluate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

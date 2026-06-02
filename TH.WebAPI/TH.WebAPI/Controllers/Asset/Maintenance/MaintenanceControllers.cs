@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         private readonly IChecklistTemplateService _service;
         public ChecklistTemplateController(IChecklistTemplateService service) => _service = service;
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateChecklistTemplateDto request)
         {
@@ -23,6 +25,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateChecklistTemplateDto request)
         {
@@ -32,6 +35,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -41,6 +45,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll()
         {
@@ -48,6 +53,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -59,6 +65,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
 
         // ── Items ─────────────────────────────────────────────────────────
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPost("add-item")]
         public async Task<IActionResult> AddItem([FromBody] CreateChecklistTemplateItemDto request)
         {
@@ -66,6 +73,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPut("update-item")]
         public async Task<IActionResult> UpdateItem([FromBody] UpdateChecklistTemplateItemDto request)
         {
@@ -75,6 +83,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpDelete("delete-item/{itemId}")]
         public async Task<IActionResult> DeleteItem(Guid itemId)
         {
@@ -84,6 +93,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get-items/{templateId}")]
         public async Task<IActionResult> GetItems(Guid templateId)
         {
@@ -102,6 +112,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         private readonly IMaintenanceScheduleService _service;
         public MaintenanceScheduleController(IMaintenanceScheduleService service) => _service = service;
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateMaintenanceScheduleDto request)
         {
@@ -109,6 +120,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateMaintenanceScheduleDto request)
         {
@@ -118,6 +130,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -127,6 +140,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? assetId,
@@ -136,6 +150,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -145,6 +160,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get-overdue")]
         public async Task<IActionResult> GetOverdue()
         {
@@ -163,6 +179,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         private readonly IWorkOrderService _service;
         public WorkOrderController(IWorkOrderService service) => _service = service;
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateWorkOrderDto request)
         {
@@ -170,6 +187,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateWorkOrderDto request)
         {
@@ -179,6 +197,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderCreate")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -188,6 +207,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? assetId,
@@ -198,6 +218,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -207,6 +228,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderAssign")]
         [HttpPost("assign-technician")]
         public async Task<IActionResult> AssignTechnician([FromBody] CreateWorkOrderAssignmentDto request)
         {
@@ -214,6 +236,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderExecute")]
         [HttpPost("add-checklist-response")]
         public async Task<IActionResult> AddChecklistResponse([FromBody] CreateWorkOrderChecklistResponseDto request)
         {
@@ -221,6 +244,7 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderExecute")]
         [HttpPost("add-attachment")]
         public async Task<IActionResult> AddAttachment([FromBody] CreateWorkOrderAttachmentDto request)
         {
@@ -228,6 +252,15 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "WorkOrderView")]
+        [HttpGet("get-attachments/{woId}")]
+        public async Task<IActionResult> GetAttachments(Guid woId)
+        {
+            var result = await _service.GetAttachmentsAsync(woId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "WorkOrderExecute")]
         [HttpPost("add-material-used")]
         public async Task<IActionResult> AddMaterialUsed([FromBody] CreateWorkOrderMaterialUsedDto request)
         {

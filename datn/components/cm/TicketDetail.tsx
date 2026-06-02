@@ -12,7 +12,7 @@ import {
   tickets, slaConfigs, warehouses, materials, inventoryTransactions, purchaseRequests,
   displayUser, EMPTY_GUID,
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
-  type SlaConfigResponse, type UpdateTicketInput,
+  type SlaConfigResponse, type UpdateTicketInput, type TicketAttachmentResponse,
   type WarehouseResponse, type MaterialResponse,
   type InventoryTransactionResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
@@ -21,7 +21,7 @@ import { mockTickets, mockSlaConfigs } from "@/lib/mock/cm";
 import { mockWarehouses, mockMaterials } from "@/lib/mock/inventory";
 import {
   MockBanner, LoadingState, ErrorState, StatusBadge, PriorityBadge, SlaBadge, ToneBadge,
-  EntityModal, Field, type StatusDef,
+  EntityModal, Field, PhotoCapture, type StatusDef,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,22 @@ function remaining(t: TicketResponse) {
   const h = Math.floor(Math.abs(diff) / 3600_000);
   const m = Math.floor((Math.abs(diff) % 3600_000) / 60_000);
   return { overdue, text: `${h}h ${m}ph` };
+}
+
+// Diagram 1: "Chụp ảnh kết quả (Trước/Sau)". Hệ thống chưa có cột phân loại ảnh cho
+// TicketAttachment → mã hoá loại ảnh vào fragment URL (#BEFORE/#AFTER). An toàn cho cả
+// URL http lẫn data URL base64 (bảng chữ cái base64 không chứa ký tự '#').
+type PhotoKind = "BEFORE" | "AFTER" | "OTHER";
+function encodePhoto(url: string, kind: Exclude<PhotoKind, "OTHER">): string {
+  const base = url.replace(/#(BEFORE|AFTER)$/i, "");
+  return `${base}#${kind}`;
+}
+function photoKind(url: string): PhotoKind {
+  const m = url.match(/#(BEFORE|AFTER)$/i);
+  return m ? (m[1].toUpperCase() as PhotoKind) : "OTHER";
+}
+function stripPhotoKind(url: string): string {
+  return url.replace(/#(BEFORE|AFTER)$/i, "");
 }
 
 // Luồng CM: NEW/OPEN → ASSIGNED → IN_PROGRESS ⇆ PENDING_MATERIAL → RESOLVED → CLOSED
@@ -103,6 +119,10 @@ export default function TicketDetail() {
   const linkedPrsQ = useApiList<PurchaseRequestResponse>(
     () => purchaseRequests.getAll({ ticketId: String(id) }),
     { deps: [id], enabled: !!t },
+  );
+  const photosQ = useApiList<TicketAttachmentResponse>(
+    () => tickets.getAttachments(String(id)),
+    { mock: () => [], deps: [id], enabled: !!t },
   );
 
   // ── Assign modal state ────────────────────────────────────────────────────────
@@ -238,6 +258,16 @@ export default function TicketDetail() {
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
   }
 
+  // Diagram 1: KTV chụp ảnh kết quả Trước/Sau khi sửa chữa.
+  async function addPhoto(rawUrl: string, kind: "BEFORE" | "AFTER") {
+    if (!t) return;
+    const res = await tickets.addAttachment({ ticketId: t.id, fileUrl: encodePhoto(rawUrl, kind) });
+    if (res.errorCode === 200) {
+      toast.success(kind === "BEFORE" ? "Đã thêm ảnh trước khi sửa." : "Đã thêm ảnh sau khi sửa.");
+      photosQ.refetch();
+    } else toast.error(res.errorMessage || "Thêm ảnh thất bại.");
+  }
+
   if (q.loading) return <div className="py-10"><LoadingState /></div>;
   if (!t) return <div className="py-10"><ErrorState message={q.error ?? "Không tìm thấy ticket."} onRetry={q.refetch} /></div>;
 
@@ -246,6 +276,11 @@ export default function TicketDetail() {
   const closed = isClosed(t);
   const canAssign = t.status === "NEW" || t.status === "OPEN";
   const showMaterial = SHOW_MATERIAL.has(t.status);
+
+  const beforePhotos = photosQ.items.filter((a) => photoKind(a.fileUrl) === "BEFORE").map((a) => ({ url: stripPhotoKind(a.fileUrl) }));
+  const afterPhotos  = photosQ.items.filter((a) => photoKind(a.fileUrl) === "AFTER").map((a) => ({ url: stripPhotoKind(a.fileUrl) }));
+  const otherPhotos  = photosQ.items.filter((a) => photoKind(a.fileUrl) === "OTHER").map((a) => ({ url: a.fileUrl }));
+  const showPhotos   = showMaterial || photosQ.items.length > 0;
 
   return (
     <div>
@@ -473,6 +508,33 @@ export default function TicketDetail() {
                   )}
                 </div>
               </div>
+            </Section>
+          )}
+
+          {/* ── Diagram 1: Chụp ảnh kết quả (Trước / Sau) ─────────────────────── */}
+          {showPhotos && (
+            <Section title="Ảnh hiện trường (Trước / Sau)">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <PhotoCapture
+                  title="Trước khi sửa"
+                  photos={beforePhotos}
+                  onAdd={(u) => addPhoto(u, "BEFORE")}
+                  disabled={closed}
+                  emptyHint="Chụp ảnh hiện trạng trước khi sửa chữa."
+                />
+                <PhotoCapture
+                  title="Sau khi sửa"
+                  photos={afterPhotos}
+                  onAdd={(u) => addPhoto(u, "AFTER")}
+                  disabled={closed}
+                  emptyHint="Chụp ảnh kết quả sau khi hoàn tất."
+                />
+              </div>
+              {otherPhotos.length > 0 && (
+                <div className="mt-4">
+                  <PhotoCapture title="Ảnh khác" photos={otherPhotos} onAdd={() => {}} disabled emptyHint="" />
+                </div>
+              )}
             </Section>
           )}
 

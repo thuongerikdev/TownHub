@@ -8,10 +8,11 @@ import { toast } from "sonner";
 import {
   workOrders, checklistTemplates,
   type WorkOrderResponse, type ChecklistTemplateItemResponse, type UpdateWorkOrderInput,
+  type WorkOrderAttachmentResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
 import { mockWorkOrders, mockChecklistItems } from "@/lib/mock/pm";
-import { MockBanner, LoadingState, ErrorState, ToneBadge, Field } from "@/components/shared";
+import { MockBanner, LoadingState, ErrorState, ToneBadge, Field, PhotoCapture } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +39,17 @@ export default function ChecklistScreen() {
     () => [...itemsQ.items].sort((a, b) => a.sortOrder - b.sortOrder),
     [itemsQ.items],
   );
+
+  const photosQ = useApiList<WorkOrderAttachmentResponse>(
+    () => workOrders.getAttachments(String(wo?.id)),
+    { mock: () => [], deps: [wo?.id], enabled: !!wo?.id },
+  );
+  async function addPhoto(url: string) {
+    if (!wo) return;
+    const res = await workOrders.addAttachment({ woId: wo.id, attachmentType: "EVIDENCE", fileUrl: url });
+    if (res.errorCode === 200) { toast.success("Đã thêm ảnh minh chứng."); photosQ.refetch(); }
+    else toast.error(res.errorMessage || "Thêm ảnh thất bại.");
+  }
 
   const [responses, setResponses] = useState<Record<string, ItemState>>({});
   const [actualHours, setActualHours] = useState("");
@@ -197,6 +209,18 @@ export default function ChecklistScreen() {
             })}
           </ul>
         )}
+      </div>
+
+      <div className="mt-4">
+        <PhotoCapture
+          title="Ảnh minh chứng"
+          photos={photosQ.items.map((a) => ({
+            url: a.fileUrl,
+            caption: a.caption ?? (a.attachmentType && a.attachmentType !== "EVIDENCE" ? a.attachmentType : undefined),
+          }))}
+          onAdd={addPhoto}
+          emptyHint="Chụp/đính kèm ảnh minh chứng quá trình bảo trì (trước/sau, kết quả đo…)."
+        />
       </div>
 
       <div className="mt-4 rounded-xl border border-border bg-surface p-5">

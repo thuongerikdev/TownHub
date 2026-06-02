@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,190 +17,114 @@ namespace TH.Auth.Infrastructure
     {
         public static async Task SeedPermissionsAsync(AuthDbContext context)
         {
-            // =========================================================
-            // STEP 0: CLEANUP - DỌN DẸP QUYỀN SAI
-            // =========================================================
-            var staffRoleIds = new List<int> { 2, 3, 4 };
+            // Tập "code" chuẩn — nguồn sự thật duy nhất từ PermissionConstants.
+            var constantCodes = new HashSet<string>(PermissionConstants.Permissions.Values);
+            var universalCodes = PermissionConstants.UniversalCodes;
 
-            var badLinks = await context.authRolePermissions
-                .Include(rp => rp.permission)
-                .Where(rp => staffRoleIds.Contains(rp.roleID) && rp.permission.code.EndsWith(".admin"))
-                .ToListAsync();
+            // =========================================================
+            // STEP 0: DỌN DẸP — XOÁ QUYỀN KHÔNG CÒN TRONG DANH MỤC
+            // Gồm toàn bộ quyền "rác" của hệ cũ (movie/episode/subtitle/
+            // subscription/payment…) hiện còn sót trong DB thật.
+            // =========================================================
+            var allPermsNow = await context.authPermissions.ToListAsync();
+            var obsoletePerms = allPermsNow
+                .Where(p => string.IsNullOrWhiteSpace(p.code) || !constantCodes.Contains(p.code))
+                .ToList();
 
-            if (badLinks.Any())
+            Console.WriteLine($"[SEED] Quyền hiện có trong DB: {allPermsNow.Count}. Danh mục chuẩn: {constantCodes.Count}. Cần dọn (rác/không liên quan): {obsoletePerms.Count}.");
+            if (obsoletePerms.Any())
             {
-                context.authRolePermissions.RemoveRange(badLinks);
-                await context.SaveChangesAsync();
-            }
+                var sample = string.Join(", ", obsoletePerms.Take(20).Select(p => p.code));
+                Console.WriteLine($"[SEED] Xoá các quyền không còn trong danh mục: {sample}{(obsoletePerms.Count > 20 ? " …" : "")}");
 
-            // =========================================================
-            // STEP 1: ĐỒNG BỘ PERMISSION TỪ CODE -> DB
-            // =========================================================
-            var allConstantPermissions = PermissionConstants.Permissions;
-            var existingPermissions = await context.authPermissions.ToListAsync();
-            var newPermissionsToAdd = new List<AuthPermission>();
+                var obsoleteIds = obsoletePerms.Select(p => p.permissionID).ToHashSet();
 
-            foreach (var kvp in allConstantPermissions)
-            {
-                if (!existingPermissions.Any(p => p.code == kvp.Value))
+                // Xoá link role-permission trỏ tới quyền sắp xoá TRƯỚC (tránh vỡ khoá ngoại).
+                var obsoleteLinks = await context.authRolePermissions
+                    .Where(rp => obsoleteIds.Contains(rp.permissionID))
+                    .ToListAsync();
+                if (obsoleteLinks.Any())
                 {
-                    string scope = "user";
-                    if ((kvp.Value.Contains("manage") || kvp.Value.Contains("delete") ||
-                         kvp.Value.Contains("upload") || kvp.Value.Contains("read_all") ||
-                         kvp.Value.Contains(".admin"))
-                        && !kvp.Value.Contains("_own"))
-                    {
-                        scope = "staff";
-                    }
-
-                    newPermissionsToAdd.Add(new AuthPermission
-                    {
-                        permissionName = kvp.Key,
-                        code = kvp.Value,
-                        permissionDescription = kvp.Key,
-                        scope = scope
-                    });
+                    context.authRolePermissions.RemoveRange(obsoleteLinks);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"[SEED] Đã xoá {obsoleteLinks.Count} liên kết role-permission tới quyền rác.");
                 }
-            }
 
-            if (newPermissionsToAdd.Any())
-            {
-                await context.authPermissions.AddRangeAsync(newPermissionsToAdd);
+                context.authPermissions.RemoveRange(obsoletePerms);
                 await context.SaveChangesAsync();
+                Console.WriteLine($"[SEED] Đã xoá {obsoletePerms.Count} quyền rác khỏi DB.");
             }
 
             // =========================================================
-            // STEP 2: ĐỊNH NGHĨA NHÓM QUYỀN
+            // STEP 1: ĐỒNG BỘ QUYỀN TỪ CODE -> DB (thêm quyền còn thiếu)
             // =========================================================
+            var existingCodes = (await context.authPermissions.Select(p => p.code).ToListAsync())
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .ToHashSet();
 
-            var guestCodes = new HashSet<string> { "auth.login", "auth.login_google", "auth.register", "auth.forgot_password", "system.health", "payment.callback", "subtitle.callback" };
+            var toAdd = new List<AuthPermission>();
+            foreach (var kvp in PermissionConstants.Permissions)
+            {
+                if (existingCodes.Contains(kvp.Value)) continue;
+                toAdd.Add(new AuthPermission
+                {
+                    permissionName = kvp.Key,
+                    code = kvp.Value,
+                    permissionDescription = kvp.Key,
+                    // Quyền công khai = "user"; quyền quản trị/nghiệp vụ = "staff".
+                    scope = universalCodes.Contains(kvp.Value) ? "user" : "staff",
+                });
+            }
+            if (toAdd.Any())
+            {
+                await context.authPermissions.AddRangeAsync(toAdd);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[SEED] Đã thêm {toAdd.Count} quyền mới từ danh mục chuẩn: {string.Join(", ", toAdd.Take(20).Select(p => p.code))}{(toAdd.Count > 20 ? " …" : "")}");
+            }
+            else
+            {
+                Console.WriteLine("[SEED] Danh mục quyền đã đầy đủ — không cần thêm quyền mới.");
+            }
 
-            var customerFreeCodes = new HashSet<string> {
-                "account.mfa_setup", "account.change_password", "auth.logout", "auth.refresh", "auth.mfa_verify",
-                "comment.read", "episode.read", "movie.read_details", "movie.browse", "movie_person.read", "movie_tag.read",
-                "person.read", "tag.read",
-                "user.read_profile", "user.update_profile", "user.read_details",
-                "rating.read",
-                "plan.read", "price.read", "region.read", "search.movie", "search.suggest", "search.person",
-                "subscription.read_own", "subscription.cancel", "order.read_own", "invoice.read_own", "payment.checkout", "image.read"
-            };
-
-            var customerVipCodes = new HashSet<string> {
-                "comment.create", "comment.update_own", "comment.delete_own",
-                "source.read", "progress.track", "progress.read",
-                "movie.watch_stream", "movie.watch_vip", "subtitle.read",
-                "saved_movie.manage", "saved_movie.read",
-                "rating.create", "rating.update", "rating.delete"
-            };
-
-            // Danh sách các nhóm chức năng dành cho Staff
-            var staffCodes = new HashSet<string> {
-                "upload.archive", "upload.vimeo", "upload.youtube",
-                "episode.manage", "source.manage", "image.manage",
-                "invoice.read_all", "movie.manage", "movie_person.manage", "movie_tag.manage",
-                "subtitle.upload", "subtitle.translate", "subtitle.manage",
-                "order.read_all", "permission.read", "person.manage", "plan.manage", "price.manage", "region.manage",
-                "subscription.read_all", "subscription.manage", "tag.manage",
-                "user.read_list", "user.read_details",
-                "search.advanced",
-                "role.assign", "permission.assign",
-                // --- THÊM 2 QUYỀN NÀY ---
-                "audit_log.manage", "usersession.manage"
-            };
+            // =========================================================
+            // STEP 2: ĐẢM BẢO CÓ ROLE 'admin'
+            // (phòng trường hợp DB mới tinh — admin phải có trước khi gán quyền)
+            // =========================================================
+            var allRoles = await context.authRoles.ToListAsync();
+            var adminRole = allRoles.FirstOrDefault(r => r.roleName != null && r.roleName.ToLower() == "admin");
+            if (adminRole == null)
+            {
+                adminRole = new AuthRole { roleName = "admin", roleDescription = "Quản trị hệ thống (Auto Generated)", scope = "staff" };
+                context.authRoles.Add(adminRole);
+                await context.SaveChangesAsync();
+                allRoles.Add(adminRole);
+            }
 
             // =========================================================
             // STEP 3: GÁN QUYỀN VÀO ROLE
+            //   • admin   : TẤT CẢ quyền.
+            //   • role khác: tự nhận nhóm quyền "công khai" (đăng nhập, đổi mật khẩu,
+            //     hồ sơ cá nhân…). Quyền nghiệp vụ do màn "Phân quyền theo vai trò"
+            //     gán thủ công — KHÔNG động vào link đã có sẵn.
             // =========================================================
-
-            var allPermissionsInDb = await context.authPermissions.ToListAsync();
-            var allRolePermissionsInDb = await context.authRolePermissions.ToListAsync();
-
-            int adminRoleId = 1;
-            int contentMgrId = 2;
-            int userMgrId = 3;
-            int financeMgrId = 4;
-            int customerId = 10;
-            int vipId = 11;
+            var allPerms = await context.authPermissions.ToListAsync();
+            var existingLinks = await context.authRolePermissions.ToListAsync();
 
             var linksToAdd = new List<AuthRolePermission>();
-
-            void AddLinkIfNotExist(int rId, int pId)
+            void AddLink(int roleId, int permId)
             {
-                bool existsInDb = allRolePermissionsInDb.Any(rp => rp.roleID == rId && rp.permissionID == pId);
-                bool existsInPending = linksToAdd.Any(rp => rp.roleID == rId && rp.permissionID == pId);
-
-                if (!existsInDb && !existsInPending)
-                {
-                    linksToAdd.Add(new AuthRolePermission { roleID = rId, permissionID = pId });
-                }
+                if (existingLinks.Any(rp => rp.roleID == roleId && rp.permissionID == permId)) return;
+                if (linksToAdd.Any(rp => rp.roleID == roleId && rp.permissionID == permId)) return;
+                linksToAdd.Add(new AuthRolePermission { roleID = roleId, permissionID = permId });
             }
 
-            foreach (var perm in allPermissionsInDb)
+            foreach (var role in allRoles)
             {
-                if (guestCodes.Contains(perm.code)) continue;
-
-                // --- 1. ADMIN ---
-                AddLinkIfNotExist(adminRoleId, perm.permissionID);
-
-                // --- 2. STAFF ROLES ---
-                // Logic: Phải nằm trong staffCodes HOẶC chứa từ khóa quản lý
-                bool isStaffPerm = staffCodes.Contains(perm.code) ||
-                                   (perm.code.Contains("manage") || perm.code.Contains("read_list"));
-
-                // CHẶN QUYỀN ADMIN
-                if (isStaffPerm && !perm.code.EndsWith(".admin"))
+                bool isAdmin = role.roleID == adminRole.roleID;
+                foreach (var perm in allPerms)
                 {
-                    // A. Content Manager
-                    if (perm.code.StartsWith("movie") || perm.code.StartsWith("episode") ||
-                        perm.code.StartsWith("person") || perm.code.StartsWith("tag") ||
-                        perm.code.StartsWith("image") || perm.code.StartsWith("source") ||
-                        perm.code.StartsWith("subtitle") || perm.code.StartsWith("upload"))
-                    {
-                        AddLinkIfNotExist(contentMgrId, perm.permissionID);
-                    }
-
-                    // B. User Manager
-                    // - usersession.manage bắt đầu bằng "user" nên tự động được nhận.
-                    // - audit_log.manage cần check thêm.
-                    if (perm.code.StartsWith("user") ||
-                        perm.code.StartsWith("role.assign") ||
-                        perm.code.StartsWith("permission.assign") ||
-                        perm.code.StartsWith("audit_log")) // <--- THÊM AUDIT LOG
-                    {
-                        AddLinkIfNotExist(userMgrId, perm.permissionID);
-                    }
-
-                    // C. Finance Manager
-                    if (perm.code.StartsWith("order") || perm.code.StartsWith("invoice") ||
-                        perm.code.StartsWith("plan") || perm.code.StartsWith("price") ||
-                        perm.code.StartsWith("subscription"))
-                    {
-                        AddLinkIfNotExist(financeMgrId, perm.permissionID);
-                    }
-
-                    // D. Shared Staff
-                    if (perm.code == "permission.read" || perm.code == "search.advanced")
-                    {
-                        AddLinkIfNotExist(contentMgrId, perm.permissionID);
-                        AddLinkIfNotExist(userMgrId, perm.permissionID);
-                        AddLinkIfNotExist(financeMgrId, perm.permissionID);
-                    }
-                }
-
-                // --- 3. CUSTOMER RIGHTS ---
-                if (customerFreeCodes.Contains(perm.code))
-                {
-                    AddLinkIfNotExist(customerId, perm.permissionID);
-                    AddLinkIfNotExist(vipId, perm.permissionID);
-                    AddLinkIfNotExist(contentMgrId, perm.permissionID);
-                    AddLinkIfNotExist(userMgrId, perm.permissionID);
-                    AddLinkIfNotExist(financeMgrId, perm.permissionID);
-                }
-
-                // --- 4. VIP RIGHTS ---
-                if (customerVipCodes.Contains(perm.code))
-                {
-                    AddLinkIfNotExist(vipId, perm.permissionID);
+                    if (isAdmin || universalCodes.Contains(perm.code))
+                        AddLink(role.roleID, perm.permissionID);
                 }
             }
 
@@ -209,6 +133,8 @@ namespace TH.Auth.Infrastructure
                 await context.authRolePermissions.AddRangeAsync(linksToAdd);
                 await context.SaveChangesAsync();
             }
+            Console.WriteLine($"[SEED] Vai trò 'admin' (id={adminRole.roleID}) + quyền công khai cho mọi vai trò: đã thêm {linksToAdd.Count} liên kết mới. Tổng số quyền trong hệ thống: {allPerms.Count}.");
+            Console.WriteLine("[SEED] ✅ Đồng bộ phân quyền hoàn tất.");
         }
 
         public static async Task SeedAdminUserAsync(AuthDbContext context, IServiceProvider serviceProvider)

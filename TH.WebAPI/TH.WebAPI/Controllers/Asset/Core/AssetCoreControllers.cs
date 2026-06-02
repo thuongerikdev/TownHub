@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetService _service;
         public AssetController(IAssetService service) => _service = service;
 
+        [Authorize(Policy = "AssetCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateAssetDto request)
         {
@@ -23,6 +25,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetUpdate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateAssetDto request)
         {
@@ -32,6 +35,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetDelete")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -41,6 +45,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? buildingId,
@@ -51,6 +56,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -71,6 +77,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetCategoryService _service;
         public AssetCategoryController(IAssetCategoryService service) => _service = service;
 
+        [Authorize(Policy = "AssetCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateAssetCategoryDto request)
         {
@@ -78,6 +85,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetUpdate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateAssetCategoryDto request)
         {
@@ -87,6 +95,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetDelete")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -96,6 +105,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll()
         {
@@ -103,6 +113,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -123,6 +134,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetLocationService _service;
         public AssetLocationController(IAssetLocationService service) => _service = service;
 
+        [Authorize(Policy = "AssetCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateAssetLocationDto request)
         {
@@ -130,6 +142,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetUpdate")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateAssetLocationDto request)
         {
@@ -139,6 +152,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetDelete")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -148,6 +162,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll([FromQuery] Guid? buildingId)
         {
@@ -155,6 +170,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -175,6 +191,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetQrCodeService _service;
         public AssetQrCodeController(IAssetQrCodeService service) => _service = service;
 
+        [Authorize(Policy = "AssetCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateAssetQrCodeDto request)
         {
@@ -182,6 +199,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetDelete")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -191,6 +209,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAssetId(Guid assetId)
         {
@@ -200,6 +219,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-by-code")]
         public async Task<IActionResult> GetByQrCode([FromQuery] string qrCode)
         {
@@ -220,6 +240,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetTransferService _service;
         public AssetTransferController(IAssetTransferService service) => _service = service;
 
+        [Authorize(Policy = "AssetCreate")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateAssetTransferDto request)
         {
@@ -227,6 +248,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAssetId(Guid assetId)
         {
@@ -245,6 +267,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetDepreciationService _service;
         public AssetDepreciationController(IAssetDepreciationService service) => _service = service;
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAssetId(Guid assetId)
         {
@@ -252,6 +275,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "AssetView")]
         [HttpGet("get-by-period")]
         public async Task<IActionResult> GetByPeriod([FromQuery] int year, [FromQuery] int month)
         {

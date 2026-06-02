@@ -482,6 +482,7 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         Task<ResponseDto<bool>> AssignTechnicianAsync(CreateWorkOrderAssignmentDto request);
         Task<ResponseDto<bool>> AddChecklistResponseAsync(CreateWorkOrderChecklistResponseDto request);
         Task<ResponseDto<bool>> AddAttachmentAsync(CreateWorkOrderAttachmentDto request);
+        Task<ResponseDto<List<WorkOrderAttachmentResponse>>> GetAttachmentsAsync(Guid woId);
         Task<ResponseDto<bool>> AddMaterialUsedAsync(CreateWorkOrderMaterialUsedDto request);
     }
 
@@ -720,6 +721,36 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             {
                 _logger.LogError(ex, "Lỗi khi thêm tệp đính kèm Work Order.");
                 return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        public async Task<ResponseDto<List<WorkOrderAttachmentResponse>>> GetAttachmentsAsync(Guid woId)
+        {
+            try
+            {
+                var result = await _dbContext.WorkOrderAttachments
+                    .Where(x => x.woId == woId)
+                    .OrderBy(x => x.uploadedAt)
+                    .Select(x => new WorkOrderAttachmentResponse
+                    {
+                        id             = x.id,
+                        woId           = x.woId,
+                        attachmentType = x.attachmentType,
+                        fileUrl        = x.fileUrl,
+                        fileName       = x.fileName,
+                        fileSizeBytes  = x.fileSizeBytes,
+                        uploadedBy     = x.uploadedBy,
+                        uploadedAt     = x.uploadedAt,
+                        caption        = x.caption
+                    })
+                    .ToListAsync();
+
+                return ResponseConst.Success("Lấy danh sách tệp đính kèm Work Order thành công.", result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy tệp đính kèm Work Order. WoId: {Id}", woId);
+                return ResponseConst.Error<List<WorkOrderAttachmentResponse>>(500, "Lỗi hệ thống: " + ex.Message);
             }
         }
 

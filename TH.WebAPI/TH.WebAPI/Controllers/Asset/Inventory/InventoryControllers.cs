@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IWarehouseService _service;
         public WarehouseController(IWarehouseService service) => _service = service;
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateWarehouseDto request)
         {
@@ -29,6 +31,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateWarehouseDto request)
         {
@@ -38,6 +41,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -47,6 +51,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll([FromQuery] Guid? buildingId)
         {
@@ -54,6 +59,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -74,6 +80,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IMaterialService _service;
         public MaterialController(IMaterialService service) => _service = service;
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateMaterialDto request)
         {
@@ -81,6 +88,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateMaterialDto request)
         {
@@ -90,6 +98,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -99,6 +108,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? categoryId,
@@ -108,6 +118,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -117,6 +128,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get-low-stock")]
         public async Task<IActionResult> GetLowStock([FromQuery] Guid? warehouseId)
         {
@@ -124,6 +136,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get-inventory-levels")]
         public async Task<IActionResult> GetInventoryLevels(
             [FromQuery] Guid? warehouseId,
@@ -144,6 +157,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IInventoryTransactionService _service;
         public InventoryTransactionController(IInventoryTransactionService service) => _service = service;
 
+        [Authorize(Policy = "InventoryTransaction")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateInventoryTransactionDto request)
         {
@@ -151,6 +165,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? warehouseId,
@@ -163,6 +178,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "InventoryView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -183,6 +199,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IPurchaseRequestService _service;
         public PurchaseRequestController(IPurchaseRequestService service) => _service = service;
 
+        [Authorize(Policy = "ProcurementRequest")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreatePurchaseRequestDto request)
         {
@@ -190,6 +207,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementRequest")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdatePurchaseRequestDto request)
         {
@@ -199,6 +217,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementRequest")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -208,6 +227,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? status,
@@ -218,6 +238,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -227,6 +248,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementApprove")]
         [HttpPut("approve/{id}")]
         public async Task<IActionResult> Approve(Guid id, [FromBody] ApproveRequestBody body)
         {
@@ -236,6 +258,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementApprove")]
         [HttpPut("reject/{id}")]
         public async Task<IActionResult> Reject(Guid id, [FromBody] RejectRequestBody body)
         {
@@ -245,6 +268,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementRequest")]
         [HttpPost("add-item")]
         public async Task<IActionResult> AddItem([FromBody] CreatePurchaseRequestItemDto request)
         {
@@ -252,6 +276,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-items/{prId}")]
         public async Task<IActionResult> GetItems(Guid prId)
         {
@@ -270,6 +295,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IPurchaseOrderService _service;
         public PurchaseOrderController(IPurchaseOrderService service) => _service = service;
 
+        [Authorize(Policy = "ProcurementOrder")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreatePurchaseOrderDto request)
         {
@@ -277,6 +303,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementOrder")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdatePurchaseOrderDto request)
         {
@@ -286,6 +313,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementOrder")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -295,6 +323,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? status,
@@ -304,6 +333,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -313,6 +343,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementOrder")]
         [HttpPost("add-item")]
         public async Task<IActionResult> AddItem([FromBody] CreatePurchaseOrderItemDto request)
         {
@@ -320,6 +351,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-items/{poId}")]
         public async Task<IActionResult> GetItems(Guid poId)
         {
@@ -338,6 +370,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IInvoiceService _service;
         public InvoiceController(IInvoiceService service) => _service = service;
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateInvoiceDto request)
         {
@@ -345,6 +378,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateInvoiceDto request)
         {
@@ -354,6 +388,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -363,6 +398,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? vendorId,
@@ -372,6 +408,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -381,6 +418,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpPut("mark-paid/{id}")]
         public async Task<IActionResult> MarkPaid(Guid id, [FromBody] MarkPaidRequestBody body)
         {
@@ -390,6 +428,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpPost("add-item")]
         public async Task<IActionResult> AddItem([FromBody] CreateInvoiceItemDto request)
         {
@@ -397,6 +436,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-items/{invoiceId}")]
         public async Task<IActionResult> GetItems(Guid invoiceId)
         {
@@ -415,6 +455,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IOcrJobService _service;
         public OcrJobController(IOcrJobService service) => _service = service;
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpPost("submit")]
         public async Task<IActionResult> Submit([FromBody] CreateOcrJobDto request)
         {
@@ -422,6 +463,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll([FromQuery] string? status)
         {
@@ -429,6 +471,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementView")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -438,6 +481,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementInvoice")]
         [HttpPut("mark-reviewed/{id}")]
         public async Task<IActionResult> MarkReviewed(Guid id, [FromBody] MarkReviewedRequestBody body)
         {

@@ -14,13 +14,17 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 
+type NavChild = { label: string; path: string; perm?: string };
 type NavItem = {
   icon: React.ElementType;
   label: string;
   path: string;
-  children?: { label: string; path: string }[];
+  perm?: string;            // quyền tối thiểu để thấy mục này
+  children?: NavChild[];
 };
 
+// `perm` = mã quyền (khớp lib/rbac.ts & backend). Mục không có `perm` → ai cũng thấy.
+// Mục có children: hiện nếu còn ít nhất 1 child mà user có quyền.
 const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   {
     section: "TỔNG QUAN",
@@ -28,7 +32,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   },
   {
     section: "CƯ DÂN & CĂN HỘ",
-    items: [{ icon: Building2, label: "Căn hộ", path: "/apartments" }],
+    items: [{ icon: Building2, label: "Căn hộ", path: "/apartments", perm: "apartment.view" }],
   },
   {
     section: "KỸ THUẬT & TÀI SẢN",
@@ -36,48 +40,48 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       {
         icon: Boxes, label: "Tài sản", path: "/assets",
         children: [
-          { label: "Danh sách tài sản", path: "/assets" },
-          { label: "Danh mục", path: "/assets/categories" },
-          { label: "Khấu hao", path: "/assets/depreciation" },
+          { label: "Danh sách tài sản", path: "/assets", perm: "asset.view" },
+          { label: "Danh mục", path: "/assets/categories", perm: "asset.view" },
+          { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
         ],
       },
       {
         icon: Wrench, label: "Bảo trì định kỳ", path: "/pm/work-orders",
         children: [
-          { label: "Lệnh công việc (WO)", path: "/pm/work-orders" },
-          { label: "Lịch bảo trì", path: "/pm/schedules" },
+          { label: "Lệnh công việc (WO)", path: "/pm/work-orders", perm: "workorder.view" },
+          { label: "Lịch bảo trì", path: "/pm/schedules", perm: "workorder.view" },
         ],
       },
       {
         icon: Ticket, label: "Sự cố / CM", path: "/tickets",
         children: [
-          { label: "Phiếu sự cố", path: "/tickets" },
-          { label: "Bảng SLA", path: "/tickets/sla-dashboard" },
+          { label: "Phiếu sự cố", path: "/tickets", perm: "ticket.view" },
+          { label: "Bảng SLA", path: "/tickets/sla-dashboard", perm: "ticket.view" },
         ],
       },
       {
         icon: Package, label: "Kho vật tư", path: "/inventory",
         children: [
-          { label: "Tồn kho", path: "/inventory" },
-          { label: "Danh mục vật tư", path: "/inventory/catalog" },
-          { label: "Kiểm kê", path: "/inventory/stock-taking" },
+          { label: "Tồn kho", path: "/inventory", perm: "inventory.view" },
+          { label: "Danh mục vật tư", path: "/inventory/catalog", perm: "inventory.view" },
+          { label: "Kiểm kê", path: "/inventory/stock-taking", perm: "inventory.audit" },
         ],
       },
       {
         icon: ShoppingCart, label: "Mua sắm", path: "/procurement/requests",
         children: [
-          { label: "Yêu cầu mua (PR)", path: "/procurement/requests" },
-          { label: "Đơn hàng (PO)", path: "/procurement/orders" },
-          { label: "Hoá đơn", path: "/procurement/invoices" },
-          { label: "Upload OCR", path: "/procurement/ocr/new" },
+          { label: "Yêu cầu mua (PR)", path: "/procurement/requests", perm: "procurement.view" },
+          { label: "Đơn hàng (PO)", path: "/procurement/orders", perm: "procurement.order" },
+          { label: "Hoá đơn", path: "/procurement/invoices", perm: "procurement.invoice" },
+          { label: "Upload OCR", path: "/procurement/ocr/new", perm: "procurement.invoice" },
         ],
       },
       {
         icon: Handshake, label: "Nhà thầu", path: "/vendors",
         children: [
-          { label: "Danh sách NCC", path: "/vendors" },
-          { label: "Hợp đồng", path: "/vendors/contracts" },
-          { label: "Đánh giá", path: "/vendors/performance" },
+          { label: "Danh sách NCC", path: "/vendors", perm: "vendor.view" },
+          { label: "Hợp đồng", path: "/vendors/contracts", perm: "vendor.view" },
+          { label: "Đánh giá", path: "/vendors/performance", perm: "vendor.evaluate" },
         ],
       },
     ],
@@ -88,9 +92,9 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       {
         icon: BarChart3, label: "Báo cáo", path: "/reports",
         children: [
-          { label: "Tổng quan", path: "/reports" },
-          { label: "KPI vận hành", path: "/reports/kpi" },
-          { label: "Chi phí bảo trì", path: "/reports/cost" },
+          { label: "Tổng quan", path: "/reports", perm: "report.kpi" },
+          { label: "KPI vận hành", path: "/reports/kpi", perm: "report.kpi" },
+          { label: "Chi phí bảo trì", path: "/reports/cost", perm: "report.cost" },
         ],
       },
     ],
@@ -98,19 +102,19 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   {
     section: "QUẢN TRỊ HỆ THỐNG",
     items: [
-      { icon: Users, label: "Tài khoản", path: "/users" },
-      { icon: ClipboardList, label: "Vai trò", path: "/roles" },
+      { icon: Users, label: "Tài khoản", path: "/users", perm: "user.read_details" },
+      { icon: ClipboardList, label: "Vai trò", path: "/roles", perm: "role.read" },
       {
         icon: Shield, label: "Phân quyền", path: "/permissions",
         children: [
-          { label: "Gán quyền theo vai trò", path: "/permissions/assign" },
-          { label: "Danh mục quyền (Actions)", path: "/permissions" },
+          { label: "Gán quyền theo vai trò", path: "/permissions/assign", perm: "permission.assign" },
+          { label: "Danh mục quyền (Actions)", path: "/permissions", perm: "permission.read" },
         ],
       },
-      { icon: BellRing, label: "Thông báo", path: "/notifications" },
-      { icon: Settings, label: "Cấu hình SLA", path: "/settings/sla" },
-      { icon: FileText, label: "Nhật ký (Audit)", path: "/audit-logs" },
-      { icon: Monitor, label: "Tác vụ hệ thống", path: "/admin/system-jobs" },
+      { icon: BellRing, label: "Thông báo", path: "/notifications", perm: "notification.view" },
+      { icon: Settings, label: "Cấu hình SLA", path: "/settings/sla", perm: "ticket.view" },
+      { icon: FileText, label: "Nhật ký (Audit)", path: "/audit-logs", perm: "audit_log.manage" },
+      { icon: Monitor, label: "Tác vụ hệ thống", path: "/admin/system-jobs", perm: "audit_log.manage" },
     ],
   },
 ];
@@ -120,8 +124,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loggingOut, setLoggingOut] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, hasPermission } = useAuth();
   const router = useRouter();
+
+  // Lọc menu theo quyền: mục/đề mục không đủ quyền sẽ bị ẩn.
+  // (admin là siêu quản trị → hasPermission luôn true → thấy đủ.)
+  const visibleSections = NAV_SECTIONS.map((section) => {
+    const items: NavItem[] = [];
+    for (const item of section.items) {
+      if (item.children?.length) {
+        const kids = item.children.filter((c) => !c.perm || hasPermission(c.perm));
+        if (kids.length > 0) items.push({ ...item, children: kids });
+      } else if (!item.perm || hasPermission(item.perm)) {
+        items.push(item);
+      }
+    }
+    return { section: section.section, items };
+  }).filter((s) => s.items.length > 0);
 
   function toggleMenu(path: string) {
     setOpenMenus((prev) => ({ ...prev, [path]: !prev[path] }));
@@ -195,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Nav */}
         <nav className="custom-scrollbar flex-1 overflow-y-auto px-3 py-3">
-          {NAV_SECTIONS.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.section} className="mb-4">
               <p className="mb-1 px-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">{section.section}</p>
               <div className="space-y-0.5">

@@ -1,6 +1,10 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { auth, account, setToken, getToken, clearToken, type GetUserResponse } from "@/lib/api";
+import {
+  auth, account, setToken, getToken, clearToken,
+  setAuthCache, getCachedPermissions, getCachedRoles, clearAuthCache,
+  type GetUserResponse,
+} from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 interface AuthState {
@@ -65,7 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = getToken();
     if (token) {
-      setState((s) => ({ ...s, token }));
+      // Khôi phục permissions/roles đã cache để hasPermission() hoạt động ngay
+      // sau khi reload (không phải đợi đăng nhập lại).
+      setState((s) => ({
+        ...s,
+        token,
+        permissions: getCachedPermissions(),
+        roles: getCachedRoles(),
+      }));
       refreshUser();
     } else {
       setState((s) => ({ ...s, loading: false }));
@@ -88,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setToken(d.token);
+        setAuthCache(d.permissions ?? [], d.roles ?? []);
         setState((s) => ({
           ...s,
           token: d.token,
@@ -116,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const d = res.data;
         setToken(d.token);
+        setAuthCache(d.permissions ?? [], d.roles ?? []);
         setState((s) => ({
           ...s,
           token: d.token,
@@ -179,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Continue with logout even if API fails
     } finally {
       clearToken();
+      clearAuthCache();
       setState({
         user: null,
         permissions: [],
@@ -191,9 +205,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
+  // Vai trò "admin" là siêu quản trị — luôn có mọi quyền (an toàn kể cả khi
+  // thiếu 1 code nào đó trong cache). Ngoài ra mới xét theo danh sách quyền.
+  const isAdmin = state.roles.some((r) => r.roleName?.toLowerCase() === "admin");
   const hasPermission = useCallback(
-    (code: string) => state.permissions.includes(code),
-    [state.permissions]
+    (code: string) => isAdmin || state.permissions.includes(code),
+    [isAdmin, state.permissions]
   );
 
   return (

@@ -5,6 +5,7 @@ export { DataTable, type Column } from "./data-table";
 export { FilterBar } from "./filter-bar";
 export { EntityModal, Field } from "./entity-modal";
 export { LoadingState, EmptyState, ErrorState, MockBanner } from "./states";
+export { PhotoCapture, type PhotoItem } from "./photo-capture";
 export {
   ToneBadge, StatusBadge, PriorityBadge, SlaBadge,
   type Tone, type StatusDef,

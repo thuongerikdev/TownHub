@@ -3,6 +3,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 /** All-zero GUID — used for Asset-module cross-service user references that have
  *  no Auth directory yet (we record the human name separately, not as a GUID). */
 export const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
+/** Canonical building for this single-complex deployment. Matches the backend
+ *  AssetDataSeeder `BUILDING` Guid. Asset-module `buildingId` references default
+ *  to this when the screen has no explicit building picker. */
+export const BUILDING_ID = "11111111-1111-1111-1111-111111111111";
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Returns a human label for a user-reference value, or undefined when the value
  *  is empty / a raw GUID (so the UI can fall back instead of showing an ugly id). */
@@ -80,6 +84,31 @@ export const getToken = (): string | null => {
 };
 export const clearToken = () => {
   if (typeof window !== "undefined") localStorage.removeItem("token");
+};
+
+// ─── Permission cache ──────────────────────────────────────────────────────
+// Lưu permissions/roles của phiên đăng nhập để hasPermission() sống sót qua
+// reload trang (login response chỉ trả 1 lần; account.getMe không kèm quyền).
+const PERMS_KEY = "auth.permissions";
+const ROLES_KEY = "auth.roles";
+export type CachedRole = { roleID: number; roleName: string };
+export const setAuthCache = (permissions: string[], roles: CachedRole[]) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PERMS_KEY, JSON.stringify(permissions ?? []));
+  localStorage.setItem(ROLES_KEY, JSON.stringify(roles ?? []));
+};
+export const getCachedPermissions = (): string[] => {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(PERMS_KEY) || "[]"); } catch { return []; }
+};
+export const getCachedRoles = (): CachedRole[] => {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(ROLES_KEY) || "[]"); } catch { return []; }
+};
+export const clearAuthCache = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(PERMS_KEY);
+  localStorage.removeItem(ROLES_KEY);
 };
 
 // ─── Core fetch ───────────────────────────────────────────────────────────────
@@ -562,6 +591,8 @@ export const workOrders = {
     apiFetch<boolean>(`/api/asset/work-order/add-checklist-response`, { method: "POST", body: JSON.stringify(body) }),
   addAttachment: (body: { woId: string; attachmentType: string; fileUrl: string; fileName?: string; fileSizeBytes?: number; uploadedBy?: string; caption?: string }) =>
     apiFetch<boolean>(`/api/asset/work-order/add-attachment`, { method: "POST", body: JSON.stringify(body) }),
+  getAttachments: (woId: string) =>
+    apiFetch<WorkOrderAttachmentResponse[]>(`/api/asset/work-order/get-attachments/${woId}`),
   addMaterialUsed: (body: { woId: string; materialId: string; warehouseId: string; inventoryTransactionId?: string }) =>
     apiFetch<boolean>(`/api/asset/work-order/add-material-used`, { method: "POST", body: JSON.stringify(body) }),
 };
@@ -585,6 +616,9 @@ export interface TicketResponse {
 export interface TicketStatusHistoryResponse {
   id: string; ticketId: string; fromStatus?: string; toStatus: string;
   changedBy?: string; changedAt: string; note?: string;
+}
+export interface TicketAttachmentResponse {
+  id: string; ticketId: string; fileUrl: string;
 }
 export interface SlaEscalationLogResponse {
   id: string; ticketId: string; ticketCode?: string; escalationLevel: number; escalatedAt: string;
@@ -633,6 +667,8 @@ export const tickets = {
     apiFetch<boolean>(`/api/asset/ticket/assign`, { method: "POST", body: JSON.stringify(body) }),
   addAttachment: (body: { ticketId: string; fileUrl: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/add-attachment`, { method: "POST", body: JSON.stringify(body) }),
+  getAttachments: (ticketId: string) =>
+    apiFetch<TicketAttachmentResponse[]>(`/api/asset/ticket/get-attachments/${ticketId}`, {}),
   rate: (body: { ticketId: string; ratedBy?: string; overallRating: number }) =>
     apiFetch<boolean>(`/api/asset/ticket/rate`, { method: "POST", body: JSON.stringify(body) }),
   getStatusHistory: (ticketId: string) =>

@@ -35,6 +35,16 @@ namespace TH.Asset.ApplicationService.Service.Core
         {
             try
             {
+                // Chặn sớm dữ liệu rỗng/không hợp lệ → trả lỗi rõ ràng thay vì 400 model-binding khó hiểu.
+                if (string.IsNullOrWhiteSpace(request.assetCode))
+                    return ResponseConst.Error<bool>(400, "Mã tài sản không được để trống.");
+                if (string.IsNullOrWhiteSpace(request.name))
+                    return ResponseConst.Error<bool>(400, "Tên tài sản không được để trống.");
+                if (request.categoryId == Guid.Empty)
+                    return ResponseConst.Error<bool>(400, "Vui lòng chọn danh mục tài sản.");
+                if (request.buildingId == Guid.Empty)
+                    return ResponseConst.Error<bool>(400, "Thiếu thông tin toà nhà của tài sản.");
+
                 var codeExists = await _dbContext.Assets.AnyAsync(x => x.assetCode == request.assetCode);
                 if (codeExists)
                     return ResponseConst.Error<bool>(400, $"Mã tài sản '{request.assetCode}' đã tồn tại.");
@@ -100,6 +110,16 @@ namespace TH.Asset.ApplicationService.Service.Core
                 var entity = await _dbContext.Assets.FirstOrDefaultAsync(x => x.id == request.id);
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy tài sản.");
+
+                // Chặn sớm dữ liệu rỗng/không hợp lệ → trả lỗi rõ ràng thay vì 400 model-binding khó hiểu.
+                if (string.IsNullOrWhiteSpace(request.assetCode))
+                    return ResponseConst.Error<bool>(400, "Mã tài sản không được để trống.");
+                if (string.IsNullOrWhiteSpace(request.name))
+                    return ResponseConst.Error<bool>(400, "Tên tài sản không được để trống.");
+                if (request.categoryId == Guid.Empty)
+                    return ResponseConst.Error<bool>(400, "Vui lòng chọn danh mục tài sản.");
+                if (request.buildingId == Guid.Empty)
+                    return ResponseConst.Error<bool>(400, "Thiếu thông tin toà nhà của tài sản.");
 
                 if (entity.assetCode != request.assetCode)
                 {

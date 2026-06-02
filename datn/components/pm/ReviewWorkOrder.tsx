@@ -6,14 +6,16 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, XCircle, AlertCircle, FileText, Clock, Gauge } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, checklistTemplates,
+  workOrders, checklistTemplates, maintenanceSchedules, costTracking,
   type WorkOrderResponse, type ChecklistTemplateItemResponse, type UpdateWorkOrderInput,
+  type MaintenanceScheduleResponse, type UpdateMaintenanceScheduleInput,
+  type WorkOrderAttachmentResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
 import { mockWorkOrders, mockChecklistItems } from "@/lib/mock/pm";
 import {
   MockBanner, LoadingState, ErrorState, StatusBadge, PriorityBadge, ToneBadge,
-  EntityModal, StatCard, type StatusDef,
+  EntityModal, StatCard, PhotoCapture, type StatusDef,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,24 @@ const WO_STATUS: Record<string, StatusDef> = {
   CANCELLED: { label: "Đã huỷ", tone: "danger" },
   REJECTED: { label: "Bị từ chối", tone: "danger" },
 };
+
+// Quy đổi loại chu kỳ → số ngày (fallback khi schedule không khai báo frequencyDays).
+const FREQ_DAYS: Record<string, number> = {
+  DAILY: 1, WEEKLY: 7, BIWEEKLY: 14, MONTHLY: 30, BIMONTHLY: 60,
+  QUARTERLY: 90, SEMIANNUAL: 182, SEMI_ANNUAL: 182, YEARLY: 365, ANNUAL: 365,
+};
+function scheduleIntervalDays(s: MaintenanceScheduleResponse): number {
+  if (s.frequencyDays && s.frequencyDays > 0) return s.frequencyDays;
+  return FREQ_DAYS[(s.frequencyType ?? "").toUpperCase()] ?? 30;
+}
+function addDaysISO(base: Date, days: number): string {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -68,6 +88,11 @@ export default function ReviewWorkOrder() {
   );
   const items = useMemo(() => [...itemsQ.items].sort((a, b) => a.sortOrder - b.sortOrder), [itemsQ.items]);
 
+  const photosQ = useApiList<WorkOrderAttachmentResponse>(
+    () => workOrders.getAttachments(String(wo?.id)),
+    { mock: () => [], deps: [wo?.id], enabled: !!wo?.id },
+  );
+
   const [totalCost, setTotalCost] = useState("");
   const [approving, setApproving] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -81,20 +106,61 @@ export default function ReviewWorkOrder() {
     };
   }
 
+  // Diagram 3 tail: "Đóng WO & Tính toán chu kỳ tiếp theo" — đẩy lịch bảo trì sang kỳ kế.
+  async function advanceSchedule(woId: string, scheduleId: string): Promise<boolean> {
+    const sres = await maintenanceSchedules.getById(scheduleId);
+    if (sres.errorCode !== 200 || !sres.data) return false;
+    const s = sres.data;
+    const now = new Date();
+    const body: UpdateMaintenanceScheduleInput = {
+      id: s.id, assetId: s.assetId, scheduleType: s.scheduleType,
+      checklistTemplateId: s.checklistTemplateId, autoAssignDepartmentId: s.autoAssignDepartmentId,
+      frequencyType: s.frequencyType, frequencyDays: s.frequencyDays,
+      startDate: s.startDate, endDate: s.endDate, leadTimeDays: s.leadTimeDays,
+      isActive: s.isActive, description: s.description,
+      nextDueDate: addDaysISO(now, scheduleIntervalDays(s)),
+      lastExecutedAt: now.toISOString(),
+      lastWoId: woId,
+    };
+    const ures = await maintenanceSchedules.update(body);
+    return ures.errorCode === 200;
+  }
+
+  // Diagram 3 tail: "Ghi nhận lịch sử bảo trì tài sản" — ghi nhận chi phí nghiệm thu vào sổ chi phí.
+  async function recordCost(woId: string, amount: number) {
+    if (!wo || !amount || amount <= 0) return;
+    await costTracking.create({
+      referenceType: "WORK_ORDER", referenceId: woId,
+      assetId: wo.assetId, buildingId: wo.buildingId,
+      amount, currency: "VND", costType: "MAINTENANCE",
+      costDate: todayISO(), description: `Nghiệm thu ${wo.woCode}`,
+    });
+  }
+
   async function doApprove() {
     if (!wo) return;
     setApproving(true);
+    const effectiveCost = totalCost ? Number(totalCost) : wo.totalCost;
     const res = await workOrders.update({
       ...baseBody(), status: "COMPLETED", approvedAt: new Date().toISOString(),
-      totalCost: totalCost ? Number(totalCost) : wo.totalCost,
+      totalCost: effectiveCost,
     });
-    setApproving(false);
-    if (res.errorCode === 200) {
-      toast.success("Đã nghiệm thu & đóng phiếu.");
-      router.push(`/pm/work-orders/${wo.id}`);
-    } else {
+    if (res.errorCode !== 200) {
+      setApproving(false);
       toast.error(res.errorMessage || "Nghiệm thu thất bại.");
+      return;
     }
+    // Sau khi đóng phiếu: tính chu kỳ kế tiếp + ghi nhận chi phí (best-effort, không chặn điều hướng).
+    let schedAdvanced = false;
+    if (wo.scheduleId) schedAdvanced = await advanceSchedule(wo.id, wo.scheduleId);
+    if (effectiveCost) await recordCost(wo.id, Number(effectiveCost));
+    setApproving(false);
+    toast.success(
+      schedAdvanced
+        ? "Đã nghiệm thu, đóng phiếu & lên lịch bảo trì kế tiếp."
+        : "Đã nghiệm thu & đóng phiếu.",
+    );
+    router.push(`/pm/work-orders/${wo.id}`);
   }
 
   async function doReject() {
@@ -191,6 +257,17 @@ export default function ReviewWorkOrder() {
               </ul>
             )}
           </Section>
+
+          <PhotoCapture
+            title="Ảnh minh chứng"
+            photos={photosQ.items.map((a) => ({
+              url: a.fileUrl,
+              caption: a.caption ?? (a.attachmentType && a.attachmentType !== "EVIDENCE" ? a.attachmentType : undefined),
+            }))}
+            onAdd={() => {}}
+            disabled
+            emptyHint="Chưa có ảnh minh chứng từ KTV."
+          />
         </div>
 
         <div className="space-y-6">
@@ -224,7 +301,7 @@ export default function ReviewWorkOrder() {
           </Section>
 
           <div className="rounded-xl border border-info/30 bg-info/10 p-4">
-            <p className="text-sm text-foreground/90">Sau khi nghiệm thu, phiếu sẽ đóng và không thể chỉnh sửa. Vật tư được trừ kho theo thực tế.</p>
+            <p className="text-sm text-foreground/90">Sau khi nghiệm thu: phiếu đóng lại, hệ thống ghi nhận lịch sử bảo trì, <strong className="font-semibold">tính chu kỳ bảo trì kế tiếp</strong> và ghi nhận chi phí vào sổ.</p>
           </div>
         </div>
       </div>

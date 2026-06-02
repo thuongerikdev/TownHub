@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Package, Trash2, Eye, FileText, Truck, CheckCircle2 } from "lucide-react";
+import {
+  Plus, Package, Trash2, Eye, FileText, Truck, CheckCircle2,
+  Send, PackageCheck, XCircle, FilePlus2,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   purchaseOrders, vendorsApi, purchaseRequests,
-  type PurchaseOrderResponse, type CreatePurchaseOrderInput,
+  type PurchaseOrderResponse, type CreatePurchaseOrderInput, type UpdatePurchaseOrderInput,
   type VendorResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -31,6 +34,19 @@ const PO_STATUS: Record<string, StatusDef> = {
   CANCELLED: { label: "Đã huỷ", tone: "danger" },
 };
 const STATUS_OPTIONS = ["DRAFT", "SENT", "CONFIRMED", "RECEIVED", "CANCELLED"];
+
+// Vòng đời PO: DRAFT → SENT (gửi NCC) → CONFIRMED (NCC xác nhận) → RECEIVED (đã nhận hàng).
+const NEXT_PO: Record<string, { to: string; label: string; icon: typeof Send }> = {
+  DRAFT: { to: "SENT", label: "Gửi NCC", icon: Send },
+  SENT: { to: "CONFIRMED", label: "NCC xác nhận", icon: CheckCircle2 },
+  CONFIRMED: { to: "RECEIVED", label: "Đã nhận hàng", icon: PackageCheck },
+};
+function isActivePo(status: string): boolean {
+  return status !== "RECEIVED" && status !== "CANCELLED";
+}
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 interface FormState {
   poCode: string; vendorId: string; prId: string; issueDate: string;
@@ -68,6 +84,7 @@ export default function PurchaseOrders() {
   const [submitting, setSubmitting] = useState(false);
   const [detail, setDetail] = useState<PurchaseOrderResponse | null>(null);
   const [confirmDel, setConfirmDel] = useState<PurchaseOrderResponse | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const stats = useMemo(() => ({
     total: list.length,
@@ -75,6 +92,12 @@ export default function PurchaseOrders() {
     inTransit: list.filter((p) => p.status === "SENT" || p.status === "CONFIRMED").length,
     received: list.filter((p) => p.status === "RECEIVED").length,
   }), [list]);
+
+  // Đề xuất đã duyệt mà chưa có PO nào liên kết → gợi ý "Tạo PO từ PR".
+  const approvedPrs = useMemo(() => {
+    const linked = new Set(list.map((p) => p.prId).filter(Boolean) as string[]);
+    return prsQ.items.filter((p) => p.status === "APPROVED" && !linked.has(p.id));
+  }, [prsQ.items, list]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -85,9 +108,45 @@ export default function PurchaseOrders() {
     });
   }, [list, search, statusF]);
 
+  function newPoCode() {
+    return `PO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  }
   function openCreate() {
-    setForm({ ...emptyForm, poCode: `PO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}` });
+    setForm({ ...emptyForm, poCode: newPoCode() });
     setOpen(true);
+  }
+  function openCreateFromPr(pr: PurchaseRequestResponse) {
+    setForm({
+      ...emptyForm,
+      poCode: newPoCode(),
+      prId: pr.id,
+      notes: pr.title ? `Theo đề xuất ${pr.prCode}: ${pr.title}` : `Theo đề xuất ${pr.prCode}`,
+    });
+    setOpen(true);
+  }
+
+  function buildUpdate(po: PurchaseOrderResponse, status: string): UpdatePurchaseOrderInput {
+    return {
+      id: po.id, poCode: po.poCode, vendorId: po.vendorId, prId: po.prId,
+      issueDate: po.issueDate, expectedDelivery: po.expectedDelivery,
+      totalAmount: po.totalAmount, currency: po.currency, paymentTerms: po.paymentTerms,
+      notes: po.notes, createdBy: po.createdBy, status,
+      actualDelivery: status === "RECEIVED" ? (po.actualDelivery ?? todayISO()) : po.actualDelivery,
+    };
+  }
+  async function advance(po: PurchaseOrderResponse, toStatus: string) {
+    setBusyId(po.id);
+    const res = await purchaseOrders.update(buildUpdate(po, toStatus));
+    setBusyId(null);
+    if (res.errorCode === 200) {
+      toast.success(`PO ${po.poCode} → ${PO_STATUS[toStatus]?.label ?? toStatus}.`);
+      setDetail((d) => (d && d.id === po.id ? { ...d, status: toStatus } : d));
+      q.refetch();
+    } else toast.error(res.errorMessage || "Cập nhật trạng thái thất bại.");
+  }
+  async function cancel(po: PurchaseOrderResponse) {
+    if (!window.confirm(`Huỷ đơn đặt hàng ${po.poCode}?`)) return;
+    await advance(po, "CANCELLED");
   }
 
   async function submit() {
@@ -134,12 +193,25 @@ export default function PurchaseOrders() {
     { key: "status", header: "Trạng thái", sortable: true, sortAccessor: (p) => p.status, cell: (p) => <StatusBadge value={p.status} map={PO_STATUS} /> },
     {
       key: "actions", header: "", align: "right",
-      cell: (p) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" title="Chi tiết" onClick={() => setDetail(p)}><Eye className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(p)}><Trash2 className="size-4" /></Button>
-        </div>
-      ),
+      cell: (p) => {
+        const next = NEXT_PO[p.status];
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {next && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busyId === p.id}
+                onClick={() => advance(p, next.to)}
+              >
+                <next.icon className="size-4" /> {next.label}
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" title="Chi tiết" onClick={() => setDetail(p)}><Eye className="size-4" /></Button>
+            <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(p)}><Trash2 className="size-4" /></Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -160,6 +232,24 @@ export default function PurchaseOrders() {
         <StatCard label="Đang giao" value={stats.inTransit} icon={Truck} tone="info" loading={q.loading} />
         <StatCard label="Đã nhận hàng" value={stats.received} icon={CheckCircle2} tone="success" loading={q.loading} />
       </div>
+
+      {approvedPrs.length > 0 && (
+        <div className="mb-6 rounded-xl border border-brand/30 bg-brand/5 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <FilePlus2 className="size-4 text-brand" />
+            Đề xuất đã duyệt chờ tạo PO ({approvedPrs.length})
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {approvedPrs.map((pr) => (
+              <Button key={pr.id} variant="outline" size="sm" onClick={() => openCreateFromPr(pr)}>
+                <Plus className="size-4" />
+                <span className="font-mono text-xs">{pr.prCode}</span>
+                {pr.title && <span className="max-w-[16rem] truncate text-muted-foreground">· {pr.title}</span>}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <FilterBar search={search} onSearch={setSearch} placeholder="Tìm PO, nhà cung cấp…">
         <Select value={statusF} onValueChange={setStatusF}>
@@ -227,7 +317,29 @@ export default function PurchaseOrders() {
         title={detail?.poCode ?? ""}
         description={detail?.vendorName}
         size="md"
-        footer={<div className="flex justify-end border-t border-border px-6 py-4"><Button variant="outline" onClick={() => setDetail(null)}>Đóng</Button></div>}
+        footer={
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-4">
+            {detail && isActivePo(detail.status) && (
+              <Button
+                variant="ghost"
+                className="mr-auto text-danger hover:text-danger"
+                disabled={busyId === detail.id}
+                onClick={() => cancel(detail)}
+              >
+                <XCircle className="size-4" /> Huỷ PO
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setDetail(null)}>Đóng</Button>
+            {detail && NEXT_PO[detail.status] && (
+              <Button
+                disabled={busyId === detail.id}
+                onClick={() => advance(detail, NEXT_PO[detail.status].to)}
+              >
+                {(() => { const N = NEXT_PO[detail.status]; const I = N.icon; return <><I className="size-4" /> {N.label}</>; })()}
+              </Button>
+            )}
+          </div>
+        }
       >
         {detail && (
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">

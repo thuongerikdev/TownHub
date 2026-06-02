@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  assetApi, assetCategories, assetLocations, assetQrCodes,
+  assetApi, assetCategories, assetLocations, assetQrCodes, BUILDING_ID,
   type AssetResponse, type CreateAssetInput, type UpdateAssetInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -54,7 +54,7 @@ interface FormState {
   usefulLifeMonths: string; salvageValue: string; depreciationMethod: string; notes: string;
 }
 const emptyForm: FormState = {
-  assetCode: "", name: "", categoryId: "", buildingId: "", locationId: "",
+  assetCode: "", name: "", categoryId: "", buildingId: BUILDING_ID, locationId: "",
   status: "ACTIVE", criticalityLevel: "MEDIUM", serialNumber: "",
   purchasePrice: "", purchaseDate: "", warrantyExpiryDate: "",
   usefulLifeMonths: "", salvageValue: "0", depreciationMethod: "STRAIGHT_LINE", notes: "",
@@ -96,6 +96,18 @@ export default function AssetList() {
   const assets = assetsQ.items;
   const cats = catsQ.items;
   const locs = locsQ.items;
+
+  // Toà nhà là tham chiếu cross-service (không có endpoint riêng) → suy ra từ dữ liệu
+  // đã có (vị trí + tài sản) và luôn kèm toà nhà mặc định để tránh phải gõ GUID tay.
+  const buildingOptions = useMemo(() => {
+    const ids = new Set<string>([BUILDING_ID]);
+    for (const l of locs) if (l.buildingId) ids.add(l.buildingId);
+    for (const a of assets) if (a.buildingId) ids.add(a.buildingId);
+    return [...ids].map((id) => ({
+      id,
+      label: id === BUILDING_ID ? "Toà nhà chính" : `Toà nhà ${id.slice(0, 8)}…`,
+    }));
+  }, [locs, assets]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -349,8 +361,13 @@ export default function AssetList() {
               <Field label="Số serial">
                 <Input value={form.serialNumber} onChange={(e) => patch({ serialNumber: e.target.value })} placeholder="SN-..." />
               </Field>
-              <Field label="Mã toà nhà (buildingId)" required hint="Tự điền khi chọn vị trí.">
-                <Input value={form.buildingId} onChange={(e) => patch({ buildingId: e.target.value })} placeholder="GUID toà nhà" className="font-mono text-xs" />
+              <Field label="Toà nhà" required hint="Tự điền theo vị trí đã chọn.">
+                <Select value={form.buildingId} onValueChange={(v) => patch({ buildingId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Chọn toà nhà" /></SelectTrigger>
+                  <SelectContent>
+                    {buildingOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
           </div>
