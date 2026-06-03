@@ -4,13 +4,13 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TH.Asset.Infrastructure.Database;
-using TH.Shared.ApplicationService;
 
 namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
 {
@@ -80,12 +80,12 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
             {
                 try
                 {
-                    var cloud     = scope.ServiceProvider.GetRequiredService<ICloudinaryService>();
-                    var hostedUrl = await UploadDataUrlAsync(cloud, job.fileUrl, job.fileName);
+                    var cloud = scope.ServiceProvider.GetRequiredService<Cloudinary>();
+                    var (hostedUrl, uploadError) = await UploadDataUrlAsync(cloud, job.fileUrl, job.fileName, ct);
                     if (string.IsNullOrWhiteSpace(hostedUrl))
                     {
                         job.status       = "FAILED";
-                        job.errorMessage = "Không tải được tệp lên kho ảnh để OCR. Vui lòng thử lại.";
+                        job.errorMessage = "Không tải được tệp lên kho ảnh để OCR: " + (uploadError ?? "lỗi không xác định");
                         job.completedAt  = DateTime.UtcNow;
                         await db.SaveChangesAsync(ct);
                         return;
@@ -132,12 +132,15 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         }
 
         // ── Helpers: decode 'data:' URL base64 → upload Cloudinary → URL https ───────
-        private static async Task<string?> UploadDataUrlAsync(
-            ICloudinaryService cloud, string dataUrl, string? fileName)
+        // Upload trực tiếp bằng Cloudinary (singleton) với MemoryStream seekable thật, KHÔNG
+        // qua FormFile.OpenReadStream() (ReferenceReadStream có thể ném khi đọc Length →
+        // SDK báo upload fail, trả SecureUrl null). Trả kèm thông điệp lỗi thật để FE thấy rõ.
+        private static async Task<(string? url, string? error)> UploadDataUrlAsync(
+            Cloudinary cloud, string dataUrl, string? fileName, CancellationToken ct)
         {
             // Định dạng: data:[<mediatype>][;base64],<payload>
             var comma = dataUrl.IndexOf(',');
-            if (comma < 0) return null;
+            if (comma < 0) return (null, "fileUrl không phải data URL hợp lệ.");
 
             var header  = dataUrl.Substring(5, comma - 5); // bỏ tiền tố "data:"
             var payload = dataUrl.Substring(comma + 1);
@@ -149,19 +152,29 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
             var bytes = isBase64
                 ? Convert.FromBase64String(payload)
                 : Encoding.UTF8.GetBytes(Uri.UnescapeDataString(payload));
-            if (bytes.Length == 0) return null;
+            if (bytes.Length == 0) return (null, "Nội dung tệp rỗng.");
 
             var name = string.IsNullOrWhiteSpace(fileName)
                 ? "ocr-" + Guid.NewGuid().ToString("N") + GuessExtension(mediaType)
                 : fileName;
 
-            using var ms = new MemoryStream(bytes);
-            IFormFile form = new FormFile(ms, 0, bytes.Length, "file", name)
+            using var ms = new MemoryStream(bytes, writable: false);
+
+            // Dùng ImageUploadParams cho cả ảnh lẫn PDF (Cloudinary nhận PDF dưới resource_type=image).
+            var result = await cloud.UploadAsync(new ImageUploadParams
             {
-                Headers     = new HeaderDictionary(),
-                ContentType = mediaType
-            };
-            return await cloud.UploadImageAsync(form);
+                File           = new FileDescription(name, ms),
+                Folder         = "ocr",
+                UseFilename    = true,
+                UniqueFilename = true,
+                Overwrite      = false
+            }, ct);
+
+            if (result?.SecureUrl != null)
+                return (result.SecureUrl.ToString(), null);
+
+            var err = result?.Error?.Message ?? ("Cloudinary trả về HTTP " + (int?)result?.StatusCode);
+            return (null, err);
         }
 
         private static string GuessExtension(string mediaType) => mediaType.ToLowerInvariant() switch
