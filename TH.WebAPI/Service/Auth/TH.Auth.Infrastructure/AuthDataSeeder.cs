@@ -102,9 +102,10 @@ namespace TH.Auth.Infrastructure
                 "order.read_all", "permission.read", "person.manage", "plan.manage", "price.manage", "region.manage",
                 "subscription.read_all", "subscription.manage", "tag.manage",
                 "user.read_list", "user.read_details",
+                "user.create",       // BQL/Admin tạo tài khoản Resident — user_manager cần có
+                "user.delete",
                 "search.advanced",
                 "role.assign", "permission.assign",
-                // --- THÊM 2 QUYỀN NÀY ---
                 "audit_log.manage", "usersession.manage"
             };
 

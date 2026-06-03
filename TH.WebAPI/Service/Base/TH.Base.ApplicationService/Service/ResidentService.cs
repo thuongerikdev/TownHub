@@ -15,6 +15,8 @@ namespace TH.TownHub.ApplicationService.Service
     public interface IResidentService
     {
         Task<ResponseDto<bool>> CreateAsync(CreateResidentRequestDto request);
+        // Tạo cư dân và trả về ID mới — dùng cho luồng đăng ký kết hợp với auth user
+        Task<ResponseDto<int>> CreateAndGetIdAsync(CreateResidentRequestDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdateResidentRequestDto request);
         Task<ResponseDto<bool>> DeleteAsync(int id);
         Task<ResponseDto<List<ResidentResponse>>> GetAllAsync(int? apartmentId = null);
@@ -54,6 +56,7 @@ namespace TH.TownHub.ApplicationService.Service
                     Gender = request.gender,
                     ApartmentId = request.apartmentId,
                     IsOwner = request.isOwner,
+                    IsBusinessOwner = request.isBusinessOwner,
                     MoveInDate = request.moveInDate,
                     AvatarUrl = request.avatarUrl,
                     AuthUserId = request.authUserId
@@ -101,6 +104,7 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.Gender = request.gender;
                 entity.ApartmentId = request.apartmentId;
                 entity.IsOwner = request.isOwner;
+                entity.IsBusinessOwner = request.isBusinessOwner;
                 entity.MoveInDate = request.moveInDate;
                 entity.MoveOutDate = request.moveOutDate;
                 entity.AvatarUrl = request.avatarUrl;
@@ -164,6 +168,7 @@ namespace TH.TownHub.ApplicationService.Service
                         apartmentId = x.ApartmentId,
                         apartmentCode = x.Apartment != null ? x.Apartment.Code : null,
                         isOwner = x.IsOwner,
+                        isBusinessOwner = x.IsBusinessOwner,
                         moveInDate = x.MoveInDate,
                         moveOutDate = x.MoveOutDate,
                         avatarUrl = x.AvatarUrl,
@@ -200,6 +205,7 @@ namespace TH.TownHub.ApplicationService.Service
                         apartmentId = x.ApartmentId,
                         apartmentCode = x.Apartment != null ? x.Apartment.Code : null,
                         isOwner = x.IsOwner,
+                        isBusinessOwner = x.IsBusinessOwner,
                         moveInDate = x.MoveInDate,
                         moveOutDate = x.MoveOutDate,
                         avatarUrl = x.AvatarUrl,
@@ -217,6 +223,52 @@ namespace TH.TownHub.ApplicationService.Service
             {
                 _logger.LogError(ex, "Lỗi khi lấy chi tiết cư dân. ID: {Id}", id);
                 return ResponseConst.Error<ResidentResponse>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        public async Task<ResponseDto<int>> CreateAndGetIdAsync(CreateResidentRequestDto request)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(request.idCard))
+                {
+                    var idCardExists = await _dbContext.Residents.AnyAsync(x => x.IdCard == request.idCard);
+                    if (idCardExists)
+                        return ResponseConst.Error<int>(400, "Số CCCD/CMND đã tồn tại trong hệ thống.");
+                }
+
+                if (request.apartmentId.HasValue)
+                {
+                    var aptExists = await _dbContext.Apartments.AnyAsync(x => x.Id == request.apartmentId.Value);
+                    if (!aptExists)
+                        return ResponseConst.Error<int>(400, "Căn hộ không tồn tại.");
+                }
+
+                var entity = new Resident
+                {
+                    FullName = request.fullName,
+                    Phone = request.phone,
+                    Email = request.email,
+                    IdCard = request.idCard,
+                    DateOfBirth = request.dateOfBirth,
+                    Gender = request.gender,
+                    ApartmentId = request.apartmentId,
+                    IsOwner = request.isOwner,
+                    IsBusinessOwner = request.isBusinessOwner,
+                    MoveInDate = request.moveInDate,
+                    AvatarUrl = request.avatarUrl,
+                    AuthUserId = request.authUserId
+                };
+
+                _dbContext.Residents.Add(entity);
+                await _dbContext.SaveChangesAsync(); // EF tự điền entity.Id sau khi save
+
+                return ResponseConst.Success("Thêm cư dân thành công.", entity.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo cư dân (GetId).");
+                return ResponseConst.Error<int>(500, "Lỗi hệ thống: " + ex.Message);
             }
         }
     }

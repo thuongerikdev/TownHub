@@ -22,6 +22,8 @@ namespace TH.Constant
             { "AuthRegister", "auth.register" },
 
             // --- User ---
+            { "UserCreate", "user.create" },             // BQL + Admin tạo tài khoản Resident/Provider
+            { "UserCreateBQL", "user.create_bql" },      // Admin tạo tài khoản BQL
             { "UserDelete", "user.delete" },
             { "UserReadProfile", "user.read_profile" },
             { "UserUpdateProfile", "user.update_profile" },

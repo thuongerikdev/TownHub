@@ -47,11 +47,14 @@ namespace TH.TownHub.Dtos
         public string? idCard { get; set; }
         public DateTime? dateOfBirth { get; set; }
         public string? gender { get; set; }
+        // Căn hộ chỉ dùng để ở — không kinh doanh tại đây
         public int? apartmentId { get; set; }
-        public bool isOwner { get; set; } = false;
+        public bool isOwner { get; set; } = false;      // true = chủ hộ, false = thuê
         public DateTime? moveInDate { get; set; }
         public string? avatarUrl { get; set; }
         public int? authUserId { get; set; }
+        // Đánh dấu cư dân có hoạt động kinh doanh (là NCC)
+        public bool isBusinessOwner { get; set; } = false;
     }
 
     public class UpdateResidentRequestDto : CreateResidentRequestDto
@@ -71,7 +74,8 @@ namespace TH.TownHub.Dtos
         public string? gender { get; set; }
         public int? apartmentId { get; set; }
         public string? apartmentCode { get; set; }
-        public bool isOwner { get; set; }
+        public bool isOwner { get; set; }           // Chủ hộ / người thuê
+        public bool isBusinessOwner { get; set; }   // Có kinh doanh dịch vụ
         public DateTime? moveInDate { get; set; }
         public DateTime? moveOutDate { get; set; }
         public string? avatarUrl { get; set; }
@@ -299,6 +303,251 @@ namespace TH.TownHub.Dtos
         public int? targetId { get; set; }
         public string? ipAddress { get; set; }
         public DateTime createdAt { get; set; }
+    }
+
+    // ============================================================
+    // PROVIDER DTOs
+    // ============================================================
+    public class RegisterProviderRequestDto
+    {
+        public required string companyName { get; set; }
+        public required string contactName { get; set; }
+        public required string phone { get; set; }
+        public string? email { get; set; }
+        public string? address { get; set; }
+        public string? serviceCategories { get; set; }  // JSON array
+        // Nếu NCC là cư dân trong toà nhà — hệ thống sẽ đánh dấu IsBusinessOwner = true
+        public int? residentId { get; set; }
+    }
+
+    // Hộ dân đã có tài khoản tự nộp đơn đăng ký NCC — authUserId lấy từ token
+    public class SelfRegisterProviderRequestDto
+    {
+        public int authUserId { get; set; }             // ID tài khoản đang đăng nhập
+        public required string companyName { get; set; }
+        public string? contactName { get; set; }        // nếu null → tự lấy từ hồ sơ cư dân
+        public string? phone { get; set; }              // nếu null → tự lấy từ hồ sơ cư dân
+        public string? email { get; set; }
+        public string? address { get; set; }
+        public string? serviceCategories { get; set; }  // JSON array
+    }
+
+    public class ApproveProviderRequestDto
+    {
+        public int id { get; set; }
+        public int approvedByAuthUserId { get; set; }
+    }
+
+    public class RejectProviderRequestDto
+    {
+        public int id { get; set; }
+        public required string reason { get; set; }
+    }
+
+    public class ProviderResponse
+    {
+        public int id { get; set; }
+        public string companyName { get; set; } = null!;
+        public string contactName { get; set; } = null!;
+        public string phone { get; set; } = null!;
+        public string? email { get; set; }
+        public string? address { get; set; }
+        public string? serviceCategories { get; set; }
+        public string registrationStatus { get; set; } = null!;
+        public string? rejectionReason { get; set; }
+        public int? approvedByAuthUserId { get; set; }
+        public DateTime? approvedAt { get; set; }
+        // Nếu NCC là cư dân
+        public int? residentId { get; set; }
+        public string? residentFullName { get; set; }
+        public string? residentApartmentCode { get; set; }
+        public DateTime createdAt { get; set; }
+    }
+
+    // ============================================================
+    // SERVICE REQUEST DTOs
+    // ============================================================
+    public class CreateServiceRequestDto
+    {
+        public required string title { get; set; }
+        public string? description { get; set; }
+        public required string category { get; set; }
+        public int? apartmentId { get; set; }
+        public bool requiresMgtApproval { get; set; } = false;
+        public int requestedByAuthUserId { get; set; }
+        public int? providerId { get; set; }
+        public DateTime? scheduledDate { get; set; }
+        public string? note { get; set; }
+    }
+
+    public class ApproveByMgtRequestDto
+    {
+        public int id { get; set; }
+        public int approvedByAuthUserId { get; set; }
+    }
+
+    public class RejectByMgtRequestDto
+    {
+        public int id { get; set; }
+        public required string reason { get; set; }
+    }
+
+    public class AcceptByProviderRequestDto
+    {
+        public int id { get; set; }
+        public int providerId { get; set; }
+    }
+
+    public class RejectByProviderRequestDto
+    {
+        public int id { get; set; }
+        public required string reason { get; set; }
+    }
+
+    public class UpdateServiceRequestStatusDto
+    {
+        public int id { get; set; }
+        public required string status { get; set; }  // in_progress | completed
+    }
+
+    public class ServiceRequestResponse
+    {
+        public int id { get; set; }
+        public string title { get; set; } = null!;
+        public string? description { get; set; }
+        public string category { get; set; } = null!;
+        public int? apartmentId { get; set; }
+        public string? apartmentCode { get; set; }
+        // Thông tin liên hệ người gửi yêu cầu — để NCC biết cách liên lạc
+        public string? requesterName { get; set; }
+        public string? requesterPhone { get; set; }
+        public string? requesterApartmentCode { get; set; }
+        public bool requiresMgtApproval { get; set; }
+        public string status { get; set; } = null!;
+        public int? providerId { get; set; }
+        public string? providerCompanyName { get; set; }
+        public int requestedByAuthUserId { get; set; }
+        public int? mgtApprovedByAuthUserId { get; set; }
+        public DateTime? mgtApprovedAt { get; set; }
+        public string? mgtRejectionReason { get; set; }
+        public string? providerRejectionReason { get; set; }
+        public DateTime? scheduledDate { get; set; }
+        public DateTime? completedAt { get; set; }
+        public string? note { get; set; }
+        public DateTime createdAt { get; set; }
+    }
+
+    // ============================================================
+    // PROVIDER SERVICE LISTING DTOs — Dịch vụ NCC đăng ký
+    // ============================================================
+
+    // NCC đăng ký một dịch vụ cụ thể
+    public class RegisterServiceListingDto
+    {
+        public int providerId { get; set; }
+        public required string name { get; set; }
+        public required string category { get; set; }   // plumbing | electrical | cleaning | renovation | camera | other
+        public string? description { get; set; }
+
+        // Thông tin liên hệ cho dịch vụ (có thể khác với thông tin NCC)
+        public string? contactPhone { get; set; }
+        public string? contactEmail { get; set; }
+        public string? contactAddress { get; set; }
+
+        // Bảng giá — JSON array
+        // Ví dụ: [{"name":"Sửa ổ điện","unit":"cái","price":150000}]
+        public string? priceList { get; set; }
+    }
+
+    public class UpdateServiceListingDto
+    {
+        public int id { get; set; }
+        public required string name { get; set; }
+        public required string category { get; set; }
+        public string? description { get; set; }
+        public string? contactPhone { get; set; }
+        public string? contactEmail { get; set; }
+        public string? contactAddress { get; set; }
+        public string? priceList { get; set; }
+    }
+
+    public class ApproveServiceListingDto
+    {
+        public int id { get; set; }
+        public int approvedByAuthUserId { get; set; }
+    }
+
+    public class RejectServiceListingDto
+    {
+        public int id { get; set; }
+        public required string reason { get; set; }
+    }
+
+    public class ServiceListingResponse
+    {
+        public int id { get; set; }
+        public int providerId { get; set; }
+        public string? providerCompanyName { get; set; }
+        public string? providerPhone { get; set; }
+        public string name { get; set; } = null!;
+        public string category { get; set; } = null!;
+        public string? description { get; set; }
+        public string? contactPhone { get; set; }
+        public string? contactEmail { get; set; }
+        public string? contactAddress { get; set; }
+        public string? priceList { get; set; }
+        public string status { get; set; } = null!;
+        public string? rejectionReason { get; set; }
+        public int? approvedByAuthUserId { get; set; }
+        public DateTime? approvedAt { get; set; }
+        public DateTime createdAt { get; set; }
+    }
+
+    // ============================================================
+    // REGISTRATION DTOs — Tạo tài khoản theo từng đối tượng
+    // ============================================================
+
+    // Admin tạo tài khoản Ban Quản Lý — không có căn hộ
+    public class CreateBQLAccountRequestDto
+    {
+        public required string userName { get; set; }
+        public required string email { get; set; }
+        public required string password { get; set; }
+        public string? firstName { get; set; }
+        public string? lastName { get; set; }
+        public string? gender { get; set; }
+        public DateTime? dateOfBirth { get; set; }
+        // ID các role BQL cần gán; bỏ trống → gán role BQL mặc định
+        public List<int>? roleIds { get; set; }
+    }
+
+    // BQL / Admin tạo tài khoản Cư dân — có căn hộ để ở
+    // Nếu cư dân có kinh doanh → hệ thống tạo thêm hồ sơ NCC (chờ duyệt)
+    public class CreateResidentAccountRequestDto
+    {
+        // --- Thông tin đăng nhập ---
+        public required string userName { get; set; }
+        public required string email { get; set; }
+        public required string password { get; set; }
+
+        // --- Hồ sơ cư dân ---
+        public required string fullName { get; set; }
+        public required string phone { get; set; }
+        public string? idCard { get; set; }
+        public DateTime? dateOfBirth { get; set; }
+        public string? gender { get; set; }
+        public string? avatarUrl { get; set; }
+
+        // --- Căn hộ (chỉ dùng để ở) ---
+        public int? apartmentId { get; set; }
+        public bool isOwner { get; set; } = false;      // true = chủ hộ, false = người thuê
+        public DateTime? moveInDate { get; set; }
+
+        // --- Kinh doanh dịch vụ (nếu có) ---
+        public bool isBusinessOwner { get; set; } = false;
+        public string? businessCompanyName { get; set; }        // Tên công ty / hộ kinh doanh
+        public string? businessServiceCategories { get; set; }  // JSON array
+        public string? businessAddress { get; set; }
     }
 
     // ============================================================

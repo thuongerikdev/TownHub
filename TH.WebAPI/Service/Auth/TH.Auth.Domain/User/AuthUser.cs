@@ -22,8 +22,8 @@ namespace TH.Auth.Domain.User
         [Required, MaxLength(100)]
         public required string userName { get; set; }
 
-        [Required, MaxLength(255)]
-        public required string email { get; set; }
+        [MaxLength(255)]
+        public string? email { get; set; }
 
         [MaxLength(32)]
         public string? phoneNumber { get; set; }
