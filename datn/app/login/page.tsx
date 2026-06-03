@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldAlert, ArrowRight, Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
 import { useState, useRef } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -42,7 +41,7 @@ export default function LoginPage() {
         setTimeout(() => mfaRef.current?.focus(), 300);
         return;
       }
-      router.push("/");
+      router.push(result.isResident ? "/portal" : "/");
     } catch {
       setError("Lỗi kết nối. Vui lòng thử lại.");
     } finally {
@@ -194,12 +193,6 @@ export default function LoginPage() {
                   {loading ? "Đang đăng nhập..." : "Đăng Nhập"}
                 </button>
 
-                <p className="text-center text-sm text-zinc-500">
-                  Chưa có tài khoản?{" "}
-                  <Link href="/register" className="text-amber-500 hover:text-amber-400 font-semibold transition-colors">
-                    Đăng ký
-                  </Link>
-                </p>
               </motion.form>
             ) : (
               <motion.form

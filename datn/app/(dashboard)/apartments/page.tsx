@@ -3,14 +3,22 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Building2, MapPin, Home, Search, Plus, CheckCircle2, AlertCircle,
   Loader2, X, RefreshCw, Users, Phone, Mail, CreditCard, Pencil,
-  Trash2, Crown, UserPlus, ChevronRight,
+  Trash2, Crown, UserPlus, ChevronRight, Box, LayoutList,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { apartments, residents, users } from "@/lib/api";
 import type { ApartmentResponse, ResidentResponse, GetUserResponse } from "@/lib/api";
+import type { ApartmentInfo } from "@/components/Building3DModel";
+
+const Building3DModel = dynamic(() => import("@/components/Building3DModel"), { ssr: false });
 import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+const BUILDING_CODE_MAP: Record<string, string> = {
+  "Tòa A": "A", "Tòa B": "B", "Villa": "V",
+};
+
 const STATUS_LABELS: Record<string, string> = {
   occupied: "Đã có cư dân",
   vacant: "Đang trống",
@@ -115,6 +123,10 @@ export default function ApartmentsPage() {
   const [deletingResident, setDeletingResident] = useState<ResidentResponse | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // 3D model view
+  const [viewMode, setViewMode] = useState<"grid" | "model3d">("grid");
+  const [selected3dApt, setSelected3dApt] = useState<ApartmentInfo | null>(null);
+
   // ── Fetch apartments ──────────────────────────────────────────────────────
   const fetchApartments = useCallback(async () => {
     setLoading(true);
@@ -197,7 +209,7 @@ export default function ApartmentsPage() {
     if (systemUsers.length > 0) return;
     setLoadingUsers(true);
     try {
-      const res = await users.getAllAdmin();
+      const res = await users.getAll();
       if (res.errorCode === 200) setSystemUsers(res.data ?? []);
     } finally {
       setLoadingUsers(false);
@@ -297,6 +309,18 @@ export default function ApartmentsPage() {
     return onFloor && matchSearch;
   });
 
+  // For 3D model: derive building dimensions from real data
+  const model3dFloors = data.length > 0 ? Math.max(...data.map((a) => a.floor)) : 8;
+  const floorCounts = new Map<number, number>();
+  data.forEach((a) => floorCounts.set(a.floor, (floorCounts.get(a.floor) ?? 0) + 1));
+  const model3dAptsPerFloor = floorCounts.size > 0 ? Math.max(...floorCounts.values()) : 4;
+  const buildingCode = BUILDING_CODE_MAP[selectedBuilding] ?? "A";
+
+  // Real apartments on the floor selected in 3D
+  const floorApts = selected3dApt
+    ? data.filter((a) => a.floor === selected3dApt.floor)
+    : [];
+
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -334,6 +358,21 @@ export default function ApartmentsPage() {
             className="p-2 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
+          {/* View toggle */}
+          <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${viewMode === "grid" ? "bg-indigo-500 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              <LayoutList className="w-3.5 h-3.5" /> Sơ đồ
+            </button>
+            <button
+              onClick={() => { setViewMode("model3d"); setSelected3dApt(null); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${viewMode === "model3d" ? "bg-indigo-500 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              <Box className="w-3.5 h-3.5" /> Mô hình 3D
+            </button>
+          </div>
         </div>
       </motion.div>
 
@@ -343,8 +382,81 @@ export default function ApartmentsPage() {
         </div>
       )}
 
+      {/* ── 3D Model View ──────────────────────────────────────────────────── */}
+      {viewMode === "model3d" && (
+        <div className="flex gap-4 items-start">
+          {/* Canvas */}
+          <div className={`h-[620px] rounded-2xl overflow-hidden border border-white/5 transition-all ${selected3dApt ? "flex-1" : "w-full"}`}>
+            <Building3DModel
+              floors={model3dFloors}
+              apartmentsPerFloor={model3dAptsPerFloor}
+              buildingCode={buildingCode}
+              selectedAptId={selected3dApt?.aptId}
+              onApartmentClick={setSelected3dApt}
+            />
+          </div>
+
+          {/* Floor detail panel */}
+          <AnimatePresence>
+            {selected3dApt && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                className="w-72 flex-shrink-0 bg-[#0e0e1a] border border-white/8 rounded-2xl overflow-hidden flex flex-col max-h-[620px]"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                  <div>
+                    <p className="text-sm font-bold text-white">Tầng {selected3dApt.floor}</p>
+                    <p className="text-[10px] text-zinc-500">{floorApts.length} căn hộ · {selectedBuilding}</p>
+                  </div>
+                  <button onClick={() => setSelected3dApt(null)} className="text-zinc-500 hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {loading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-indigo-400" /></div>
+                  ) : floorApts.length === 0 ? (
+                    <p className="text-xs text-zinc-600 text-center py-8">Chưa có căn hộ nào trên tầng này</p>
+                  ) : floorApts.map((apt) => (
+                    <button
+                      key={apt.id}
+                      onClick={() => openApartment(apt)}
+                      className={`w-full text-left flex items-center justify-between px-3 py-2.5 rounded-xl border transition-colors ${
+                        apt.status === "occupied"
+                          ? "bg-emerald-500/8 border-emerald-500/20 hover:bg-emerald-500/15"
+                          : apt.status === "maintenance"
+                          ? "bg-amber-500/8 border-amber-500/20 hover:bg-amber-500/15"
+                          : "bg-white/[0.03] border-white/5 hover:bg-white/8"
+                      }`}
+                    >
+                      <div>
+                        <p className={`text-sm font-bold ${
+                          apt.status === "occupied" ? "text-emerald-400"
+                          : apt.status === "maintenance" ? "text-amber-400"
+                          : "text-zinc-300"
+                        }`}>{apt.code}</p>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">{apt.type} · {apt.areaM2}m²</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-medium ${
+                          apt.status === "occupied" ? "text-emerald-400"
+                          : apt.status === "maintenance" ? "text-amber-400"
+                          : "text-zinc-500"
+                        }`}>{STATUS_LABELS[apt.status]}</span>
+                        <ChevronRight className="w-3 h-3 text-zinc-600" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      {viewMode === "grid" && <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
           className="lg:col-span-1 space-y-4">
@@ -467,7 +579,7 @@ export default function ApartmentsPage() {
             </div>
           )}
         </motion.div>
-      </div>
+      </div>}
 
       {/* ── Apartment Detail Panel ── */}
       <AnimatePresence>

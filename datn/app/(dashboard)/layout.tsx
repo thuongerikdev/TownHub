@@ -6,19 +6,26 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Building2, BellRing, Settings,
   LogOut, Search, Menu, X, ShieldAlert, Loader2,
-  Shield, ClipboardList, FileText,
+  Shield, ClipboardList, UserCheck, Briefcase,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
-const NAV_ITEMS = [
+type NavSection = { section: true; label: string };
+type NavLink    = { section?: false; icon: React.ElementType; label: string; path: string; indent?: boolean };
+type NavEntry   = NavSection | NavLink;
+
+const NAV_ITEMS: NavEntry[] = [
   { icon: LayoutDashboard, label: "Tổng quan",              path: "/" },
-  { icon: Users,           label: "Tài khoản",              path: "/users" },
+  { icon: Users,           label: "Tài khoản & Phân quyền", path: "/users" },
   { icon: Building2,       label: "Định danh căn hộ",       path: "/apartments" },
-  { icon: BellRing,        label: "Thông báo",              path: "/notifications" },
-  { icon: Shield,          label: "Permissions",            path: "/permissions" },
-  { icon: ClipboardList,   label: "Vai trò & Gán quyền",    path: "/roles" },
-  { icon: FileText,        label: "Audit Log",              path: "/audit-logs" },
+  { section: true,         label: "Dịch vụ khu đô thị" },
+  // { icon: Building2,       label: "Quản lý toà nhà",        path: "/buildings",  indent: true },
+  // { icon: UserCheck,       label: "Cư dân",                 path: "/residents",  indent: true },
+  { icon: Briefcase,       label: "Nhà cung cấp dịch vụ",   path: "/providers",  indent: true },
+  { icon: BellRing,        label: "Trung tâm thông báo",    path: "/notifications" },
+  { icon: Shield,          label: "Phân quyền",             path: "/roles" },
+  { icon: ClipboardList,   label: "Audit Log",              path: "/audit-logs" },
   { icon: Settings,        label: "Cấu hình hệ thống",      path: "/settings" },
 ];
 
@@ -99,16 +106,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
           <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wider mb-2 px-2">Menu</p>
           <div className="space-y-0.5">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.map((item, idx) => {
+              if (item.section) {
+                return (
+                  <p key={idx} className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wider mt-3 mb-1 px-2">
+                    {item.label}
+                  </p>
+                );
+              }
               const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
               return (
                 <Link
                   key={item.path}
                   href={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-150 group relative text-sm ${
-                    isActive ? "text-amber-400 bg-amber-500/10" : "text-zinc-400 hover:text-white hover:bg-white/5"
-                  }`}
+                  className={`flex items-center gap-2.5 rounded-lg transition-all duration-150 group relative text-sm ${
+                    item.indent ? "px-3 py-2 ml-2" : "px-3 py-2.5"
+                  } ${isActive ? "text-amber-400 bg-amber-500/10" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
                 >
                   {isActive && (
                     <motion.div
@@ -116,8 +130,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       className="absolute inset-y-0 left-0 w-0.5 bg-amber-500 rounded-r-full"
                     />
                   )}
-                  <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-amber-500" : "group-hover:text-zinc-300 transition-colors"}`} />
-                  <span className="font-medium truncate">{item.label}</span>
+                  <item.icon className={`flex-shrink-0 ${item.indent ? "w-3.5 h-3.5" : "w-4 h-4"} ${isActive ? "text-amber-500" : "group-hover:text-zinc-300 transition-colors"}`} />
+                  <span className={`font-medium truncate ${item.indent ? "text-xs" : ""}`}>{item.label}</span>
                 </Link>
               );
             })}

@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { roles, type Role } from "@/lib/api";
-import RolePermissionModal from "@/components/RolePermissionModal";
 
 function scopeStyle(scope = "") {
   return scope === "staff"
@@ -278,7 +277,6 @@ export default function RolesPage() {
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
-  const [permissionTarget, setPermissionTarget] = useState<Role | null>(null);
 
   const fetchRoles = useCallback(async () => {
     setLoading(true);
@@ -409,10 +407,10 @@ export default function RolesPage() {
         ) : (
           <div className="space-y-6">
             {staffRoles.length > 0 && (
-              <RoleSection title="Nhóm Staff" icon="staff" items={staffRoles} onDelete={setDeleteTarget} onManagePermissions={setPermissionTarget} />
+              <RoleSection title="Nhóm Staff" icon="staff" items={staffRoles} onDelete={setDeleteTarget} />
             )}
             {userRoles.length > 0 && (
-              <RoleSection title="Nhóm User" icon="user" items={userRoles} onDelete={setDeleteTarget} onManagePermissions={setPermissionTarget} />
+              <RoleSection title="Nhóm User" icon="user" items={userRoles} onDelete={setDeleteTarget} />
             )}
           </div>
         )}
@@ -433,15 +431,6 @@ export default function RolesPage() {
             onDeleted={handleDeleted}
           />
         )}
-        {permissionTarget && (
-          <RolePermissionModal
-            roleID={permissionTarget.roleID}
-            roleName={permissionTarget.roleName}
-            roleDescription={permissionTarget.roleDescription}
-            onClose={() => setPermissionTarget(null)}
-            onSaved={fetchRoles}
-          />
-        )}
       </AnimatePresence>
     </>
   );
@@ -450,13 +439,12 @@ export default function RolesPage() {
 // ─── Role Section & Card ──────────────────────────────────────────────────────
 
 function RoleSection({
-  title, icon, items, onDelete, onManagePermissions,
+  title, icon, items, onDelete,
 }: {
   title: string;
   icon: "staff" | "user";
   items: Role[];
   onDelete: (role: Role) => void;
-  onManagePermissions: (role: Role) => void;
 }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
@@ -473,18 +461,14 @@ function RoleSection({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((role) => (
-          <RoleCard key={role.roleID} role={role} onDelete={onDelete} onManagePermissions={onManagePermissions} />
+          <RoleCard key={role.roleID} role={role} onDelete={onDelete} />
         ))}
       </div>
     </motion.div>
   );
 }
 
-function RoleCard({ role, onDelete, onManagePermissions }: {
-  role: Role;
-  onDelete: (role: Role) => void;
-  onManagePermissions: (role: Role) => void;
-}) {
+function RoleCard({ role, onDelete }: { role: Role; onDelete: (role: Role) => void }) {
   return (
     <div className="group bg-[#111] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all hover:bg-white/2">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -521,14 +505,6 @@ function RoleCard({ role, onDelete, onManagePermissions }: {
           {scopeLabel(role.scope)}
         </span>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => onManagePermissions(role)}
-            className="px-3 py-1.5 text-xs bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-all flex items-center gap-1"
-            title="Quản lý permissions"
-          >
-            <Shield className="w-3 h-3" />
-            Permissions
-          </button>
           <button
             onClick={() => onDelete(role)}
             className="px-3 py-1.5 text-xs bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 hover:bg-rose-500/20 transition-all flex items-center gap-1"

@@ -13,7 +13,8 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (userName: string, password: string) => Promise<{ requiresMfa?: boolean; mfaTicket?: string; error?: string }>;
+  isAdmin: boolean;
+  login: (userName: string, password: string) => Promise<{ requiresMfa?: boolean; mfaTicket?: string; error?: string; isResident?: boolean }>;
   completeMfa: (mfaTicket: string, code: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   hasPermission: (code: string) => boolean;
@@ -65,7 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = getToken();
     if (token) {
-      setState((s) => ({ ...s, token }));
+      const storedPermissions: string[] = JSON.parse(localStorage.getItem("permissions") ?? "[]");
+      const storedRoles: { roleID: number; roleName: string }[] = JSON.parse(localStorage.getItem("roles") ?? "[]");
+      setState((s) => ({ ...s, token, permissions: storedPermissions, roles: storedRoles }));
       refreshUser();
     } else {
       setState((s) => ({ ...s, loading: false }));
@@ -75,10 +78,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (userName: string, password: string) => {
       try {
-        const res = await auth.staffLogin(userName, password);
+        // Thử staff login trước
+        let res = await auth.staffLogin(userName, password);
+        let isResident = false;
 
         if (res.errorCode !== 200 || !res.data) {
-          return { error: res.errorMessage || "Sai tài khoản hoặc mật khẩu" };
+          // Fallback sang user login (cư dân)
+          res = await auth.userLogin(userName, password);
+          if (res.errorCode !== 200 || !res.data) {
+            return { error: res.errorMessage || "Sai tài khoản hoặc mật khẩu" };
+          }
+          isResident = true;
         }
 
         const d = res.data;
@@ -88,6 +98,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setToken(d.token);
+        localStorage.setItem("permissions", JSON.stringify(d.permissions ?? []));
+        localStorage.setItem("roles", JSON.stringify(d.roles ?? []));
         setState((s) => ({
           ...s,
           token: d.token,
@@ -97,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
 
         await refreshUser();
-        return {};
+        return { isResident };
       } catch (error) {
         return { error: error instanceof Error ? error.message : "Lỗi kết nối" };
       }
@@ -116,6 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const d = res.data;
         setToken(d.token);
+        localStorage.setItem("permissions", JSON.stringify(d.permissions ?? []));
+        localStorage.setItem("roles", JSON.stringify(d.roles ?? []));
         setState((s) => ({
           ...s,
           token: d.token,
@@ -179,6 +193,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Continue with logout even if API fails
     } finally {
       clearToken();
+      localStorage.removeItem("permissions");
+      localStorage.removeItem("roles");
       setState({
         user: null,
         permissions: [],
@@ -196,10 +212,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [state.permissions]
   );
 
+  const isAdmin = state.permissions.includes("user.create_bql");
+
   return (
     <AuthContext.Provider
       value={{
         ...state,
+        isAdmin,
         login,
         completeMfa,
         logout,
