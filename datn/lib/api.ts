@@ -780,7 +780,28 @@ export interface InvoiceItemResponse {
 export interface OcrJobResponse {
   id: string; documentType: string; status: string; reviewedBy?: string;
   fileUrl?: string; fileName?: string; fileSizeBytes?: number; confidenceScore?: number;
+  rawExtractedText?: string;   // JSON do worker OCR ghi: { rawText, fields, lineItems }
   errorMessage?: string; startedAt?: string; completedAt?: string; submittedBy?: string; submittedAt: string;
+}
+
+// Cấu trúc JSON bóc tách trong OcrJobResponse.rawExtractedText (worker serialize camelCase).
+export interface OcrExtractedFields {
+  invoiceNumber?: string; invoiceDate?: string; sellerName?: string; sellerTaxCode?: string;
+  subtotal?: number; taxAmount?: number; totalAmount?: number; currency?: string;
+}
+export interface OcrExtractedLineItem {
+  description?: string; quantity?: number; unitPrice?: number; totalPrice?: number;
+}
+export interface OcrExtractedPayload {
+  rawText?: string; fields?: OcrExtractedFields; lineItems?: OcrExtractedLineItem[];
+}
+/** Parse an toàn OcrJobResponse.rawExtractedText → payload có cấu trúc (trả null nếu lỗi/empty). */
+export function parseOcrPayload(raw?: string | null): OcrExtractedPayload | null {
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw) as OcrExtractedPayload;
+    return p && typeof p === "object" ? p : null;
+  } catch { return null; }
 }
 export interface CreatePurchaseRequestInput {
   prCode: string; ticketId?: string; woId?: string; departmentId?: string; requestedBy?: string; requestedByName?: string;
@@ -853,8 +874,9 @@ export const invoices = {
 export const ocrJobs = {
   getAll: (status?: string) => apiFetch<OcrJobResponse[]>(`/api/asset/ocr-job/get-all${qs({ status })}`, {}),
   getById: (id: string) => apiFetch<OcrJobResponse>(`/api/asset/ocr-job/get/${id}`, {}),
+  // submit trả về id (Guid) của job vừa tạo để FE điều hướng sang màn kết quả + poll.
   submit: (body: { documentType: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedBy?: string }) =>
-    apiFetch<boolean>(`/api/asset/ocr-job/submit`, { method: "POST", body: JSON.stringify(body) }),
+    apiFetch<string>(`/api/asset/ocr-job/submit`, { method: "POST", body: JSON.stringify(body) }),
   markReviewed: (id: string, reviewedBy: string) =>
     apiFetch<boolean>(`/api/asset/ocr-job/mark-reviewed/${id}`, { method: "PUT", body: JSON.stringify({ reviewedBy }) }),
 };

@@ -425,6 +425,7 @@ namespace TH.Asset.Dtos
         public string? fileUrl { get; set; }
         public string? fileName { get; set; }
         public int? fileSizeBytes { get; set; }
+        public string? rawExtractedText { get; set; }  // JSON: { rawText, fields, lineItems }
         public decimal? confidenceScore { get; set; }
         public string? errorMessage { get; set; }
         public DateTime? startedAt { get; set; }

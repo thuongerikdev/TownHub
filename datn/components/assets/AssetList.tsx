@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus, Boxes, QrCode, Pencil, Trash2, Download, AlertTriangle,
-  CheckCircle2, Wrench, Copy,
+  CheckCircle2, Wrench, Copy, ScanLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -74,6 +75,7 @@ function MaintenanceCell({ iso }: { iso?: string | null }) {
 }
 
 export default function AssetList() {
+  const router = useRouter();
   const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll(), { mock: mockAssets });
   const catsQ = useApiList(() => assetCategories.getAll(), { mock: mockAssetCategories });
   const locsQ = useApiList(() => assetLocations.getAll(), { mock: mockAssetLocations });
@@ -260,6 +262,7 @@ export default function AssetList() {
         icon={Boxes}
         actions={
           <>
+            <Button variant="outline" onClick={() => router.push("/assets/scan")}><ScanLine className="size-4" /> Quét QR</Button>
             <Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Xuất CSV</Button>
             <Button onClick={openCreate}><Plus className="size-4" /> Thêm tài sản</Button>
           </>
@@ -479,6 +482,35 @@ function DetailRow({ label, children, className }: { label: string; children: Re
 
 function QrDialog({ asset, onClose }: { asset: AssetResponse | null; onClose: () => void }) {
   const qrValue = asset ? `QR-${asset.assetCode}` : "";
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  // Sinh mã QR thật (PNG data URL) ngay trên trình duyệt — dán lên tài sản, quét được.
+  useEffect(() => {
+    let cancelled = false;
+    if (!asset) { setDataUrl(null); return; }
+    (async () => {
+      try {
+        const QRCode = (await import("qrcode")).default;
+        const url = await QRCode.toDataURL(qrValue, {
+          width: 256, margin: 2, errorCorrectionLevel: "M",
+          color: { dark: "#000000", light: "#ffffff" },
+        });
+        if (!cancelled) setDataUrl(url);
+      } catch {
+        if (!cancelled) setDataUrl(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [asset, qrValue]);
+
+  function downloadPng() {
+    if (!dataUrl || !asset) return;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `qr-${asset.assetCode}.png`;
+    a.click();
+  }
+
   return (
     <EntityModal
       open={!!asset}
@@ -487,8 +519,11 @@ function QrDialog({ asset, onClose }: { asset: AssetResponse | null; onClose: ()
       description={asset ? asset.name : ""}
       size="sm"
       footer={
-        <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border px-6 py-4">
           <Button variant="outline" onClick={onClose}>Đóng</Button>
+          <Button variant="outline" onClick={downloadPng} disabled={!dataUrl}>
+            <Download className="size-4" /> Tải PNG
+          </Button>
           <Button
             onClick={() => { navigator.clipboard?.writeText(qrValue); toast.success("Đã sao chép mã QR."); }}
           >
@@ -498,12 +533,17 @@ function QrDialog({ asset, onClose }: { asset: AssetResponse | null; onClose: ()
       }
     >
       <div className="flex flex-col items-center gap-4 py-2">
-        <div className="flex size-44 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/40">
-          <QrCode className="size-24 text-muted-foreground" />
+        <div className="flex size-52 items-center justify-center rounded-xl border border-border bg-white p-3">
+          {dataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={dataUrl} alt={`Mã QR ${qrValue}`} width={208} height={208} className="size-full" />
+          ) : (
+            <QrCode className="size-24 animate-pulse text-muted-foreground" />
+          )}
         </div>
         <code className="rounded-md bg-muted px-3 py-1.5 font-mono text-sm text-foreground">{qrValue}</code>
         <p className="text-center text-xs text-muted-foreground">
-          Dán mã này lên tài sản. Kỹ thuật viên quét để mở nhanh hồ sơ bảo trì.
+          Dán mã này lên tài sản. Kỹ thuật viên quét ở mục <strong className="text-foreground">Quét mã QR</strong> để mở nhanh hồ sơ bảo trì.
         </p>
       </div>
     </EntityModal>

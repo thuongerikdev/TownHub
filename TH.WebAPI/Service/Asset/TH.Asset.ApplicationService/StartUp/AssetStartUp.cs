@@ -15,6 +15,7 @@ using TH.Asset.ApplicationService.Service.Incident;
 using TH.Asset.ApplicationService.Service.Inventory;
 using TH.Asset.ApplicationService.Service.Vendor;
 using TH.Asset.ApplicationService.Service.System;
+using TH.Asset.ApplicationService.Service.Inventory.Ocr;
 
 namespace TH.Asset.ApplicationService.StartUp
 {
@@ -151,6 +152,28 @@ namespace TH.Asset.ApplicationService.StartUp
             // ── System / Reporting ──
             builder.Services.AddScoped<IKpiSnapshotService,        KpiSnapshotService>();
             builder.Services.AddScoped<ICostTrackingService,       CostTrackingService>();
+
+            // ── OCR đọc hoá đơn (VietOCR chạy trên Colab) ─────────────────
+            // Hàng đợi + worker xử lý nền. Engine chọn theo .env:
+            //   • Có OCR_SERVICE_URL  → gọi VietOCR thật (trừ khi OCR_ENGINE=mock)
+            //   • Không có            → MockOcrEngine (test luồng, không cần Colab)
+            builder.Services.AddSingleton<OcrJobQueue>();
+            builder.Services.AddHostedService<OcrProcessingWorker>();
+
+            var ocrUrl    = builder.Configuration["OCR_SERVICE_URL"];
+            var ocrEngine = (builder.Configuration["OCR_ENGINE"] ?? "").Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(ocrUrl) && ocrEngine != "mock")
+            {
+                builder.Services.AddHttpClient<IInvoiceOcrEngine, VietOcrEngine>(c =>
+                {
+                    c.BaseAddress = new Uri(ocrUrl!.TrimEnd('/') + "/");
+                    c.Timeout     = TimeSpan.FromSeconds(180);
+                });
+            }
+            else
+            {
+                builder.Services.AddScoped<IInvoiceOcrEngine, MockOcrEngine>();
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════

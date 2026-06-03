@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -26,6 +26,7 @@ const OCR_STATUS: Record<string, { tone: Tone; label: string }> = {
   QUEUED: { tone: "neutral", label: "Trong hàng đợi" },
   PROCESSING: { tone: "info", label: "Đang xử lý" },
   COMPLETED: { tone: "success", label: "Hoàn tất" },
+  DONE: { tone: "success", label: "Hoàn tất" },
   REVIEWED: { tone: "brand", label: "Đã duyệt" },
   FAILED: { tone: "danger", label: "Lỗi" },
 };
@@ -65,6 +66,15 @@ export default function OCRResult() {
 
   const job = jobQ.data;
 
+  // Tự động poll khi job còn đang trong hàng đợi / đang xử lý → cập nhật khi xong.
+  useEffect(() => {
+    const s = job?.status;
+    const active = s === "QUEUED" || s === "PROCESSING" || s === "PENDING";
+    if (!active) return;
+    const t = setInterval(() => jobQ.refetch(), 2500);
+    return () => clearInterval(t);
+  }, [job?.status, jobQ.refetch]);
+
   async function markReviewed() {
     if (!job) return;
     setReviewing(true);
@@ -79,7 +89,7 @@ export default function OCRResult() {
   }
 
   const st = job ? (OCR_STATUS[job.status] ?? OCR_STATUS.PENDING) : OCR_STATUS.PENDING;
-  const done = job?.status === "COMPLETED" || job?.status === "REVIEWED";
+  const done = job?.status === "COMPLETED" || job?.status === "DONE" || job?.status === "REVIEWED";
   const failed = job?.status === "FAILED";
   const processing = !!job && !done && !failed;
   const confidencePct = job?.confidenceScore != null ? Math.round(job.confidenceScore * 100) : null;

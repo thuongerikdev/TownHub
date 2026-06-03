@@ -9,6 +9,7 @@ using TH.Asset.Domain.Inventory;
 using TH.Asset.Dtos;
 using TH.Asset.Infrastructure.Database;
 using TH.Constant;
+using TH.Asset.ApplicationService.Service.Inventory.Ocr;
 
 using VendorEntity = TH.Asset.Domain.Vendor.Vendor;
 
@@ -1406,7 +1407,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
     // ============================================================
     public interface IOcrJobService
     {
-        Task<ResponseDto<bool>> SubmitAsync(CreateOcrJobDto request);
+        Task<ResponseDto<Guid>> SubmitAsync(CreateOcrJobDto request);
         Task<ResponseDto<List<OcrJobResponse>>> GetAllAsync(string? status = null);
         Task<ResponseDto<OcrJobResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> MarkReviewedAsync(Guid id, Guid reviewedBy);
@@ -1414,28 +1415,34 @@ namespace TH.Asset.ApplicationService.Service.Inventory
 
     public class OcrJobService : AssetServiceBase, IOcrJobService
     {
-        public OcrJobService(ILogger<OcrJobService> logger, AssetDbContext dbContext)
-            : base(logger, dbContext) { }
+        private readonly OcrJobQueue _queue;
+        public OcrJobService(ILogger<OcrJobService> logger, AssetDbContext dbContext, OcrJobQueue queue)
+            : base(logger, dbContext) => _queue = queue;
 
-        public async Task<ResponseDto<bool>> SubmitAsync(CreateOcrJobDto request)
+        public async Task<ResponseDto<Guid>> SubmitAsync(CreateOcrJobDto request)
         {
             try
             {
-                _dbContext.OcrJobs.Add(new OcrJob
+                var job = new OcrJob
                 {
-                    documentType = request.documentType,
-                    fileUrl      = request.fileUrl,
-                    fileName     = request.fileName,
+                    documentType  = request.documentType,
+                    fileUrl       = request.fileUrl,
+                    fileName      = request.fileName,
                     fileSizeBytes = request.fileSizeBytes,
-                    submittedBy  = request.submittedBy
-                });
+                    submittedBy   = request.submittedBy
+                };
+                _dbContext.OcrJobs.Add(job);
                 await _dbContext.SaveChangesAsync();
-                return ResponseConst.Success("Gửi job OCR thành công.", true);
+
+                // Đẩy vào hàng đợi để worker OCR xử lý nền (QUEUED → PROCESSING → COMPLETED/FAILED).
+                await _queue.EnqueueAsync(job.id);
+                // Trả id job mới để FE điều hướng sang màn kết quả và poll trạng thái.
+                return ResponseConst.Success("Gửi job OCR thành công.", job.id);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi submit OCR job.");
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<Guid>(500, "Lỗi hệ thống: " + ex.Message);
             }
         }
 
@@ -1507,6 +1514,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             fileUrl         = x.fileUrl,
             fileName        = x.fileName,
             fileSizeBytes   = x.fileSizeBytes,
+            rawExtractedText = x.rawExtractedText,
             confidenceScore = x.confidenceScore,
             errorMessage    = x.errorMessage,
             startedAt       = x.startedAt,

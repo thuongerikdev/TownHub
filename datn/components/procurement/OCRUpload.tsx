@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ScanLine, Upload, FileText, X, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ocrJobs, type OcrJobResponse } from "@/lib/api";
@@ -28,6 +29,7 @@ const OCR_STATUS: Record<string, { tone: Tone; label: string }> = {
   QUEUED: { tone: "neutral", label: "Trong hàng đợi" },
   PROCESSING: { tone: "info", label: "Đang xử lý" },
   COMPLETED: { tone: "success", label: "Hoàn tất" },
+  DONE: { tone: "success", label: "Hoàn tất" },
   REVIEWED: { tone: "brand", label: "Đã duyệt" },
   FAILED: { tone: "danger", label: "Lỗi" },
 };
@@ -39,7 +41,44 @@ function fileSize(bytes?: number): string {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
+/**
+ * Đọc tệp chứng từ → data URL để gửi kèm job OCR (hệ thống chưa có endpoint
+ * upload file riêng — theo đúng pattern PhotoCapture). Ảnh sẽ được thu nhỏ
+ * (≤1600px, JPEG q0.72) cho gọn; PDF/khác giữ nguyên data URL gốc.
+ * Worker OCR chỉ cần fileUrl không rỗng (engine thật đọc base64, mock bỏ qua).
+ */
+async function fileToDataUrl(file: File, maxDim = 1600, quality = 0.72): Promise<string> {
+  const raw = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("read-failed"));
+    reader.readAsDataURL(file);
+  });
+  if (!file.type.startsWith("image/")) return raw; // PDF & loại khác: giữ nguyên
+  try {
+    const img = document.createElement("img");
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("decode-failed"));
+      img.src = raw;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return raw;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return raw; // fallback: ảnh gốc
+  }
+}
+
 export default function OCRUpload() {
+  const router = useRouter();
   const jobsQ = useApiList<OcrJobResponse>(() => ocrJobs.getAll(), { mock: mockOcrJobs });
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -52,23 +91,39 @@ export default function OCRUpload() {
     [...jobsQ.items].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()),
   [jobsQ.items]);
 
+  // Còn job đang chạy → poll danh sách để trạng thái tự cập nhật.
+  const hasActive = recent.some((j) => j.status === "QUEUED" || j.status === "PROCESSING" || j.status === "PENDING");
+  useEffect(() => {
+    if (!hasActive) return;
+    const t = setInterval(() => jobsQ.refetch(), 3000);
+    return () => clearInterval(t);
+  }, [hasActive, jobsQ.refetch]);
+
   async function submit() {
     if (!file) { toast.error("Hãy chọn tệp chứng từ để xử lý."); return; }
     setSubmitting(true);
-    const res = await ocrJobs.submit({
-      documentType: docType,
-      fileName: file.name,
-      fileSizeBytes: file.size,
-      submittedBy: submittedBy || undefined,
-    });
-    setSubmitting(false);
-    if (res.errorCode === 200) {
-      toast.success("Đã gửi chứng từ vào hàng đợi OCR.");
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-      jobsQ.refetch();
-    } else {
-      toast.error(res.errorMessage || "Gửi xử lý OCR thất bại.");
+    try {
+      const fileUrl = await fileToDataUrl(file);
+      const res = await ocrJobs.submit({
+        documentType: docType,
+        fileUrl,
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        submittedBy: submittedBy || undefined,
+      });
+      if (res.errorCode === 200 && res.data) {
+        toast.success("Đã gửi chứng từ. Đang nhận diện…");
+        setFile(null);
+        if (fileRef.current) fileRef.current.value = "";
+        // Sang màn kết quả của job vừa tạo để theo dõi tiến trình OCR (tự poll).
+        router.push(`/procurement/ocr/${res.data}/result`);
+      } else {
+        toast.error(res.errorMessage || "Gửi xử lý OCR thất bại.");
+      }
+    } catch {
+      toast.error("Không đọc được tệp chứng từ. Vui lòng thử tệp khác.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -154,7 +209,7 @@ export default function OCRUpload() {
           <ul className="divide-y divide-border">
             {recent.map((j) => {
               const st = OCR_STATUS[j.status] ?? OCR_STATUS.PENDING;
-              const done = j.status === "COMPLETED" || j.status === "REVIEWED";
+              const done = j.status === "COMPLETED" || j.status === "DONE" || j.status === "REVIEWED";
               const row = (
                 <div className="flex items-center gap-3 px-5 py-3">
                   <FileText className="size-5 shrink-0 text-muted-foreground" />

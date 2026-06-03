@@ -41,6 +41,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
         icon: Boxes, label: "Tài sản", path: "/assets",
         children: [
           { label: "Danh sách tài sản", path: "/assets", perm: "asset.view" },
+          { label: "Quét mã QR", path: "/assets/scan", perm: "asset.view" },
           { label: "Danh mục", path: "/assets/categories", perm: "asset.view" },
           { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
         ],

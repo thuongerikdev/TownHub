@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  invoices, ocrJobs, vendorsApi, purchaseOrders,
+  invoices, ocrJobs, vendorsApi, purchaseOrders, parseOcrPayload,
   type OcrJobResponse, type VendorResponse, type PurchaseOrderResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
@@ -46,6 +46,22 @@ function plusDaysISO(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
+}
+/** Chuẩn hóa chuỗi ngày do OCR trả (ISO, dd/mm/yyyy, dd-mm-yyyy) → input[type=date] (YYYY-MM-DD). */
+function toDateInput(s?: string): string | null {
+  if (!s) return null;
+  const t = s.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  const m = t.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  }
+  const d = new Date(t);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+function normTax(s?: string | null): string {
+  return (s ?? "").replace(/[\s\-]/g, "");
 }
 
 export default function InvoiceVerify() {
@@ -96,6 +112,48 @@ export default function InvoiceVerify() {
 
   const job = jobQ.data;
   const anyMock = jobQ.isMock || vendorsQ.isMock || poQ.isMock;
+
+  // ── Tiền điền từ dữ liệu AI OCR (chạy 1 lần khi có payload + vendors đã tải) ──
+  const ocr = useMemo(() => parseOcrPayload(job?.rawExtractedText), [job?.rawExtractedText]);
+  const ocrFields = ocr?.fields;
+  const [aiPrefilled, setAiPrefilled] = useState(false);
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (prefilledRef.current) return;
+    if (!ocr || vendorsQ.loading) return;
+    prefilledRef.current = true;
+
+    const f = ocr.fields ?? {};
+    if (f.invoiceNumber) setInvoiceNumber(f.invoiceNumber);
+    const d = toDateInput(f.invoiceDate);
+    if (d) setInvoiceDate(d);
+    if (f.subtotal && f.subtotal > 0 && f.taxAmount != null) {
+      const r = Math.round((f.taxAmount / f.subtotal) * 100);
+      if (r >= 0 && r <= 100) setTaxRate(r);
+    }
+
+    const li: LineItem[] = (ocr.lineItems ?? [])
+      .map((it) => {
+        const qty = it.quantity && it.quantity > 0 ? it.quantity : 1;
+        const unit = it.unitPrice ?? (it.totalPrice != null ? it.totalPrice / qty : 0);
+        return { name: (it.description ?? "").trim(), quantity: qty, unitPrice: Math.round(unit) };
+      })
+      .filter((it) => it.name || it.unitPrice > 0);
+    if (li.length) setItems(li);
+    else if (f.subtotal && f.subtotal > 0) {
+      setItems([{
+        name: f.sellerName ? `Hàng hóa/dịch vụ — ${f.sellerName}` : "Theo chứng từ OCR",
+        quantity: 1, unitPrice: Math.round(f.subtotal),
+      }]);
+    }
+
+    if (f.sellerTaxCode) {
+      const v = vendorsQ.items.find((vd) => normTax(vd.taxId) === normTax(f.sellerTaxCode));
+      if (v) setVendorId((cur) => cur || v.id);
+    }
+    setAiPrefilled(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ocr, vendorsQ.loading, vendorsQ.items]);
 
   const selectedPo = poId === NONE ? undefined : poQ.items.find((p) => p.id === poId);
   const selectedVendor = vendorsQ.items.find((v) => v.id === vendorId);
@@ -211,6 +269,23 @@ export default function InvoiceVerify() {
                   )}
                 </div>
               </div>
+
+              {ocrFields ? (
+                <dl className="mt-4 space-y-1.5 rounded-lg border border-info/20 bg-surface/70 p-3 text-sm">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-info">Dữ liệu AI đọc được</p>
+                  <OcrRow label="Số hóa đơn" value={ocrFields.invoiceNumber} />
+                  <OcrRow label="Ngày hóa đơn" value={ocrFields.invoiceDate} />
+                  <OcrRow label="Nhà cung cấp" value={ocrFields.sellerName} />
+                  <OcrRow label="Mã số thuế" value={ocrFields.sellerTaxCode} mono />
+                  <OcrRow label="Tạm tính" value={ocrFields.subtotal != null ? formatCurrency(ocrFields.subtotal) : undefined} />
+                  <OcrRow label="Thuế" value={ocrFields.taxAmount != null ? formatCurrency(ocrFields.taxAmount) : undefined} />
+                  <OcrRow label="Tổng cộng" value={ocrFields.totalAmount != null ? formatCurrency(ocrFields.totalAmount) : undefined} strong />
+                </dl>
+              ) : job && job.status !== "COMPLETED" && job.status !== "DONE" && job.status !== "REVIEWED" ? (
+                <p className="mt-4 rounded-lg border border-dashed border-info/30 bg-surface/60 p-3 text-xs text-muted-foreground">
+                  Chứng từ chưa xử lý xong hoặc không bóc tách được dữ liệu — nhập tay ở cột bên phải.
+                </p>
+              ) : null}
             </div>
 
             {/* Smart Mapping với PO */}
@@ -323,7 +398,14 @@ export default function InvoiceVerify() {
           {/* ============ RIGHT: Hóa đơn (chỉnh sửa) ============ */}
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-surface p-5">
-              <h3 className="mb-4 text-sm font-semibold text-foreground">Thông tin hóa đơn</h3>
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-foreground">Thông tin hóa đơn</h3>
+                {aiPrefilled && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-info/30 bg-info/10 px-2 py-0.5 text-xs font-medium text-info">
+                    <Sparkles className="size-3" /> AI tự điền
+                  </span>
+                )}
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Mã hóa đơn" required>
                   <Input value={invoiceCode} disabled />
@@ -449,6 +531,32 @@ export default function InvoiceVerify() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Một dòng dữ liệu AI bóc tách (read-only) trong thẻ "Chứng từ gốc". */
+function OcrRow({
+  label, value, mono, strong,
+}: {
+  label: string;
+  value?: string;
+  mono?: boolean;
+  strong?: boolean;
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd
+        className={cn(
+          "min-w-0 break-words text-right",
+          value ? "text-foreground" : "text-muted-foreground",
+          mono && "font-mono",
+          strong ? "font-semibold tabular-nums" : "font-medium",
+        )}
+      >
+        {value || "—"}
+      </dd>
     </div>
   );
 }
