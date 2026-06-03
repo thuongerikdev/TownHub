@@ -13,6 +13,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         private readonly ILogger<MockOcrEngine> _logger;
         public MockOcrEngine(ILogger<MockOcrEngine> logger) => _logger = logger;
 
+        // Mock bỏ qua fileUrl (không fetch) → không cần URL http, không cần Cloudinary.
+        public bool RequiresHostedUrl => false;
+
         public async Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default)
         {
             _logger.LogInformation("[OCR-MOCK] Giả lập đọc hoá đơn từ: {Url}", fileUrl);

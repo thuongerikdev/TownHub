@@ -28,6 +28,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
             _apiKey  = config["OCR_API_KEY"] ?? "";
         }
 
+        // VietOCR service fetch ảnh qua requests.get(fileUrl) → bắt buộc URL http(s) tải được.
+        public bool RequiresHostedUrl => true;
+
         public async Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default)
         {
             try

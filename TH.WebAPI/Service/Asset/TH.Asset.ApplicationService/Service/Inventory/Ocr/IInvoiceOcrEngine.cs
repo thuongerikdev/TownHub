@@ -11,6 +11,14 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
     /// </summary>
     public interface IInvoiceOcrEngine
     {
+        /// <summary>
+        /// Engine có cần <c>fileUrl</c> là URL http(s) tải được không?
+        /// Engine thật (VietOCR trên Colab) fetch ảnh qua <c>requests.get(fileUrl)</c> nên
+        /// KHÔNG đọc được <c>data:</c> URL → worker phải upload lên kho ảnh trước.
+        /// Mock engine bỏ qua fileUrl nên trả <c>false</c> (test không cần Cloudinary).
+        /// </summary>
+        bool RequiresHostedUrl { get; }
+
         Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default);
     }
 
