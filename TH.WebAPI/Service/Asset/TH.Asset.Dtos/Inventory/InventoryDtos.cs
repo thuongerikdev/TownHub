@@ -412,8 +412,9 @@ namespace TH.Asset.Dtos
         public string? fileUrl { get; set; }
         public string? fileName { get; set; }
         public int? fileSizeBytes { get; set; }
-        // Cross-service (Auth)
+        // Cross-service (Auth) — luôn nhận EMPTY_GUID từ FE; tên ghi vào submittedByName
         public Guid? submittedBy { get; set; }
+        public string? submittedByName { get; set; }
     }
 
     public class OcrJobResponse
@@ -422,6 +423,7 @@ namespace TH.Asset.Dtos
         public string documentType { get; set; } = null!;
         public string status { get; set; } = null!;  // QUEUED | PROCESSING | DONE | FAILED
         public Guid? reviewedBy { get; set; }
+        public string? reviewedByName { get; set; }
         public string? fileUrl { get; set; }
         public string? fileName { get; set; }
         public int? fileSizeBytes { get; set; }
@@ -431,6 +433,7 @@ namespace TH.Asset.Dtos
         public DateTime? startedAt { get; set; }
         public DateTime? completedAt { get; set; }
         public Guid? submittedBy { get; set; }
+        public string? submittedByName { get; set; }
         public DateTime submittedAt { get; set; }
     }
 }

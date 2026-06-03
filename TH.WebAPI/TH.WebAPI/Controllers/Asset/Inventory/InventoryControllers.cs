@@ -11,7 +11,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
     public record ApproveRequestBody(Guid ApprovedBy);
     public record RejectRequestBody(string Reason);
     public record MarkPaidRequestBody(string PaymentMethod, Guid ConfirmedBy);
-    public record MarkReviewedRequestBody(Guid ReviewedBy);
+    public record MarkReviewedRequestBody(Guid ReviewedBy, string? ReviewedByName = null);
 
     // ════════════════════════════════════════════════════════════════════════
     // WAREHOUSE CONTROLLER
@@ -485,7 +485,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         [HttpPut("mark-reviewed/{id}")]
         public async Task<IActionResult> MarkReviewed(Guid id, [FromBody] MarkReviewedRequestBody body)
         {
-            var result = await _service.MarkReviewedAsync(id, body.ReviewedBy);
+            var result = await _service.MarkReviewedAsync(id, body.ReviewedBy, body.ReviewedByName);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);

@@ -418,6 +418,9 @@ namespace TH.Asset.Domain.Inventory
 
         // Cross-service (Auth) — không dùng navigation property
         public Guid? reviewedBy { get; set; }
+        // Tên người duyệt (free-text) — đi kèm reviewedBy do chưa có Auth directory
+        [MaxLength(150)]
+        public string? reviewedByName { get; set; }
 
         // Patch fields
         public string? fileUrl { get; set; }
@@ -431,6 +434,9 @@ namespace TH.Asset.Domain.Inventory
         public DateTime? completedAt { get; set; }
         // Cross-service (Auth) — không dùng navigation property
         public Guid? submittedBy { get; set; }
+        // Tên người gửi (free-text) — đi kèm submittedBy do chưa có Auth directory
+        [MaxLength(150)]
+        public string? submittedByName { get; set; }
         public DateTime submittedAt { get; set; } = DateTime.UtcNow;
 
         // ── Navigation Properties (inverse) ──

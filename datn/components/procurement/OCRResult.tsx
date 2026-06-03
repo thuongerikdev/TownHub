@@ -7,7 +7,7 @@ import {
   ScanLine, ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw, FileCheck2, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ocrJobs, type OcrJobResponse } from "@/lib/api";
+import { ocrJobs, displayUser, type OcrJobResponse } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { mockOcrJobs } from "@/lib/mock/procurement";
 import {
@@ -78,7 +78,7 @@ export default function OCRResult() {
   async function markReviewed() {
     if (!job) return;
     setReviewing(true);
-    const res = await ocrJobs.markReviewed(job.id, reviewedBy || "Kế toán");
+    const res = await ocrJobs.markReviewed(job.id, reviewedBy || undefined);
     setReviewing(false);
     if (res.errorCode === 200) {
       toast.success("Đã đánh dấu chứng từ đã duyệt.");
@@ -180,11 +180,13 @@ export default function OCRResult() {
               <Meta label="Loại chứng từ" value={DOC_LABEL[job.documentType] ?? job.documentType} />
               <Meta label="Tên tệp" value={job.fileName ?? "—"} />
               <Meta label="Kích thước" value={fileSize(job.fileSizeBytes)} />
-              <Meta label="Người gửi" value={job.submittedBy ?? "—"} />
+              <Meta label="Người gửi" value={job.submittedByName ?? displayUser(job.submittedBy) ?? "—"} />
               <Meta label="Thời gian gửi" value={formatDateTime(job.submittedAt)} />
               <Meta label="Bắt đầu xử lý" value={formatDateTime(job.startedAt)} />
               <Meta label="Hoàn tất" value={formatDateTime(job.completedAt)} />
-              {job.reviewedBy && <Meta label="Người duyệt" value={job.reviewedBy} />}
+              {(job.reviewedByName ?? displayUser(job.reviewedBy)) && (
+                <Meta label="Người duyệt" value={job.reviewedByName ?? displayUser(job.reviewedBy)} />
+              )}
             </dl>
           </div>
 

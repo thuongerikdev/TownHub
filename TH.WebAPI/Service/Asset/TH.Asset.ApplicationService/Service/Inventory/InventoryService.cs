@@ -1410,7 +1410,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<Guid>> SubmitAsync(CreateOcrJobDto request);
         Task<ResponseDto<List<OcrJobResponse>>> GetAllAsync(string? status = null);
         Task<ResponseDto<OcrJobResponse>> GetByIdAsync(Guid id);
-        Task<ResponseDto<bool>> MarkReviewedAsync(Guid id, Guid reviewedBy);
+        Task<ResponseDto<bool>> MarkReviewedAsync(Guid id, Guid reviewedBy, string? reviewedByName = null);
     }
 
     public class OcrJobService : AssetServiceBase, IOcrJobService
@@ -1428,8 +1428,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     documentType  = request.documentType,
                     fileUrl       = request.fileUrl,
                     fileName      = request.fileName,
-                    fileSizeBytes = request.fileSizeBytes,
-                    submittedBy   = request.submittedBy
+                    fileSizeBytes   = request.fileSizeBytes,
+                    submittedBy     = request.submittedBy,
+                    submittedByName = request.submittedByName
                 };
                 _dbContext.OcrJobs.Add(job);
                 await _dbContext.SaveChangesAsync();
@@ -1484,7 +1485,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<bool>> MarkReviewedAsync(Guid id, Guid reviewedBy)
+        public async Task<ResponseDto<bool>> MarkReviewedAsync(Guid id, Guid reviewedBy, string? reviewedByName = null)
         {
             try
             {
@@ -1494,6 +1495,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
 
                 entity.status     = "REVIEWED";
                 entity.reviewedBy = reviewedBy;
+                if (!string.IsNullOrWhiteSpace(reviewedByName)) entity.reviewedByName = reviewedByName;
 
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Đánh dấu OCR job đã xem xét thành công.", true);
@@ -1511,6 +1513,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             documentType    = x.documentType,
             status          = x.status,
             reviewedBy      = x.reviewedBy,
+            reviewedByName  = x.reviewedByName,
             fileUrl         = x.fileUrl,
             fileName        = x.fileName,
             fileSizeBytes   = x.fileSizeBytes,
@@ -1520,6 +1523,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             startedAt       = x.startedAt,
             completedAt     = x.completedAt,
             submittedBy     = x.submittedBy,
+            submittedByName = x.submittedByName,
             submittedAt     = x.submittedAt
         };
     }

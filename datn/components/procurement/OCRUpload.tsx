@@ -109,7 +109,7 @@ export default function OCRUpload() {
         fileUrl,
         fileName: file.name,
         fileSizeBytes: file.size,
-        submittedBy: submittedBy || undefined,
+        submittedByName: submittedBy || undefined,
       });
       if (res.errorCode === 200 && res.data) {
         toast.success("Đã gửi chứng từ. Đang nhận diện…");

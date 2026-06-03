@@ -136,8 +136,8 @@ namespace TH.Asset.ApplicationService.StartUp
                 context.MaterialCategories.AddRange(mcat.Values);
 
                 // ── OCR jobs (độc lập) ──
-                var ocr1 = new OcrJob { documentType = "INVOICE", status = "COMPLETED", fileName = "hoa-don-hoaphat-0325.pdf", fileSizeBytes = 245_000, confidenceScore = 0.96m, rawExtractedText = "HÓA ĐƠN GTGT - Hòa Phát - Tổng: 9.350.000đ", startedAt = Utc(2026, 3, 20, 9, 10), completedAt = Utc(2026, 3, 20, 9, 11), submittedBy = MANAGER, reviewedBy = MANAGER, submittedAt = Utc(2026, 3, 20, 9, 9) };
-                var ocr2 = new OcrJob { documentType = "INVOICE", status = "PROCESSING", fileName = "hoa-don-dienquang-0526.pdf", fileSizeBytes = 198_000, submittedBy = KTV1, submittedAt = now.AddHours(-2) };
+                var ocr1 = new OcrJob { documentType = "INVOICE", status = "COMPLETED", fileName = "hoa-don-hoaphat-0325.pdf", fileSizeBytes = 245_000, confidenceScore = 0.96m, rawExtractedText = "HÓA ĐƠN GTGT - Hòa Phát - Tổng: 9.350.000đ", startedAt = Utc(2026, 3, 20, 9, 10), completedAt = Utc(2026, 3, 20, 9, 11), submittedBy = MANAGER, submittedByName = "Kế toán", reviewedBy = MANAGER, reviewedByName = "Quản lý tòa nhà", submittedAt = Utc(2026, 3, 20, 9, 9) };
+                var ocr2 = new OcrJob { documentType = "INVOICE", status = "PROCESSING", fileName = "hoa-don-dienquang-0526.pdf", fileSizeBytes = 198_000, submittedBy = KTV1, submittedByName = "Kế toán", submittedAt = now.AddHours(-2) };
                 context.OcrJobs.AddRange(ocr1, ocr2);
 
                 await context.SaveChangesAsync();
