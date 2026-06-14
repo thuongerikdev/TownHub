@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ScanLine, Upload, FileText, X, ChevronRight, Sparkles } from "lucide-react";
+import { ScanLine, Upload, FileText, X, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ocrJobs, type OcrJobResponse } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -244,9 +244,12 @@ export default function OCRUpload() {
             {recent.map((j) => {
               const st = OCR_STATUS[j.status] ?? OCR_STATUS.PENDING;
               const done = j.status === "COMPLETED" || j.status === "DONE" || j.status === "REVIEWED";
+              const active = j.status === "QUEUED" || j.status === "PROCESSING" || j.status === "PENDING";
               const row = (
                 <div className="flex items-center gap-3 px-5 py-3">
-                  <FileText className="size-5 shrink-0 text-muted-foreground" />
+                  {active
+                    ? <Loader2 className="size-5 shrink-0 animate-spin text-info" />
+                    : <FileText className="size-5 shrink-0 text-muted-foreground" />}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{j.fileName ?? "(không tên)"}</p>
                     <p className="text-xs text-muted-foreground">
