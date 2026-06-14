@@ -415,6 +415,8 @@ namespace TH.Asset.Dtos
         // Cross-service (Auth) — luôn nhận EMPTY_GUID từ FE; tên ghi vào submittedByName
         public Guid? submittedBy { get; set; }
         public string? submittedByName { get; set; }
+        // Engine OCR: "vietocr" | "gemini" (mặc định "gemini")
+        public string? ocrEngine { get; set; }
     }
 
     public class OcrJobResponse
@@ -435,5 +437,6 @@ namespace TH.Asset.Dtos
         public Guid? submittedBy { get; set; }
         public string? submittedByName { get; set; }
         public DateTime submittedAt { get; set; }
+        public string ocrEngine { get; set; } = "gemini";
     }
 }

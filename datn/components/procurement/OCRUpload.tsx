@@ -83,6 +83,7 @@ export default function OCRUpload() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState("INVOICE");
+  const [ocrEngine, setOcrEngine] = useState("gemini");
   const [file, setFile] = useState<File | null>(null);
   const [submittedBy, setSubmittedBy] = useState("Kế toán");
   const [submitting, setSubmitting] = useState(false);
@@ -116,6 +117,7 @@ export default function OCRUpload() {
         fileName: file.name,
         fileSizeBytes: file.size,
         submittedByName: submittedBy || undefined,
+        ocrEngine,
       });
       if (res.errorCode === 200 && res.data) {
         toast.success("Đã gửi chứng từ. Đang nhận diện…");
@@ -156,6 +158,32 @@ export default function OCRUpload() {
           </Field>
           <Field label="Người gửi">
             <Input value={submittedBy} onChange={(e) => setSubmittedBy(e.target.value)} placeholder="VD: Kế toán" />
+          </Field>
+        </div>
+
+        <div className="mb-4">
+          <Field label="Phương thức nhận diện">
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: "gemini", label: "Gemini Vision", desc: "AI đọc ảnh trực tiếp — chính xác hơn, xử lý mọi layout" },
+                { value: "vietocr", label: "VietOCR + Regex", desc: "OCR truyền thống — nhanh hơn, phù hợp hóa đơn chuẩn" },
+              ].map((e) => (
+                <button
+                  key={e.value}
+                  type="button"
+                  onClick={() => setOcrEngine(e.value)}
+                  className={[
+                    "flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-colors",
+                    ocrEngine === e.value
+                      ? "border-brand bg-brand/5 text-foreground"
+                      : "border-border bg-surface-2/30 text-muted-foreground hover:border-border/80",
+                  ].join(" ")}
+                >
+                  <span className="text-sm font-medium">{e.label}</span>
+                  <span className="text-xs leading-snug">{e.desc}</span>
+                </button>
+              ))}
+            </div>
           </Field>
         </div>
 
@@ -223,6 +251,7 @@ export default function OCRUpload() {
                     <p className="truncate text-sm font-medium text-foreground">{j.fileName ?? "(không tên)"}</p>
                     <p className="text-xs text-muted-foreground">
                       {DOC_LABEL[j.documentType] ?? j.documentType} · {fileSize(j.fileSizeBytes)} · {formatDateTime(j.submittedAt)}
+                      {j.ocrEngine && <span className="ml-1 rounded bg-surface-2 px-1 py-0.5 font-mono text-[10px]">{j.ocrEngine}</span>}
                     </p>
                     {j.status === "FAILED" && j.errorMessage && (
                       <p className="mt-0.5 text-xs text-danger">{j.errorMessage}</p>

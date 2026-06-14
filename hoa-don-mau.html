@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hóa đơn mẫu</title>
+<style>
+  body { background: #eee; display: flex; justify-content: center; padding: 2rem; font-family: 'Times New Roman', serif; }
+  .invoice { background: #fff; width: 700px; padding: 2.5rem; border: 1px solid #ccc; color: #111; font-size: 13px; line-height: 1.6; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .title { font-size: 22px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+  .sub { font-size: 11px; color: #555; }
+  hr { border: none; border-top: 1px solid #888; margin: 12px 0; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+  th, td { border: 1px solid #888; padding: 5px 7px; }
+  th { background: #f0f0f0; text-align: center; }
+  .right { text-align: right; }
+  .center-cell { text-align: center; }
+  .summary-table { margin-left: auto; font-size: 12px; border-collapse: collapse; }
+  .summary-table td { padding: 3px 8px; }
+  .total-row td { font-weight: bold; font-size: 14px; border-top: 1px solid #888; padding-top: 6px; }
+  .sig-grid { display: grid; grid-template-columns: 1fr 1fr; text-align: center; margin-top: 2rem; font-size: 12px; gap: 8px; }
+  .sig-line { border-top: 1px dotted #888; padding-top: 4px; color: #888; font-style: italic; margin-top: 60px; }
+  @media print { body { background: white; padding: 0; } .invoice { border: none; } }
+</style>
+</head>
+<body>
+<div class="invoice">
+  <div class="center">
+    <div class="sub">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="sub" style="margin-bottom:6px">Độc lập - Tự do - Hạnh phúc</div>
+    <div class="title">Hóa đơn giá trị gia tăng</div>
+    <div class="sub">VAT INVOICE</div>
+    <div style="font-size:12px;margin-top:6px">
+      Ký hiệu (Serial): <strong>AA/24E</strong> &nbsp;&nbsp; Số (No.): <strong>0001234</strong>
+    </div>
+    <div class="sub">Ngày (Date): <strong>14 tháng 06 năm 2026</strong></div>
+  </div>
+
+  <hr />
+
+  <div class="info-grid">
+    <div>
+      <div><strong>Đơn vị bán hàng:</strong> Công ty TNHH Thương Mại ABC</div>
+      <div><strong>Mã số thuế:</strong> 0123456789</div>
+      <div><strong>Địa chỉ:</strong> 123 Đường Nguyễn Huệ, Q.1, TP.HCM</div>
+      <div><strong>Điện thoại:</strong> 028 3812 3456</div>
+    </div>
+    <div>
+      <div><strong>Người mua hàng:</strong> Nguyễn Văn An</div>
+      <div><strong>Đơn vị:</strong> Công ty CP TownHub</div>
+      <div><strong>Mã số thuế:</strong> 0987654321</div>
+      <div><strong>Địa chỉ:</strong> 456 Lê Lợi, Q.3, TP.HCM</div>
+      <div><strong>Hình thức thanh toán:</strong> Chuyển khoản</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px">STT</th>
+        <th style="text-align:left">Tên hàng hóa, dịch vụ</th>
+        <th style="width:50px">ĐVT</th>
+        <th style="width:60px">Số lượng</th>
+        <th style="width:100px">Đơn giá</th>
+        <th style="width:100px">Thành tiền</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="center-cell">1</td>
+        <td>Máy tính xách tay Dell Inspiron 15</td>
+        <td class="center-cell">Cái</td>
+        <td class="center-cell">2</td>
+        <td class="right">12.500.000</td>
+        <td class="right">25.000.000</td>
+      </tr>
+      <tr>
+        <td class="center-cell">2</td>
+        <td>Chuột không dây Logitech M705</td>
+        <td class="center-cell">Cái</td>
+        <td class="center-cell">5</td>
+        <td class="right">450.000</td>
+        <td class="right">2.250.000</td>
+      </tr>
+      <tr>
+        <td class="center-cell">3</td>
+        <td>Bàn phím cơ Keychron K2</td>
+        <td class="center-cell">Cái</td>
+        <td class="center-cell">3</td>
+        <td class="right">1.800.000</td>
+        <td class="right">5.400.000</td>
+      </tr>
+      <tr><td colspan="6" style="border:none;padding:4px"></td></tr>
+    </tbody>
+  </table>
+
+  <table class="summary-table" style="width:320px">
+    <tr>
+      <td style="text-align:right;color:#444">Cộng tiền hàng:</td>
+      <td class="right" style="width:130px">32.650.000 đ</td>
+    </tr>
+    <tr>
+      <td style="text-align:right;color:#444">Thuế suất VAT (10%):</td>
+      <td class="right">3.265.000 đ</td>
+    </tr>
+    <tr class="total-row">
+      <td style="text-align:right">Tổng cộng tiền thanh toán:</td>
+      <td class="right">35.915.000 đ</td>
+    </tr>
+  </table>
+
+  <div style="font-size:12px;margin-top:14px">
+    <strong>Số tiền bằng chữ:</strong> Ba mươi lăm triệu chín trăm mười lăm nghìn đồng chẵn.
+  </div>
+
+  <div class="sig-grid">
+    <div>
+      <div class="bold">Người mua hàng</div>
+      <div class="sub">(Ký, ghi rõ họ tên)</div>
+      <div class="sig-line">Nguyễn Văn An</div>
+    </div>
+    <div>
+      <div class="bold">Người bán hàng</div>
+      <div class="sub">(Ký, đóng dấu, ghi rõ họ tên)</div>
+      <div class="sig-line">Trần Thị Bình</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -19,7 +19,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         /// </summary>
         bool RequiresHostedUrl { get; }
 
-        Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default);
+        Task<OcrExtractionResult> ExtractAsync(string fileUrl, string ocrEngine = "gemini", CancellationToken ct = default);
     }
 
     /// <summary>Kết quả OCR đã chuẩn hoá để worker ghi vào OcrJob + (sau này) Invoice.</summary>

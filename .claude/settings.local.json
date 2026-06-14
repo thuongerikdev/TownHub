@@ -19,7 +19,12 @@
       "Bash(xargs grep -l \"errorCode\\\\|errorMessage\")",
       "Bash(xargs grep -l \"cloudinary\\\\|signature\\\\|ocr\")",
       "Bash(xargs grep -l \"cloudinary\\\\|Cloudinary\\\\|signature\\\\|Signature\")",
-      "Bash(xargs grep -l \"UserSecretsId\")"
+      "Bash(xargs grep -l \"UserSecretsId\")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(xargs grep -l \"OcrEngine\\\\|ExtractAsync\\\\|gemini\\\\|claude\\\\|openai\\\\|vision\\\\|prompt\")",
+      "Bash(xargs grep -l \"OcrJob\\\\b\")",
+      "Bash(grep -v \"//\\\\|obj\\\\|bin\")"
     ]
   }
 }

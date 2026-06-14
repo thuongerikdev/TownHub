@@ -439,6 +439,10 @@ namespace TH.Asset.Domain.Inventory
         public string? submittedByName { get; set; }
         public DateTime submittedAt { get; set; } = DateTime.UtcNow;
 
+        // Engine OCR: "vietocr" (EasyOCR+VietOCR) | "gemini" (Gemini Vision). Mặc định gemini.
+        [MaxLength(20)]
+        public string ocrEngine { get; set; } = "gemini";
+
         // ── Navigation Properties (inverse) ──
         public virtual ICollection<Invoice>? invoices { get; set; }
     }
