@@ -16,7 +16,10 @@
       "Bash(Get-ChildItem -Force)",
       "Bash(Select-Object Name, FullName)",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\TH.WebAPI\\\\Service\\\\Base\\\\TH.Base.Domain\" -File | Where-Object {$_.Extension -eq \".cs\"})",
-      "Bash(xargs grep -l \"errorCode\\\\|errorMessage\")"
+      "Bash(xargs grep -l \"errorCode\\\\|errorMessage\")",
+      "Bash(xargs grep -l \"cloudinary\\\\|signature\\\\|ocr\")",
+      "Bash(xargs grep -l \"cloudinary\\\\|Cloudinary\\\\|signature\\\\|Signature\")",
+      "Bash(xargs grep -l \"UserSecretsId\")"
     ]
   }
 }

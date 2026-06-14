@@ -92,10 +92,16 @@ export default function OCRUpload() {
   [jobsQ.items]);
 
   // Còn job đang chạy → poll danh sách để trạng thái tự cập nhật.
+  // Dừng sau 60s để tránh poll vô tận khi job bị kẹt (lỗi backend không cập nhật status).
   const hasActive = recent.some((j) => j.status === "QUEUED" || j.status === "PROCESSING" || j.status === "PENDING");
+  const pollStartRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!hasActive) return;
-    const t = setInterval(() => jobsQ.refetch(), 3000);
+    if (!hasActive) { pollStartRef.current = null; return; }
+    if (pollStartRef.current === null) pollStartRef.current = Date.now();
+    const t = setInterval(() => {
+      if (Date.now() - (pollStartRef.current ?? 0) > 60_000) { clearInterval(t); return; }
+      jobsQ.refetch();
+    }, 3000);
     return () => clearInterval(t);
   }, [hasActive, jobsQ.refetch]);
 
