@@ -167,7 +167,7 @@ namespace TH.Asset.ApplicationService.StartUp
                 builder.Services.AddHttpClient<IInvoiceOcrEngine, VietOcrEngine>(c =>
                 {
                     c.BaseAddress = new Uri(ocrUrl!.TrimEnd('/') + "/");
-                    c.Timeout     = TimeSpan.FromSeconds(180);
+                    c.Timeout     = TimeSpan.FromSeconds(600);
                 });
             }
             else
