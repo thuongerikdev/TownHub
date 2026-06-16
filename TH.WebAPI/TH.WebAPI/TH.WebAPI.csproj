@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>a280119b-03d1-4ffb-ac65-48c33f6557f9</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth" Version="1.73.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+	<PackageReference Include="DotNetEnv" Version="3.1.1" />
+
+
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+	<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.10" />
+
+	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+		<PrivateAssets>all</PrivateAssets>
+		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>  
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Service\Auth\TH.Auth.ApplicationService\TH.Auth.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Auth\TH.Auth.Domain\TH.Auth.Domain.csproj" />
+    <ProjectReference Include="..\Service\Auth\TH.Auth.Dtos\TH.Auth.Dtos.csproj" />
+    <ProjectReference Include="..\Service\Auth\TH.Auth.Infrastructure\TH.Auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.ApplicationService\TH.Base.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.Domain\TH.Base.Domain.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.Dtos\TH.Base.Dtos.csproj" />
+    <ProjectReference Include="..\Service\Base\TH.Base.Infrastructure\TH.Base.Infrastructure.csproj" />
+    <ProjectReference Include="..\Service\Shared\TH.Constant\TH.Constant.csproj" />
+    <ProjectReference Include="..\Service\Shared\TH.Shared.ApplicationService\TH.Shared.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Asset\TH.Asset.ApplicationService\TH.Asset.ApplicationService.csproj" />
+    <ProjectReference Include="..\Service\Asset\TH.Asset.Dtos\TH.Asset.Dtos.csproj" />
+  </ItemGroup>
+
+</Project>

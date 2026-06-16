@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<!-- EF Core / Npgsql -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+
+		<!-- JWT -->
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+
+		<!-- Google -->
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.10" />
+
+		<!-- Identity core -->
+		<PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.11" />
+
+		<!-- Redis -->
+		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.20" />
+		<PackageReference Include="StackExchange.Redis" Version="2.7.27" />
+
+		<!-- MailKit cho email -->
+		<PackageReference Include="MailKit" Version="4.8.0" />
+
+		<!-- ✅ Thêm dòng này cho MfaService -->
+		<PackageReference Include="Otp.NET" Version="1.4.0" />
+
+		<!-- Tuỳ chọn -->
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+		<PackageReference Include="Microsoft.Net.Http.Headers" Version="8.0.0" />
+
+
+		<PackageReference Include="CloudinaryDotNet" Version="1.27.4" />
+	</ItemGroup>
+
+
+	<!-- Cung cấp Cookies, Authorization, HttpOverrides, Hosting... -->
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Shared\TH.Constant\TH.Constant.csproj" />
+	  <ProjectReference Include="..\..\Shared\TH.Shared.ApplicationService\TH.Shared.ApplicationService.csproj" />
+	  <ProjectReference Include="..\TH.Auth.Domain\TH.Auth.Domain.csproj" />
+	  <ProjectReference Include="..\TH.Auth.Dtos\TH.Auth.Dtos.csproj" />
+	  <ProjectReference Include="..\TH.Auth.Infrastructure\TH.Auth.Infrastructure.csproj" />
+	</ItemGroup>
+	
+	
+
+
+</Project>

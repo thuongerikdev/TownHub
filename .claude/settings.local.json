@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\DATN\\\\TownHub\\\\TH.WebAPI\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(find /d/Học tập/_____Đồ án tốt nghiệp_____ -type f -name \"*.cs\" -o -name \"*.sql\" -o -name \"*.json\" | grep -E \"\\(Auth|Base|Asset\\)\" | head -50)",
+      "Bash(grep -i \"asset\\\\|Controllers\\\\\\\\Asset\")",
+      "Bash(npm run *)",
+      "Bash(npm uninstall *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\\" -Recurse -Directory -Filter \"datn\" -ErrorAction SilentlyContinue | Select-Object -First 5)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\" -Directory)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\TH.WebAPI\" -Directory)",
+      "Bash(xargs grep -l \"class ResponseDto\")",
+      "Bash(xargs grep -l \"ErrorCode.*200\\\\|Data\\\\s*{\")",
+      "Bash(Get-ChildItem -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\TH.WebAPI\\\\Service\\\\Base\\\\TH.Base.Domain\" -File | Where-Object {$_.Extension -eq \".cs\"})",
+      "Bash(xargs grep -l \"errorCode\\\\|errorMessage\")"
+    ]
+  }
+}
