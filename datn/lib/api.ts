@@ -225,6 +225,20 @@ export const account = {
   getMe: () => apiFetch<GetUserResponse>("/user/me", {}),
 };
 
+// ─── MCP Tokens (mã MCP dài hạn) ───────────────────────────────────────────────
+export interface McpTokenItem {
+  id: string; name: string; createdAt: string; expiresAt: string; revoked: boolean;
+}
+export interface McpTokenCreated {
+  id: string; name: string; token: string; createdAt: string; expiresAt: string;
+}
+export const mcpTokens = {
+  getMine: () => apiFetch<McpTokenItem[]>("/api/mcp-token/mine", {}),
+  create: (body: { name: string; expiresAt: string }) =>
+    apiFetch<McpTokenCreated>("/api/mcp-token/create", { method: "POST", body: JSON.stringify(body) }),
+  revoke: (id: string) => apiFetch<boolean>(`/api/mcp-token/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 export const users = {
   me: () => apiFetch<GetUserResponse>("/user/me", {}),

@@ -8,7 +8,7 @@ import {
   LogOut, Search, Menu, X, ShieldAlert, Loader2,
   Shield, ClipboardList, FileText, Wrench, Ticket,
   Package, ShoppingCart, Handshake, BarChart3,
-  Monitor, ChevronDown, ChevronRight, Boxes,
+  Monitor, ChevronDown, ChevronRight, Boxes, KeyRound,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -114,6 +114,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       },
       { icon: BellRing, label: "Thông báo", path: "/notifications", perm: "notification.view" },
       { icon: Settings, label: "Cấu hình SLA", path: "/settings/sla", perm: "ticket.view" },
+      { icon: KeyRound, label: "Mã MCP", path: "/settings/mcp-tokens" },
       { icon: FileText, label: "Nhật ký (Audit)", path: "/audit-logs", perm: "audit_log.manage" },
       { icon: Monitor, label: "Tác vụ hệ thống", path: "/admin/system-jobs", perm: "audit_log.manage" },
     ],

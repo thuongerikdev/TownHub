@@ -24,7 +24,21 @@
       "mcp__visualize__show_widget",
       "Bash(xargs grep -l \"OcrEngine\\\\|ExtractAsync\\\\|gemini\\\\|claude\\\\|openai\\\\|vision\\\\|prompt\")",
       "Bash(xargs grep -l \"OcrJob\\\\b\")",
-      "Bash(grep -v \"//\\\\|obj\\\\|bin\")"
+      "Bash(grep -v \"//\\\\|obj\\\\|bin\")",
+      "Bash(xargs -I {} basename {})",
+      "Bash(curl -s \"https://api.nuget.org/v3-flatcontainer/modelcontextprotocol.aspnetcore/index.json\")",
+      "Bash(curl -s \"https://api.nuget.org/v3-flatcontainer/modelcontextprotocol/index.json\")",
+      "PowerShell($f = \"D:\\\\DATN\\\\TownHub\\\\TH.WebAPI\\\\TH.WebAPI\\\\obj\\\\TH.WebAPI.csproj.nuget.g.targets\"; try { Remove-Item $f -Force -ErrorAction Stop; \"deleted ok\" } catch { \"DELETE FAILED: $\\($_.Exception.Message\\)\" }; \"--- icacls ---\"; icacls \"D:\\\\DATN\\\\TownHub\\\\TH.WebAPI\\\\TH.WebAPI\\\\obj\" 2>&1 | Select-Object -First 8)",
+      "PowerShell(\"--- listeners on 5000/8080/7xxx ---\"; Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 5000,5001,8080,7000,7001,7237 } | Select-Object LocalPort, OwningProcess; \"--- candidate procs ---\"; Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match \"TH\\\\.WebAPI|TownHub|dotnet|iisexpress|w3wp|VBCSCompiler|MSBuild\" } | Select-Object Id, ProcessName, Path | Format-Table -AutoSize)",
+      "Bash(python -c ' *)",
+      "Bash(curl -s -m 25 -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://townhub-new.fly.dev/healthz)",
+      "Bash(curl -s -m 25 -w \"\\\\nHTTP %{http_code}\\\\n\" https://townhub-new.fly.dev/mcp -H \"Content-Type: application/json\" -H \"Accept: application/json, text/event-stream\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}')",
+      "PowerShell(\"=== ACL .git ===\"; icacls \"D:\\\\DATN\\\\TownHub\\\\.git\" 2>&1 | Select-Object -First 8; \"=== tiến trình nghi vấn ===\"; Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match \"GitHubDesktop|OneDrive|Defender|MsMpEng|Dropbox|Code|devenv\" } | Select-Object Id, ProcessName | Format-Table -AutoSize)",
+      "Bash(git add *)",
+      "PowerShell(\"=== App đang giữ repo \\(VS Code / GitHub Desktop\\) ===\"; Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match \"Code$|GitHubDesktop|devenv\" } | Group-Object ProcessName | Select-Object Name, Count | Format-Table -AutoSize; \"=== Real-time protection của Defender đang BẬT? ===\"; try { \\(Get-MpComputerStatus -ErrorAction Stop\\).RealTimeProtectionEnabled } catch { \"không đọc được trạng thái Defender\" }; \"=== còn index.lock sót lại? ===\"; if \\(Test-Path \"D:\\\\DATN\\\\TownHub\\\\.git\\\\index.lock\"\\) { \"CÓ index.lock \\(cần xoá sau khi bấm n\\)\" } else { \"không có\" })",
+      "PowerShell(try { Add-MpPreference -ExclusionPath \"D:\\\\DATN\\\\TownHub\" -ErrorAction Stop; \"ĐÃ THÊM loại trừ Defender cho D:\\\\DATN\\\\TownHub\" } catch { \"KHÔNG thêm được \\(cần quyền Admin\\): \" + $_.Exception.Message })",
+      "PowerShell(\"cleaned\")",
+      "Bash(timeout 300 npx tsc --noEmit)"
     ]
   }
 }

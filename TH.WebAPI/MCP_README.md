@@ -68,7 +68,16 @@ dotnet run
 ## 5. Kết nối từ client
 
 Vì mặc định `/mcp` bắt buộc JWT, client phải gửi header `Authorization: Bearer <token>`.
-Lấy `<token>` bằng cách đăng nhập qua API (vd `POST /login/StaffLogin`) rồi copy accessToken.
+
+**Cách lấy `<token>` (khuyến nghị):** dùng trang **"Mã MCP"** trên frontend
+(menu Quản trị hệ thống → Mã MCP, route `/settings/mcp-tokens`) để **sinh token dài hạn**
+(chọn hạn 30–365 ngày), copy token hoặc copy luôn đoạn config. Token này quản lý/thu hồi
+được trong chính trang đó. API tương ứng: `POST /api/mcp-token/create`, `GET /api/mcp-token/mine`,
+`DELETE /api/mcp-token/{id}`.
+
+> Token MCP mang claim `token_use=mcp`; khi thu hồi, cờ revoke lưu ở Redis và bị chặn ngay ở
+> bước xác thực (`OnTokenValidated`). (Cách cũ: đăng nhập `POST /login/StaffLogin` lấy accessToken
+> ngắn hạn ~30 phút — chỉ nên dùng để thử nhanh.)
 
 ### a) Claude Code (HTTP trực tiếp, kèm token)
 ```bash

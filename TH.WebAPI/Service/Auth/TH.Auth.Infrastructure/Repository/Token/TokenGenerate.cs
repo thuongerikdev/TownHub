@@ -54,6 +54,11 @@ namespace TH.Auth.Infrastructure.Repository.Token
         Task<(AuthRefreshToken token, AuthUser user)?> GetActiveAsync(string refreshToken);
         Task<AuthRefreshToken> GenerateUniqueRefreshTokenAsync(int userId, int sessionId, string? ip, TimeSpan ttl);
         Task AddTokenAsync(AuthRefreshToken token, CancellationToken ct);
+
+        // MCP: phát hành JWT dài hạn riêng cho Model Context Protocol.
+        // Mang đầy đủ permission claim như access token thường, thêm claim "token_use=mcp"
+        // và jti do caller cung cấp (để có thể thu hồi qua Redis).
+        Task<string> CreateMcpTokenAsync(AuthUser user, TimeSpan ttl, string jti);
     }
     public sealed class TokenGenerate : ITokenGenerate
     {
@@ -394,6 +399,54 @@ namespace TH.Auth.Infrastructure.Repository.Token
 
             // Trả về cả Token và List quyền
             return (new JwtSecurityTokenHandler().WriteToken(tokenDescriptor), finalPermissions.ToList());
+        }
+
+        // ================= MCP TOKEN (dài hạn) =================
+        public async Task<string> CreateMcpTokenAsync(AuthUser user, TimeSpan ttl, string jti)
+        {
+            // Lấy quyền mới nhất từ DB (giống luồng refresh)
+            var dbPerms = await (from ur in _db.authUserRoles
+                                 join rp in _db.authRolePermissions on ur.roleID equals rp.roleID
+                                 join p in _db.authPermissions on rp.permissionID equals p.permissionID
+                                 where ur.userID == user.userID && !string.IsNullOrEmpty(p.code)
+                                 select p.code)
+                                 .Distinct()
+                                 .ToListAsync();
+
+            var roleNames = await _db.authUserRoles
+                .Where(x => x.userID == user.userID)
+                .Select(x => x.role.roleName)
+                .ToListAsync();
+
+            var profile = await _db.authProfiles.FirstOrDefaultAsync(x => x.userID == user.userID);
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+            {
+                new Claim("name", profile?.lastName ?? string.Empty),
+                new Claim("email", user.email),
+                new Claim("userName", user.userName),
+                new Claim("userId", user.userID.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.userID.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, user.userID.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, jti),
+                new Claim("token_use", "mcp")   // đánh dấu để middleware kiểm tra thu hồi
+            };
+
+            foreach (var r in roleNames) claims.Add(new Claim("role", r));
+            foreach (var p in dbPerms) claims.Add(new Claim("permission", p));
+
+            var token = new JwtSecurityToken(
+                issuer: null,
+                audience: null,
+                claims: claims,
+                expires: DateTime.UtcNow.Add(ttl),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
