@@ -1,0 +1,6 @@
+{
+  "name": "townhub-connector",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": { "mcp-remote": "^0.1.29" }
+}

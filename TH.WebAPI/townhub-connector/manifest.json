@@ -1,0 +1,40 @@
+{
+  "manifest_version": "0.2",
+  "name": "townhub",
+  "display_name": "TownHub Assistant",
+  "version": "1.0.0",
+  "description": "Kết nối Claude Desktop tới hệ thống quản lý tài sản & vận hành toà nhà TownHub qua MCP.",
+  "author": {
+    "name": "TownHub"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "TOWNHUB_URL": "${user_config.server_url}",
+        "TOWNHUB_TOKEN": "${user_config.token}"
+      }
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "Địa chỉ MCP",
+      "description": "URL endpoint /mcp của TownHub",
+      "default": "https://townhub-new.fly.dev/mcp",
+      "required": true
+    },
+    "token": {
+      "type": "string",
+      "title": "Mã MCP",
+      "description": "Token dài hạn sinh từ trang 'Mã MCP' trong TownHub",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}

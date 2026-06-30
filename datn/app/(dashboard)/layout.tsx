@@ -13,6 +13,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { AiAssistant } from "@/components/system/AiAssistant";
 
 type NavChild = { label: string; path: string; perm?: string };
 type NavItem = {
@@ -347,6 +348,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="custom-scrollbar flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </div>
+
+        {/* Trợ lý AI nổi (hiện trên mọi trang dashboard) */}
+        <AiAssistant />
       </main>
     </div>
   );
