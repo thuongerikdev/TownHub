@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const [recentLogs, setRecentLogs] = useState<AuditLog[]>([]);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {

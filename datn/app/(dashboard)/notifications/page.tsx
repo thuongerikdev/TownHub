@@ -60,6 +60,7 @@ export default function NotificationsPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [audience, setAudience] = useState("all");
+  const [targetFloor, setTargetFloor] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>(["push"]);
 
   const fetchHistory = useCallback(async () => {
@@ -99,11 +100,16 @@ export default function NotificationsPage() {
     try {
       // Tạo 1 notification per channel (hoặc tạo 1 với channel đầu tiên - BE hiện chỉ nhận 1 channel)
       const channel = selectedChannels[0];
+      const resolvedAudience = audience === "floor" ? `floor:${targetFloor}` : audience;
+      if (audience === "floor" && (!targetFloor || Number(targetFloor) < 1)) {
+        setError("Vui lòng nhập tầng cần gửi thông báo");
+        return;
+      }
       const res = await notifications.create({
         title: title.trim(),
         content: content.trim(),
         channel,
-        audience,
+        audience: resolvedAudience,
         createdByAuthUserId: user?.userID ?? 0,
       });
       if (res.errorCode === 200) {
@@ -212,9 +218,29 @@ export default function NotificationsPage() {
                   {AUDIENCES.map((a) => (
                     <option key={a.value} value={a.value} className="bg-[#111]">{a.label}</option>
                   ))}
+                  <option value="floor" className="bg-[#111]">Cư dân theo tầng</option>
                 </select>
               </div>
             </div>
+
+            {audience === "floor" && (
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1 space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-rose-300">Gửi riêng cho cư dân tầng</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={targetFloor}
+                      onChange={(e) => setTargetFloor(e.target.value)}
+                      placeholder="Ví dụ: 5"
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-zinc-600 focus:border-rose-500/50"
+                    />
+                  </div>
+                  <p className="pb-3 text-xs text-zinc-400">Hệ thống chỉ lập danh sách và gửi tới cư dân đang ở tại tầng này.</p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Kênh gửi</label>
