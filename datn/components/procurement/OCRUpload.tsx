@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ScanLine, Upload, FileText, X, ChevronRight, Sparkles, Loader2 } from "lucide-react";
+import { ScanLine, Upload, FileText, X, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ocrJobs, type OcrJobResponse } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -83,7 +83,6 @@ export default function OCRUpload() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState("INVOICE");
-  const [ocrEngine, setOcrEngine] = useState("gemini");
   const [file, setFile] = useState<File | null>(null);
   const [submittedBy, setSubmittedBy] = useState("Kế toán");
   const [submitting, setSubmitting] = useState(false);
@@ -93,16 +92,10 @@ export default function OCRUpload() {
   [jobsQ.items]);
 
   // Còn job đang chạy → poll danh sách để trạng thái tự cập nhật.
-  // Dừng sau 60s để tránh poll vô tận khi job bị kẹt (lỗi backend không cập nhật status).
   const hasActive = recent.some((j) => j.status === "QUEUED" || j.status === "PROCESSING" || j.status === "PENDING");
-  const pollStartRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!hasActive) { pollStartRef.current = null; return; }
-    if (pollStartRef.current === null) pollStartRef.current = Date.now();
-    const t = setInterval(() => {
-      if (Date.now() - (pollStartRef.current ?? 0) > 60_000) { clearInterval(t); return; }
-      jobsQ.refetch();
-    }, 3000);
+    if (!hasActive) return;
+    const t = setInterval(() => jobsQ.refetch(), 3000);
     return () => clearInterval(t);
   }, [hasActive, jobsQ.refetch]);
 
@@ -117,7 +110,6 @@ export default function OCRUpload() {
         fileName: file.name,
         fileSizeBytes: file.size,
         submittedByName: submittedBy || undefined,
-        ocrEngine,
       });
       if (res.errorCode === 200 && res.data) {
         toast.success("Đã gửi chứng từ. Đang nhận diện…");
@@ -158,32 +150,6 @@ export default function OCRUpload() {
           </Field>
           <Field label="Người gửi">
             <Input value={submittedBy} onChange={(e) => setSubmittedBy(e.target.value)} placeholder="VD: Kế toán" />
-          </Field>
-        </div>
-
-        <div className="mb-4">
-          <Field label="Phương thức nhận diện">
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: "gemini", label: "Gemini Vision", desc: "AI đọc ảnh trực tiếp — chính xác hơn, xử lý mọi layout" },
-                { value: "vietocr", label: "VietOCR + Regex", desc: "OCR truyền thống — nhanh hơn, phù hợp hóa đơn chuẩn" },
-              ].map((e) => (
-                <button
-                  key={e.value}
-                  type="button"
-                  onClick={() => setOcrEngine(e.value)}
-                  className={[
-                    "flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-colors",
-                    ocrEngine === e.value
-                      ? "border-brand bg-brand/5 text-foreground"
-                      : "border-border bg-surface-2/30 text-muted-foreground hover:border-border/80",
-                  ].join(" ")}
-                >
-                  <span className="text-sm font-medium">{e.label}</span>
-                  <span className="text-xs leading-snug">{e.desc}</span>
-                </button>
-              ))}
-            </div>
           </Field>
         </div>
 
@@ -244,17 +210,13 @@ export default function OCRUpload() {
             {recent.map((j) => {
               const st = OCR_STATUS[j.status] ?? OCR_STATUS.PENDING;
               const done = j.status === "COMPLETED" || j.status === "DONE" || j.status === "REVIEWED";
-              const active = j.status === "QUEUED" || j.status === "PROCESSING" || j.status === "PENDING";
               const row = (
                 <div className="flex items-center gap-3 px-5 py-3">
-                  {active
-                    ? <Loader2 className="size-5 shrink-0 animate-spin text-info" />
-                    : <FileText className="size-5 shrink-0 text-muted-foreground" />}
+                  <FileText className="size-5 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{j.fileName ?? "(không tên)"}</p>
                     <p className="text-xs text-muted-foreground">
                       {DOC_LABEL[j.documentType] ?? j.documentType} · {fileSize(j.fileSizeBytes)} · {formatDateTime(j.submittedAt)}
-                      {j.ocrEngine && <span className="ml-1 rounded bg-surface-2 px-1 py-0.5 font-mono text-[10px]">{j.ocrEngine}</span>}
                     </p>
                     {j.status === "FAILED" && j.errorMessage && (
                       <p className="mt-0.5 text-xs text-danger">{j.errorMessage}</p>

@@ -85,6 +85,85 @@ namespace TH.TownHub.Dtos
         public DateTime createdAt { get; set; }
     }
 
+    public class RegisterFaceRequestDto
+    {
+        public int residentId { get; set; }
+        public required string imageUrl { get; set; }
+    }
+
+    public class UpdateFaceAiResultRequestDto
+    {
+        public required string aiStatus { get; set; }
+        public string? embeddingRef { get; set; }
+        public string? failureReason { get; set; }
+    }
+
+    public class FaceProfileResponse
+    {
+        public int id { get; set; }
+        public int residentId { get; set; }
+        public string residentName { get; set; } = null!;
+        public string imageUrl { get; set; } = null!;
+        public string aiStatus { get; set; } = null!;
+        public string? failureReason { get; set; }
+        public DateTime registeredAt { get; set; }
+    }
+
+    public class CreateAccessEventRequestDto
+    {
+        public int? residentId { get; set; }
+        public string personType { get; set; } = "stranger";
+        public required string direction { get; set; }
+        public required string cameraName { get; set; }
+        public string? snapshotUrl { get; set; }
+        public double? confidence { get; set; }
+        public DateTime? detectedAt { get; set; }
+    }
+
+    public class HandleAccessEventRequestDto
+    {
+        public string status { get; set; } = "resolved";
+        public string? note { get; set; }
+        public int? handledByAuthUserId { get; set; }
+    }
+
+    public class AccessEventResponse
+    {
+        public long id { get; set; }
+        public int? residentId { get; set; }
+        public string? residentName { get; set; }
+        public string personType { get; set; } = null!;
+        public string direction { get; set; } = null!;
+        public string cameraName { get; set; } = null!;
+        public string? snapshotUrl { get; set; }
+        public double? confidence { get; set; }
+        public string status { get; set; } = null!;
+        public string? note { get; set; }
+        public int? handledByAuthUserId { get; set; }
+        public DateTime? handledAt { get; set; }
+        public DateTime detectedAt { get; set; }
+    }
+
+    public class AnalyzeCameraFrameRequestDto
+    {
+        public required string imageDataUrl { get; set; }
+        public required string cameraName { get; set; }
+        public string direction { get; set; } = "in";
+    }
+
+    public class CameraRecognitionResponse
+    {
+        public bool faceDetected { get; set; }
+        public bool matched { get; set; }
+        public int? residentId { get; set; }
+        public string? residentName { get; set; }
+        public double? confidence { get; set; }
+        public bool eventCreated { get; set; }
+        public long? eventId { get; set; }
+        public string result { get; set; } = "no_face";
+        public string message { get; set; } = null!;
+    }
+
     // ============================================================
     // NOTIFICATION TEMPLATE DTOs
     // ============================================================

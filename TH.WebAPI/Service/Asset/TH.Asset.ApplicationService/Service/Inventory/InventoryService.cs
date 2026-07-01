@@ -1423,16 +1423,14 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                var engine = request.ocrEngine?.ToLowerInvariant() == "vietocr" ? "vietocr" : "gemini";
                 var job = new OcrJob
                 {
-                    documentType    = request.documentType,
-                    fileUrl         = request.fileUrl,
-                    fileName        = request.fileName,
+                    documentType  = request.documentType,
+                    fileUrl       = request.fileUrl,
+                    fileName      = request.fileName,
                     fileSizeBytes   = request.fileSizeBytes,
                     submittedBy     = request.submittedBy,
-                    submittedByName = request.submittedByName,
-                    ocrEngine       = engine,
+                    submittedByName = request.submittedByName
                 };
                 _dbContext.OcrJobs.Add(job);
                 await _dbContext.SaveChangesAsync();
@@ -1526,8 +1524,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             completedAt     = x.completedAt,
             submittedBy     = x.submittedBy,
             submittedByName = x.submittedByName,
-            submittedAt     = x.submittedAt,
-            ocrEngine       = x.ocrEngine,
+            submittedAt     = x.submittedAt
         };
     }
 }

@@ -38,7 +38,6 @@ export function useApi<T>(
   const [error, setError] = useState<string | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [tick, setTick] = useState(0);
-  const dataRef = useRef<T | null>(null);
 
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
@@ -53,9 +52,7 @@ export function useApi<T>(
       return;
     }
     let cancelled = false;
-    // Chỉ show loading spinner khi chưa có data (lần fetch đầu).
-    // Khi poll nền (đã có data), giữ nguyên data cũ để tránh flicker.
-    if (dataRef.current === null) setLoading(true);
+    setLoading(true);
     setError(null);
     setIsMock(false);
 
@@ -63,7 +60,6 @@ export function useApi<T>(
       .then((res) => {
         if (cancelled) return;
         if (res.errorCode === 200) {
-          dataRef.current = res.data;
           setData(res.data);
           setIsMock(false);
         } else if (USE_MOCK && mockRef.current !== undefined) {

@@ -100,6 +100,29 @@ namespace TH.Auth.Infrastructure
                 allRoles.Add(adminRole);
             }
 
+            var residentRole = allRoles.FirstOrDefault(r =>
+                r.roleName != null &&
+                (r.roleName.ToLower() == "cư dân" || r.roleName.ToLower() == "resident"));
+            if (residentRole == null)
+            {
+                residentRole = new AuthRole
+                {
+                    roleName = "Cư dân",
+                    roleDescription = "Tài khoản cư dân",
+                    scope = "user",
+                    isDefault = false
+                };
+                context.authRoles.Add(residentRole);
+                await context.SaveChangesAsync();
+                allRoles.Add(residentRole);
+                Console.WriteLine($"[SEED] Đã tạo role Cư dân (id={residentRole.roleID}).");
+            }
+            else if (residentRole.scope != "user")
+            {
+                residentRole.scope = "user";
+                await context.SaveChangesAsync();
+            }
+
             // =========================================================
             // STEP 3: GÁN QUYỀN VÀO ROLE
             //   • admin   : TẤT CẢ quyền.
