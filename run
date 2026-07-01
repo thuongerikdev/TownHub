@@ -1,0 +1,19 @@
+1.........backend:
+
+cd D:\AI_AI_Job\TownHub-master\TH.WebAPI
+
+dotnet run `
+  --project TH.WebAPI\TH.WebAPI.csproj `
+  --launch-profile http
+
+2........fontend:
+
+cd D:\AI_AI_Job\TownHub-master\datn
+
+npm install
+npm run dev
+
+3...........AI
+
+cd D:\AI_AI_Job\TownHub-master\AI\face-service
+.\start-ai.ps1

@@ -16,7 +16,7 @@ namespace TH.Auth.ApplicationService.Service.User
     public interface IAuthUserService
     {
         Task<ResponseDto<List<UserSlimDto>>> GetAllSlimAsync(CancellationToken ct);
-        Task<ResponseDto<AuthUser>> DeleteUserAsync(int userID, CancellationToken ct);
+        Task<ResponseDto<bool>> DeleteUserAsync(int userID, CancellationToken ct);
         Task<ResponseDto<GetUserResponseDto>> GetUserByIDAsync(int userID, CancellationToken ct);
 
         Task<ResponseDto<bool>> AuthUpdateProfileRequest(AuthUpdateProfileRequest req, CancellationToken ct);
@@ -59,22 +59,28 @@ namespace TH.Auth.ApplicationService.Service.User
                 return ResponseConst.Error<List<UserSlimDto>>(500, "Internal error");
             }
         }
-        public async Task<ResponseDto<AuthUser>> DeleteUserAsync(int userID, CancellationToken ct)
+        public async Task<ResponseDto<bool>> DeleteUserAsync(int userID, CancellationToken ct)
         {
             _logger.LogInformation("Deleting user with ID: {UserID}", userID);
             try
             {
-                var user = await _users.DeleteUser(userID, ct);
-                await _uow.SaveChangesAsync(ct);
-
+                var deleted = await _uow.ExecuteInTransactionAsync(
+                    token => _users.DeleteUser(userID, token),
+                    ct: ct
+                );
+                if (!deleted)
+                {
+                    _logger.LogWarning("User with ID: {UserID} was not found.", userID);
+                    return ResponseConst.Error<bool>(404, "Không tìm thấy tài khoản.");
+                }
 
                 _logger.LogInformation("Successfully deleted user with ID: {UserID}", userID);
-                return ResponseConst.Success("User deleted successfully", user);
+                return ResponseConst.Success("Đã xóa vĩnh viễn tài khoản và toàn bộ dữ liệu xác thực.", true);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting user with ID: {UserID}", userID);
-                return ResponseConst.Error<AuthUser>(500, "Internal error");
+                return ResponseConst.Error<bool>(500, "Không thể xóa vĩnh viễn tài khoản: " + ex.Message);
             }
         }
         public async Task<ResponseDto<GetUserResponseDto>> GetUserByIDAsync(int userID, CancellationToken ct)

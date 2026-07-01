@@ -24,7 +24,7 @@ namespace TH.WebAPI.Controllers.Auth
             var result = await _userService.DeleteUserAsync(userId, ct);
             if (result.ErrorCode != 200)
             {
-                return BadRequest(result);
+                return StatusCode(result.ErrorCode, result);
             }
             return Ok(result);
         }

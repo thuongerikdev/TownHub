@@ -95,6 +95,8 @@ export const RESOURCE_DEFS: ResourceDef[] = [
       { ...A.create, description: "Thêm cư dân" },
       { ...A.update, description: "Sửa hồ sơ cư dân" },
       { ...A.delete, description: "Xoá cư dân" },
+      { action: "face_register", label: "Đăng ký khuôn mặt", description: "Đăng ký và cập nhật dữ liệu khuôn mặt AI" },
+      { action: "access_review", label: "Xử lý người lạ", description: "Xem và xử lý cảnh báo người lạ ra/vào" },
     ],
   },
 

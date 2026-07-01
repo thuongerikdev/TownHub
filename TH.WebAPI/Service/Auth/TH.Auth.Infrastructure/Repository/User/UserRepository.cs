@@ -22,7 +22,7 @@ namespace TH.Auth.Infrastructure.Repository.User
 
         Task<AuthUser?> FindByGoogleSub(string googleSub, CancellationToken ct);
 
-        Task<AuthUser> DeleteUser(int id, CancellationToken ct);
+        Task<bool> DeleteUser(int id, CancellationToken ct);
 
         Task<AuthUser?> FindByIdAsync(int id, CancellationToken ct);
         Task<AuthUser?> FindByUserNameAsync(string userName, CancellationToken ct);
@@ -489,6 +489,7 @@ namespace TH.Auth.Infrastructure.Repository.User
         public async Task<List<GetUserResponseDto?>> GetAllUserAsync(CancellationToken ct)
         {
             var user = await _db.authUsers
+                .Where(u => u.scope != "user")
                 .Select(u => new GetUserResponseDto
                 {
                     userID = u.userID,
@@ -509,14 +510,42 @@ namespace TH.Auth.Infrastructure.Repository.User
             return user;
         }
 
-        public Task<AuthUser> DeleteUser(int id, CancellationToken ct)
+        public async Task<bool> DeleteUser(int id, CancellationToken ct)
         {
-            var user = _db.authUsers.FirstOrDefault(x => x.userID == id);
-            if (user != null)
-            {
-                _db.authUsers.Remove(user);
-            }
-            return Task.FromResult(user);
+            var exists = await _db.authUsers.AnyAsync(x => x.userID == id, ct);
+            if (!exists) return false;
+
+            // Delete dependants explicitly. AuthRefreshToken is configured with
+            // Restrict, so relying on cascade deletion cannot remove the account.
+            await _db.authRefreshTokens
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authUserSessions
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authMfaSecrets
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authEmailVerifications
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authPasswordResets
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authUserRoles
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authProfiles
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authAuditLogs
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+            await _db.authUsers
+                .Where(x => x.userID == id)
+                .ExecuteDeleteAsync(ct);
+
+            return true;
         }
 
         public Task<AuthUser?> FindByGoogleSub(string googleSub, CancellationToken ct)

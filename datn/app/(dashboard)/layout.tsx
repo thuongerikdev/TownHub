@@ -8,7 +8,8 @@ import {
   LogOut, Search, Menu, X, ShieldAlert, Loader2,
   Shield, ClipboardList, FileText, Wrench, Ticket,
   Package, ShoppingCart, Handshake, BarChart3,
-  Monitor, ChevronDown, ChevronRight, Boxes, KeyRound,
+  Monitor, ChevronDown, ChevronRight, Boxes,
+  ScanFace, Cctv,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,7 +33,12 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   },
   {
     section: "CƯ DÂN & CĂN HỘ",
-    items: [{ icon: Building2, label: "Căn hộ", path: "/apartments", perm: "apartment.view" }],
+    items: [
+      { icon: Building2, label: "Căn hộ", path: "/apartments", perm: "apartment.view" },
+      { icon: Users, label: "Tài khoản cư dân", path: "/residents", perm: "resident.view" },
+      { icon: Cctv, label: "Camera giám sát", path: "/cameras", perm: "notification.view" },
+      { icon: ScanFace, label: "Người lạ ra / vào", path: "/access-alerts", perm: "notification.view" },
+    ],
   },
   {
     section: "KỸ THUẬT & TÀI SẢN",
@@ -114,7 +120,6 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       },
       { icon: BellRing, label: "Thông báo", path: "/notifications", perm: "notification.view" },
       { icon: Settings, label: "Cấu hình SLA", path: "/settings/sla", perm: "ticket.view" },
-      { icon: KeyRound, label: "Mã MCP", path: "/settings/mcp-tokens" },
       { icon: FileText, label: "Nhật ký (Audit)", path: "/audit-logs", perm: "audit_log.manage" },
       { icon: Monitor, label: "Tác vụ hệ thống", path: "/admin/system-jobs", perm: "audit_log.manage" },
     ],
@@ -294,7 +299,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User */}
         <div className="flex-shrink-0 border-t border-sidebar-border p-3">
-          <div className="mb-2 flex items-center gap-2.5 rounded-xl border border-border bg-card p-2.5">
+          <Link href="/profile" className="mb-2 flex items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 transition-colors hover:border-brand/30 hover:bg-accent">
             {user?.profile?.avatar ? (
               <img src={user.profile.avatar} alt={displayName} className="size-8 flex-shrink-0 rounded-full border border-brand/30 object-cover" />
             ) : (
@@ -306,7 +311,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p className="truncate text-xs font-medium text-foreground">{displayName}</p>
               <p className="truncate text-[10px] text-muted-foreground">{user?.email}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
