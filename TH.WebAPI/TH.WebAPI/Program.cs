@@ -90,14 +90,6 @@ namespace TH.WebAPI
                 .WithHttpTransport()
                 .WithToolsFromAssembly();
 
-            // === Trợ lý AI trong app (Claude API + tool use) ===
-            // Client Anthropic dùng chung (đọc ANTHROPIC_API_KEY từ env/.env).
-            builder.Services.AddSingleton(new Anthropic.AnthropicClient
-            {
-                ApiKey = builder.Configuration["ANTHROPIC_API_KEY"]
-            });
-            builder.Services.AddScoped<TH.WebAPI.Ai.IAiChatService, TH.WebAPI.Ai.AiChatService>();
-
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
                 {

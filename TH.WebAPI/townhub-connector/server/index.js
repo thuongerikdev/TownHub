@@ -39,10 +39,16 @@ try {
 }
 
 const args = [proxyPath, url, "--header", `Authorization: Bearer ${token}`];
+log("execPath=" + process.execPath);
 log("chạy: node mcp-remote " + url + " --header Authorization: Bearer ***");
 
-// stderr của mcp-remote được pipe ra để ghi log (đây là nơi hiện lỗi 401/404/mạng).
-const child = spawn(process.execPath, args, { stdio: ["inherit", "inherit", "pipe"] });
+// ELECTRON_RUN_AS_NODE=1: Claude Desktop chạy bằng Node tích hợp (binary Electron);
+// biến này buộc nó hành xử như Node thuần khi ta spawn lại để chạy proxy.
+// stderr của mcp-remote được pipe ra để ghi log (nơi hiện lỗi 401/404/mạng).
+const child = spawn(process.execPath, args, {
+  stdio: ["inherit", "inherit", "pipe"],
+  env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }
+});
 
 child.stderr.on("data", (d) => log("[mcp-remote] " + d.toString().trimEnd()));
 child.on("error", (err) => { log("LỖI khởi chạy mcp-remote: " + err.message); process.exit(1); });

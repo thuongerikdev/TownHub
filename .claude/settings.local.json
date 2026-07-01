@@ -47,7 +47,9 @@
       "Bash(npx --yes @anthropic-ai/mcpb@2.1.2 pack)",
       "Bash(npm install *)",
       "Bash(node -e \"console.log\\(require.resolve\\('mcp-remote/dist/proxy.js'\\)\\)\")",
-      "Bash(node -e \"const p=require\\('./node_modules/mcp-remote/package.json'\\); console.log\\('bin:', JSON.stringify\\(p.bin\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./node_modules/mcp-remote/package.json'\\); console.log\\('bin:', JSON.stringify\\(p.bin\\)\\)\")",
+      "Bash(rm -f TH.WebAPI/TH.WebAPI/Ai/AiChatService.cs TH.WebAPI/TH.WebAPI/Controllers/AiController.cs \"datn/components/system/AiAssistant.tsx\")",
+      "Bash(rmdir TH.WebAPI/TH.WebAPI/Ai)"
     ]
   }
 }

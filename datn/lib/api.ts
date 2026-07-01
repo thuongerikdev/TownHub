@@ -239,14 +239,6 @@ export const mcpTokens = {
   revoke: (id: string) => apiFetch<boolean>(`/api/mcp-token/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
-// ─── Trợ lý AI (Claude + tool use) ──────────────────────────────────────────────
-export interface AiChatMessage { role: "user" | "assistant"; content: string; }
-export interface AiChatResult { answer: string; toolsUsed: string[]; }
-export const ai = {
-  chat: (messages: AiChatMessage[]) =>
-    apiFetch<AiChatResult>("/api/ai/chat", { method: "POST", body: JSON.stringify({ messages }) }),
-};
-
 // ─── Users ───────────────────────────────────────────────────────────────────
 export const users = {
   me: () => apiFetch<GetUserResponse>("/user/me", {}),
