@@ -105,7 +105,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
                 }
             }
 
-            var result = await engine.ExtractAsync(job.fileUrl, job.ocrEngine, ct);
+            var result = await engine.ExtractAsync(job.fileUrl, ct);
 
             if (result.Success)
             {

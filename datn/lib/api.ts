@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5267";
 
 /** All-zero GUID — used for Asset-module cross-service user references that have
  *  no Auth directory yet (we record the human name separately, not as a GUID). */
@@ -61,6 +61,20 @@ export interface NotificationResponse {
   status: string; totalRecipients: number; sentCount: number; failedCount: number;
   scheduledAt?: string; sentAt?: string; createdByAuthUserId: number; createdAt: string;
 }
+export interface FaceProfileResponse {
+  id: number; residentId: number; residentName: string; imageUrl: string;
+  aiStatus: string; failureReason?: string; registeredAt: string;
+}
+export interface AccessEventResponse {
+  id: number; residentId?: number; residentName?: string; personType: "resident" | "stranger";
+  direction: "in" | "out"; cameraName: string; snapshotUrl?: string; confidence?: number;
+  status: string; note?: string; handledByAuthUserId?: number; handledAt?: string; detectedAt: string;
+}
+export interface CameraRecognitionResponse {
+  faceDetected: boolean; matched: boolean; residentId?: number; residentName?: string;
+  confidence?: number; eventCreated: boolean; eventId?: number;
+  result: "no_face" | "resident" | "stranger"; message: string;
+}
 export interface SystemConfigResponse {
   id: number; key: string; value: string; dataType: string;
   description?: string; isPublic: boolean; updatedAt: string;
@@ -112,14 +126,23 @@ export const clearAuthCache = () => {
 };
 
 // ─── Core fetch ───────────────────────────────────────────────────────────────
+type ApiFetchOptions = RequestInit & {
+  silentStatuses?: number[];
+};
+
 async function apiFetch<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiFetchOptions = {},
 ): Promise<ApiResponse<T>> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
+  const { silentStatuses = [], ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutMs = 60_000;
+  const timer = setTimeout(
+    () => controller.abort(new Error(`Request timed out after ${timeoutMs / 1000}s`)),
+    timeoutMs,
+  );
 
+  try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
@@ -134,26 +157,26 @@ async function apiFetch<T>(
     console.log(`[API] Calling: ${BASE_URL}${path}`);
 
     const res = await fetch(`${BASE_URL}${path}`, {
-      ...options,
+      ...fetchOptions,
       headers,
       credentials: "include",
       signal: controller.signal,
     });
-    clearTimeout(timer);
 
     const contentType = res.headers.get("content-type");
     const isJson = contentType?.includes("application/json");
     const data = isJson ? await res.json() : { errorCode: res.status, errorMessage: res.statusText, data: null };
 
     if (!res.ok) {
-      console.error(`[API] Error: ${path} → ${res.status}`, data);
-
-      if (res.status === 401 || res.status === 403) {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-        }
+      if (res.status === 401 && typeof window !== "undefined") {
+        clearToken();
+        localStorage.removeItem("refreshToken");
+        clearAuthCache();
       }
+      if (silentStatuses.includes(res.status)) {
+        return data as ApiResponse<T>;
+      }
+      console.error(`[API] Error: ${path} → ${res.status}`, data);
       return data as ApiResponse<T>;
     }
 
@@ -161,11 +184,16 @@ async function apiFetch<T>(
     return data as ApiResponse<T>;
   } catch (err) {
     console.error(`[API] Network error: ${path}`, err);
+    const message = controller.signal.aborted
+      ? `Backend không phản hồi sau ${timeoutMs / 1000} giây (${BASE_URL})`
+      : `Lỗi kết nối đến backend (${BASE_URL})`;
     return {
       errorCode: 500,
-      errorMessage: `Lỗi kết nối đến backend (${BASE_URL})`,
+      errorMessage: message,
       data: null as T
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -195,6 +223,18 @@ export const auth = {
   forgotCommit: (ticket: string, newPassword: string) =>
     apiFetch<boolean>("/account/password/forgot/commit", { method: "POST", body: JSON.stringify({ ticket, newPassword }) }),
 
+  changePasswordStart: (email: string) =>
+    apiFetch<boolean>("/account/password/change/email/start", { method: "POST", body: JSON.stringify({ email }) }),
+
+  changePasswordVerify: (email: string, code: string) =>
+    apiFetch<string>("/account/password/change/email/verify", { method: "POST", body: JSON.stringify({ email, code }) }),
+
+  changePasswordCommit: (ticket: string, oldPassword: string, newPassword: string) =>
+    apiFetch<boolean>("/account/password/change/commit", {
+      method: "POST",
+      body: JSON.stringify({ ticket, oldPassword, newPassword }),
+    }),
+
   registerStart: (email: string) =>
     apiFetch<boolean>("/register/email/start", { method: "POST", body: JSON.stringify({ email }) }),
 
@@ -222,21 +262,7 @@ export const auth = {
 
 // ─── Account ─────────────────────────────────────────────────────────────────
 export const account = {
-  getMe: () => apiFetch<GetUserResponse>("/user/me", {}),
-};
-
-// ─── MCP Tokens (mã MCP dài hạn) ───────────────────────────────────────────────
-export interface McpTokenItem {
-  id: string; name: string; createdAt: string; expiresAt: string; revoked: boolean;
-}
-export interface McpTokenCreated {
-  id: string; name: string; token: string; createdAt: string; expiresAt: string;
-}
-export const mcpTokens = {
-  getMine: () => apiFetch<McpTokenItem[]>("/api/mcp-token/mine", {}),
-  create: (body: { name: string; expiresAt: string }) =>
-    apiFetch<McpTokenCreated>("/api/mcp-token/create", { method: "POST", body: JSON.stringify(body) }),
-  revoke: (id: string) => apiFetch<boolean>(`/api/mcp-token/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  getMe: () => apiFetch<GetUserResponse>("/user/me", { silentStatuses: [401] }),
 };
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -244,11 +270,17 @@ export const users = {
   me: () => apiFetch<GetUserResponse>("/user/me", {}),
   getAll: () => apiFetch<GetUserResponse[]>("/user/admin/getAllUsers", {}),
   getAllAdmin: () => apiFetch<GetUserResponse[]>("/user/admin/getAllUsers", {}),
+  getAllResidents: () => apiFetch<GetUserResponse[]>("/user/getAllUsers", {}),
   getAllSlim: () => apiFetch<UserSlim[]>("/user/getAllUsersSlim", {}),
   getById: (id: number) => apiFetch<GetUserResponse>(`/user/admin/getUserById?userId=${id}`, {}),
   deleteUser: (id: number) => apiFetch<unknown>(`/user/deleteUser?userId=${id}`, { method: "DELETE" }),
   updateProfile: (form: FormData) =>
-    fetch(`${BASE_URL}/user/update/profile`, { method: "PUT", body: form, credentials: "include" })
+    fetch(`${BASE_URL}/user/update/profile`, {
+      method: "PUT",
+      body: form,
+      credentials: "include",
+      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : undefined,
+    })
       .then((r) => r.json()),
   updateUsername: (userId: number, newUsername: string) =>
     apiFetch<boolean>(`/user/update/username?userId=${userId}&newUsername=${encodeURIComponent(newUsername)}`, { method: "PUT" }),
@@ -325,6 +357,35 @@ export const residents = {
   update: (body: Partial<ResidentResponse> & { id: number }) =>
     apiFetch<boolean>("/api/Resident/update", { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: number) => apiFetch<boolean>(`/api/Resident/delete/${id}`, { method: "DELETE" }),
+};
+
+export const accessControl = {
+  getFace: (residentId: number) =>
+    apiFetch<FaceProfileResponse>(`/api/access-control/faces/${residentId}`, {
+      silentStatuses: [404],
+    }),
+  registerFace: (residentId: number, imageUrl: string) =>
+    apiFetch<FaceProfileResponse>("/api/access-control/faces/register", {
+      method: "POST", body: JSON.stringify({ residentId, imageUrl }),
+    }),
+  deleteFace: (residentId: number) =>
+    apiFetch<boolean>(`/api/access-control/faces/${residentId}`, { method: "DELETE" }),
+  getEvents: (params?: { personType?: string; status?: string; direction?: string }) => {
+    const query = params
+      ? new URLSearchParams(Object.entries(params).filter(([, value]) => value) as [string, string][]).toString()
+      : "";
+    return apiFetch<AccessEventResponse[]>(`/api/access-control/events${query ? `?${query}` : ""}`, {});
+  },
+  handleEvent: (id: number, body: { status: string; note?: string; handledByAuthUserId?: number }) =>
+    apiFetch<boolean>(`/api/access-control/events/${id}/handle`, {
+      method: "PUT", body: JSON.stringify(body),
+    }),
+  deleteEvent: (id: number) =>
+    apiFetch<boolean>(`/api/access-control/events/${id}`, { method: "DELETE" }),
+  analyzeFrame: (body: { imageDataUrl: string; cameraName: string; direction: "in" | "out" }) =>
+    apiFetch<CameraRecognitionResponse>("/api/access-control/camera/analyze", {
+      method: "POST", body: JSON.stringify(body),
+    }),
 };
 
 // ─── Notifications ────────────────────────────────────────────────────────────
@@ -796,7 +857,6 @@ export interface OcrJobResponse {
   fileUrl?: string; fileName?: string; fileSizeBytes?: number; confidenceScore?: number;
   rawExtractedText?: string;   // JSON do worker OCR ghi: { rawText, fields, lineItems }
   errorMessage?: string; startedAt?: string; completedAt?: string; submittedBy?: string; submittedByName?: string; submittedAt: string;
-  ocrEngine?: string;  // "gemini" | "vietocr"
 }
 
 // Cấu trúc JSON bóc tách trong OcrJobResponse.rawExtractedText (worker serialize camelCase).
@@ -893,7 +953,7 @@ export const ocrJobs = {
   // submittedBy là Guid? cross-service (Auth) — chưa có directory người dùng nên luôn gửi
   // EMPTY_GUID; tên người gửi (free-text) ghi riêng vào submittedByName (theo pattern
   // reportedByName/requestedByName). Tránh lỗi 400 khi serialize tên → Guid.
-  submit: (body: { documentType: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedByName?: string; ocrEngine?: string }) =>
+  submit: (body: { documentType: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedByName?: string }) =>
     apiFetch<string>(`/api/asset/ocr-job/submit`, { method: "POST", body: JSON.stringify({ ...body, submittedBy: EMPTY_GUID }) }),
   markReviewed: (id: string, reviewedByName?: string) =>
     apiFetch<boolean>(`/api/asset/ocr-job/mark-reviewed/${id}`, { method: "PUT", body: JSON.stringify({ reviewedBy: EMPTY_GUID, reviewedByName }) }),

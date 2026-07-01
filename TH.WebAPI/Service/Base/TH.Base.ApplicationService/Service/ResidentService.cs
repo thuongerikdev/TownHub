@@ -127,14 +127,50 @@ namespace TH.TownHub.ApplicationService.Service
         {
             try
             {
-                var entity = await _dbContext.Residents.FirstOrDefaultAsync(x => x.Id == id);
-                if (entity == null)
-                    return ResponseConst.Error<bool>(404, "Không tìm thấy cư dân.");
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+                return await strategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var entity = await _dbContext.Residents.FirstOrDefaultAsync(x => x.Id == id);
+                        if (entity == null)
+                            return ResponseConst.Error<bool>(404, "Không tìm thấy cư dân.");
 
-                _dbContext.Residents.Remove(entity);
-                await _dbContext.SaveChangesAsync();
+                        // Preserve historical records while removing references that would
+                        // otherwise violate nullable foreign-key constraints in PostgreSQL.
+                        await _dbContext.AccessEvents
+                            .Where(x => x.ResidentId == id)
+                            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.ResidentId, (int?)null));
 
-                return ResponseConst.Success("Xóa cư dân thành công.", true);
+                        await _dbContext.NotificationLogs
+                            .Where(x => x.ResidentId == id)
+                            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.ResidentId, (int?)null));
+
+                        await _dbContext.FaceProfiles
+                            .Where(x => x.ResidentId == id)
+                            .ExecuteDeleteAsync();
+
+                        _dbContext.Residents.Remove(entity);
+                        await _dbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return ResponseConst.Success("Xóa cư dân thành công.", true);
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Không thể xóa cư dân do dữ liệu liên quan. ID: {Id}", id);
+                return ResponseConst.Error<bool>(
+                    409,
+                    "Không thể xóa cư dân vì vẫn còn dữ liệu liên quan chưa được xử lý."
+                );
             }
             catch (Exception ex)
             {

@@ -75,7 +75,11 @@ export default function UsersPage() {
     }
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    // Initial remote data synchronization for this client-only administration screen.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchUsers();
+  }, [fetchUsers]);
 
   const filtered = userList.filter((u) => {
     const q = searchTerm.toLowerCase();

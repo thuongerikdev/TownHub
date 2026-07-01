@@ -79,17 +79,6 @@ namespace TH.WebAPI
             //builder.ConfigureMovie(typeof(Program).Namespace);
             builder.Services.AddHealthChecks();
 
-            // === MCP Server (Model Context Protocol) ===
-            // Expose nghiệp vụ TownHub thành "tools" cho LLM (Claude) gọi qua HTTP tại /mcp.
-            // Các tool nằm trong namespace TH.WebAPI.Mcp, dùng lại trực tiếp tầng Service qua DI.
-            builder.Services
-                .AddMcpServer(options =>
-                {
-                    options.ServerInfo = new() { Name = "TownHub", Version = "1.0.0" };
-                })
-                .WithHttpTransport()
-                .WithToolsFromAssembly();
-
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
                 {
@@ -193,14 +182,6 @@ namespace TH.WebAPI
             app.UseAuthorization();
 
             app.MapControllers();
-
-            // Endpoint MCP (Streamable HTTP). Client kết nối tới: {host}/mcp
-            // Bắt buộc JWT mặc định (dùng default policy = RequireAuthenticatedUser của JwtBearer).
-            // Đặt MCP_REQUIRE_AUTH=false để tắt khi demo cục bộ.
-            var mcpEndpoint = app.MapMcp("/mcp");
-            if (app.Configuration.GetValue("MCP_REQUIRE_AUTH", true))
-                mcpEndpoint.RequireAuthorization();
-
             await app.RunAsync();
         }
 

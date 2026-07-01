@@ -58,8 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.errorCode === 200 && res.data) {
         setState((s) => ({ ...s, user: res.data, loading: false }));
       } else {
-        setState((s) => ({ ...s, user: null, loading: false }));
         clearToken();
+        clearAuthCache();
+        setState({
+          user: null,
+          permissions: [],
+          roles: [],
+          loading: false,
+          sessionId: null,
+          token: null,
+        });
       }
     } catch {
       setState((s) => ({ ...s, user: null, loading: false }));
@@ -86,7 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (userName: string, password: string) => {
       try {
-        const res = await auth.staffLogin(userName, password);
+        let res = await auth.userLogin(userName, password);
+        if (res.errorCode !== 200 || !res.data) {
+          res = await auth.staffLogin(userName, password);
+        }
 
         if (res.errorCode !== 200 || !res.data) {
           return { error: res.errorMessage || "Sai tài khoản hoặc mật khẩu" };
