@@ -433,6 +433,20 @@ export const health = {
   check: () => fetch(`${BASE_URL}/healthz`).then((r) => r.text()).catch(() => "offline"),
 };
 
+// ─── MCP Tokens ───────────────────────────────────────────────────────────────
+export interface McpTokenItem {
+  id: string; name: string; createdAt: string; expiresAt: string; revoked: boolean;
+}
+export interface McpTokenCreated {
+  id: string; name: string; token: string; createdAt: string; expiresAt: string;
+}
+export const mcpTokens = {
+  getMine: () => apiFetch<McpTokenItem[]>("/api/mcp-token/mine", {}),
+  create: (body: { name: string; expiresAt: string }) =>
+    apiFetch<McpTokenCreated>("/api/mcp-token/create", { method: "POST", body: JSON.stringify(body) }),
+  revoke: (id: string) => apiFetch<boolean>(`/api/mcp-token/${id}`, { method: "DELETE" }),
+};
+
 // ════════════════════════════════════════════════════════════════════════════
 // ASSET MODULE (Kỹ thuật & Tài sản) — api/asset/*
 // PK = Guid (string). decimal→number, DateTime→ISO string.
