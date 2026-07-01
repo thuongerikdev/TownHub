@@ -49,7 +49,8 @@
       "Bash(node -e \"console.log\\(require.resolve\\('mcp-remote/dist/proxy.js'\\)\\)\")",
       "Bash(node -e \"const p=require\\('./node_modules/mcp-remote/package.json'\\); console.log\\('bin:', JSON.stringify\\(p.bin\\)\\)\")",
       "Bash(rm -f TH.WebAPI/TH.WebAPI/Ai/AiChatService.cs TH.WebAPI/TH.WebAPI/Controllers/AiController.cs \"datn/components/system/AiAssistant.tsx\")",
-      "Bash(rmdir TH.WebAPI/TH.WebAPI/Ai)"
+      "Bash(rmdir TH.WebAPI/TH.WebAPI/Ai)",
+      "Bash(TOWNHUB_URL=\"https://townhub-new.fly.dev/mcp\" TOWNHUB_TOKEN=\"dummy.tok\" timeout 6 node server/index.js)"
     ]
   }
 }
