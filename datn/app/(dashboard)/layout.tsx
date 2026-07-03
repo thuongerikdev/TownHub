@@ -14,12 +14,15 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { notifications, residents } from "@/lib/api";
 
-type NavChild = { label: string; path: string; perm?: string };
+type NavChild = { label: string; path: string; perm?: string; residentOnly?: boolean; adminOnly?: boolean };
 type NavItem = {
   icon: React.ElementType;
   label: string;
   path: string;
+  residentOnly?: boolean;
+  adminOnly?: boolean;
   perm?: string;            // quyền tối thiểu để thấy mục này
   children?: NavChild[];
 };
@@ -38,6 +41,10 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       { icon: Users, label: "Tài khoản cư dân", path: "/residents", perm: "resident.view" },
       { icon: Cctv, label: "Camera giám sát", path: "/cameras", perm: "notification.view" },
       { icon: ScanFace, label: "Người lạ ra / vào", path: "/access-alerts", perm: "notification.view" },
+      { icon: BellRing, label: "Cộng đồng cư dân", path: "/community", residentOnly: true },
+      { icon: ClipboardList, label: "Tương tác cư dân", path: "/admin/engagement", adminOnly: true },
+      { icon: Building2, label: "Quản lý tiện ích cư dân", path: "/admin/resident-cards", adminOnly: true },
+      { icon: Building2, label: "Thẻ từ", path: "/resident-card", residentOnly: true },
     ],
   },
   {
@@ -131,9 +138,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [hasResidentProfile, setHasResidentProfile] = useState(false);
+  const [hasResidentUpdates, setHasResidentUpdates] = useState(false);
   const pathname = usePathname();
-  const { user, loading, logout, hasPermission } = useAuth();
+  const { user, loading, logout, hasPermission, roles } = useAuth();
   const router = useRouter();
+  // Deployments may name the administrator role differently (Admin, Quản trị viên,
+  // System Administrator). Notification-management permission is the reliable gate.
+  const isAdmin = roles.some((role) => /admin|quản trị|quan tri/i.test(role.roleName)) ||
+    hasPermission("notification.manage") || hasPermission("notification.send");
+  const isResident = roles.some((role) => /cư dân|resident|chủ hộ|chu ho/i.test(role.roleName));
+
+  useEffect(() => {
+    if (!user) { setHasResidentProfile(false); return; }
+    residents.getAll().then((response) => {
+      setHasResidentProfile(response.errorCode === 200 && Boolean(response.data?.some((resident) => resident.authUserId === user.userID)));
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!isResident && !hasResidentProfile) return;
+    const seenAt = Number(localStorage.getItem("townhub.resident.seen-at") ?? "0");
+    const hasNewPoll = (() => {
+      try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).some((poll) => poll.id > seenAt); }
+      catch { return false; }
+    })();
+    notifications.getAll().then((response) => {
+      const hasNewNotification = response.errorCode === 200 && Boolean(response.data?.some((item) => new Date(item.createdAt).getTime() > seenAt));
+      setHasResidentUpdates(hasNewPoll || hasNewNotification);
+    });
+  }, [hasResidentProfile, isResident, pathname]);
+
+  function openResidentUpdates() {
+    localStorage.setItem("townhub.resident.seen-at", String(Date.now()));
+    setHasResidentUpdates(false);
+  }
 
   // Lọc menu theo quyền: mục/đề mục không đủ quyền sẽ bị ẩn.
   // (admin là siêu quản trị → hasPermission luôn true → thấy đủ.)
@@ -141,9 +180,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const items: NavItem[] = [];
     for (const item of section.items) {
       if (item.children?.length) {
-        const kids = item.children.filter((c) => !c.perm || hasPermission(c.perm));
+        const kids = item.children.filter((c) => (!c.perm || hasPermission(c.perm)) && (!c.residentOnly || isResident || hasResidentProfile) && (!c.adminOnly || isAdmin));
         if (kids.length > 0) items.push({ ...item, children: kids });
-      } else if (!item.perm || hasPermission(item.perm)) {
+      } else if ((!item.perm || hasPermission(item.perm)) && (!item.residentOnly || isResident || hasResidentProfile) && (!item.adminOnly || isAdmin)) {
         items.push(item);
       }
     }
@@ -343,9 +382,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link href="/notifications" className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+            <Link href={isResident || hasResidentProfile ? "/community" : "/notifications"} onClick={openResidentUpdates} className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
               <BellRing className="size-4" />
-              <span className="absolute right-1.5 top-1.5 size-1.5 animate-pulse rounded-full bg-danger" />
+              {hasResidentUpdates && <span className="absolute right-1.5 top-1.5 size-1.5 animate-pulse rounded-full bg-danger" />}
             </Link>
           </div>
         </header>

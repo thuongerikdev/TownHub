@@ -57,7 +57,8 @@
       "PowerShell(Get-ChildItem -Path \"D:\\\\DATN\\\\TownHub\\\\TH.WebAPI\\\\Service\\\\Asset\" -Directory | ForEach-Object {$_.Name})",
       "mcp__visualize__read_me",
       "Bash(node -e ' *)",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(dotnet build *)"
     ]
   }
 }

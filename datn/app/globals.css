@@ -219,3 +219,13 @@
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+/* Native selects used in dark management forms need an explicit popup palette. */
+select[class*="color-scheme"] {
+  background-color: #52525b !important;
+  color: #fff;
+}
+
+select[class*="color-scheme"] option {
+  background-color: #52525b;
+  color: #fff;
+}
