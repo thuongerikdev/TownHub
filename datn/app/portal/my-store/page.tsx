@@ -12,6 +12,7 @@ import {
   type PriceListItem,
   type ServiceRequest,
   type ServiceRequestStatus,
+  formatPriceRange,
 } from "@/lib/api";
 import {
   Briefcase, Store, Plus, Pencil, Trash2, CheckCircle,
@@ -92,12 +93,19 @@ function parsePriceList(json?: string): PriceListItem[] {
   catch { return []; }
 }
 
+function toLocalInputValue(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // ─── Listing form modal ───────────────────────────────────────────────────────
 
 interface ListingFormState {
   name: string; category: string; description: string;
   contactPhone: string; contactEmail: string; contactAddress: string;
-  priceItems: { name: string; unit: string; price: string }[];
+  priceItems: { name: string; unit: string; priceFrom: string; priceTo: string }[];
 }
 
 interface ListingModalProps {
@@ -111,9 +119,9 @@ interface ListingModalProps {
 
 function ListingModal({ mode, initial, providerContact, saving, onSave, onClose }: ListingModalProps) {
   const [form, setForm] = useState<ListingFormState>(initial);
-  const addRow = () => setForm((f) => ({ ...f, priceItems: [...f.priceItems, { name: "", unit: "lần", price: "" }] }));
+  const addRow = () => setForm((f) => ({ ...f, priceItems: [...f.priceItems, { name: "", unit: "lần", priceFrom: "", priceTo: "" }] }));
   const removeRow = (i: number) => setForm((f) => ({ ...f, priceItems: f.priceItems.filter((_, j) => j !== i) }));
-  const updateRow = (i: number, k: "name" | "unit" | "price", v: string) =>
+  const updateRow = (i: number, k: "name" | "unit" | "priceFrom" | "priceTo", v: string) =>
     setForm((f) => ({ ...f, priceItems: f.priceItems.map((r, j) => j === i ? { ...r, [k]: v } : r) }));
 
   return (
@@ -204,19 +212,22 @@ function ListingModal({ mode, initial, providerContact, saving, onSave, onClose 
               </button>
             ) : (
               <div className="space-y-2">
-                <div className="grid grid-cols-[1fr_72px_96px_28px] gap-2 px-1">
+                <div className="grid grid-cols-[1fr_56px_84px_84px_28px] gap-2 px-1">
                   <p className="text-[10px] text-zinc-600">Tên mục</p>
                   <p className="text-[10px] text-zinc-600">Đơn vị</p>
-                  <p className="text-[10px] text-zinc-600">Giá (đ)</p>
+                  <p className="text-[10px] text-zinc-600">Giá từ (đ)</p>
+                  <p className="text-[10px] text-zinc-600">Giá đến (đ)</p>
                   <div />
                 </div>
                 {form.priceItems.map((item, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_72px_96px_28px] gap-2 items-center">
+                  <div key={i} className="grid grid-cols-[1fr_56px_84px_84px_28px] gap-2 items-center">
                     <input value={item.name} onChange={(e) => updateRow(i, "name", e.target.value)} placeholder="Sửa ổ điện"
                       className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-amber-500/40" />
                     <input value={item.unit} onChange={(e) => updateRow(i, "unit", e.target.value)} placeholder="cái"
                       className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-amber-500/40" />
-                    <input type="number" min={0} value={item.price} onChange={(e) => updateRow(i, "price", e.target.value)} placeholder="150000"
+                    <input type="number" min={0} value={item.priceFrom} onChange={(e) => updateRow(i, "priceFrom", e.target.value)} placeholder="100000"
+                      className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-amber-500/40" />
+                    <input type="number" min={0} value={item.priceTo} onChange={(e) => updateRow(i, "priceTo", e.target.value)} placeholder="200000"
                       className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-amber-500/40" />
                     <button type="button" onClick={() => removeRow(i)}
                       className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
@@ -313,6 +324,12 @@ function ReqCard({ req, theme, onAccept, onReject, onUpdateStatus }: ReqCardProp
           )}
         </div>
 
+        {req.scheduledDate && (
+          <p className="flex items-center gap-1.5 text-[10px] text-amber-400/90 px-1">
+            <Clock className="w-3 h-3" /> Hẹn thợ đến: {new Date(req.scheduledDate).toLocaleString("vi-VN")}
+          </p>
+        )}
+
         {/* Expandable detail */}
         {expanded && (
           <div className="space-y-2 text-xs text-zinc-400 pt-1">
@@ -400,6 +417,8 @@ export default function MyStorePage() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [rejectModal, setRejectModal]     = useState<number | null>(null);
   const [rejectReason, setRejectReason]   = useState("");
+  const [acceptModal, setAcceptModal]     = useState<ServiceRequest | null>(null);
+  const [acceptDate, setAcceptDate]       = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const showToast = (msg: string, ok = true) => {
@@ -462,7 +481,7 @@ export default function MyStorePage() {
       contactPhone:   l.contactPhone   ?? providerContact.phone,
       contactEmail:   l.contactEmail   ?? providerContact.email,
       contactAddress: l.contactAddress ?? providerContact.address,
-      priceItems: prices.map((p) => ({ name: p.name, unit: p.unit ?? "lần", price: String(p.price) })),
+      priceItems: prices.map((p) => ({ name: p.name, unit: p.unit ?? "lần", priceFrom: String(p.priceFrom), priceTo: String(p.priceTo ?? "") })),
     };
   }
 
@@ -472,7 +491,11 @@ export default function MyStorePage() {
     if (!myProvider) return;
     setSavingListing(true);
     const priceList = form.priceItems.filter((p) => p.name.trim())
-      .map((p) => ({ name: p.name, unit: p.unit, price: Number(p.price) || 0 }));
+      .map((p) => {
+        const priceFrom = Number(p.priceFrom) || 0;
+        const priceTo = Number(p.priceTo) || undefined;
+        return { name: p.name, unit: p.unit, priceFrom, priceTo };
+      });
     const res = await listingsApi.register({
       providerId: myProvider.id, name: form.name, category: form.category,
       description: form.description || undefined,
@@ -489,7 +512,11 @@ export default function MyStorePage() {
     if (!editModal) return;
     setSavingListing(true);
     const priceList = form.priceItems.filter((p) => p.name.trim())
-      .map((p) => ({ name: p.name, unit: p.unit, price: Number(p.price) || 0 }));
+      .map((p) => {
+        const priceFrom = Number(p.priceFrom) || 0;
+        const priceTo = Number(p.priceTo) || undefined;
+        return { name: p.name, unit: p.unit, priceFrom, priceTo };
+      });
     const res = await listingsApi.update({
       id: editModal.id, name: form.name, category: form.category,
       description: form.description || undefined,
@@ -511,13 +538,14 @@ export default function MyStorePage() {
 
   // ── Request actions ──────────────────────────────────────────────────────────
 
-  async function handleAccept(id: number) {
+  async function handleAccept(id: number, scheduledDate?: string) {
     if (!myProvider) return;
     setActionLoading(id);
-    const res = await srApi.acceptByProvider(id, myProvider.id);
+    const res = await srApi.acceptByProvider(id, myProvider.id, scheduledDate);
     if (res.errorCode === 200) {
       showToast("Đã nhận việc!");
-      setRequests((r) => r.map((x) => x.id === id ? { ...x, status: "accepted_by_provider" as ServiceRequestStatus } : x));
+      setRequests((r) => r.map((x) => x.id === id ? { ...x, status: "accepted_by_provider" as ServiceRequestStatus, scheduledDate: scheduledDate ?? x.scheduledDate } : x));
+      setAcceptModal(null);
     } else showToast(res.errorMessage || "Lỗi xác nhận", false);
     setActionLoading(null);
   }
@@ -748,7 +776,7 @@ export default function MyStorePage() {
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {prices.slice(0, 2).map((p, i) => (
                           <span key={i} className="text-[10px] px-2 py-0.5 bg-white/5 text-zinc-400 rounded-full">
-                            {p.name}: {p.price.toLocaleString("vi-VN")}đ/{p.unit}
+                            {p.name}: {formatPriceRange(p)}/{p.unit}
                           </span>
                         ))}
                         {prices.length > 2 && <span className="text-[10px] text-zinc-600">+{prices.length - 2}</span>}
@@ -809,7 +837,7 @@ export default function MyStorePage() {
               </p>
               {pendingReqs.map((req) => (
                 <ReqCard key={req.id} req={req} theme={theme}
-                  onAccept={() => handleAccept(req.id)}
+                  onAccept={() => { setAcceptModal(req); setAcceptDate(toLocalInputValue(req.scheduledDate)); }}
                   onReject={() => { setRejectModal(req.id); setRejectReason(""); }}
                   onUpdateStatus={(s) => handleUpdateStatus(req.id, s)} />
               ))}
@@ -825,7 +853,7 @@ export default function MyStorePage() {
               </p>
               {activeReqs.map((req) => (
                 <ReqCard key={req.id} req={req} theme={theme}
-                  onAccept={() => handleAccept(req.id)}
+                  onAccept={() => { setAcceptModal(req); setAcceptDate(toLocalInputValue(req.scheduledDate)); }}
                   onReject={() => { setRejectModal(req.id); setRejectReason(""); }}
                   onUpdateStatus={(s) => handleUpdateStatus(req.id, s)} />
               ))}
@@ -885,6 +913,37 @@ export default function MyStorePage() {
         </div>
       )}
 
+      {/* ── Accept (confirm appointment time) modal ─────────────────────────── */}
+      {acceptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setAcceptModal(null)}>
+          <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white">Nhận việc</h2>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Xác nhận thời gian thợ đến sửa chữa</p>
+              </div>
+            </div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Thời gian hẹn</label>
+            <input type="datetime-local" value={acceptDate} onChange={(e) => setAcceptDate(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:ring-1 focus:ring-emerald-500/40 mb-4 [color-scheme:dark]" />
+            <div className="flex gap-2">
+              <button onClick={() => setAcceptModal(null)}
+                className="flex-1 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors">Hủy</button>
+              <button onClick={() => handleAccept(acceptModal.id, acceptDate ? new Date(acceptDate).toISOString() : undefined)}
+                disabled={actionLoading === acceptModal.id}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black text-sm font-bold rounded-xl transition-colors">
+                {actionLoading === acceptModal.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                Xác nhận nhận việc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Toast ────────────────────────────────────────────────────────── */}
       {toast && (
         <div className={`fixed bottom-20 right-4 z-60 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium shadow-xl ${
@@ -897,10 +956,3 @@ export default function MyStorePage() {
     </div>
   );
 }
-
-// Type alias needed by ListingModal
-type ListingFormState = {
-  name: string; category: string; description: string;
-  contactPhone: string; contactEmail: string; contactAddress: string;
-  priceItems: { name: string; unit: string; price: string }[];
-};

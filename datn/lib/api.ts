@@ -487,8 +487,8 @@ export const serviceRequests = {
     apiFetch<boolean>("/api/ServiceRequest/approve-by-mgt", { method: "PUT", body: JSON.stringify({ id, approvedByAuthUserId }) }),
   rejectByMgt: (id: number, reason: string) =>
     apiFetch<boolean>("/api/ServiceRequest/reject-by-mgt", { method: "PUT", body: JSON.stringify({ id, reason }) }),
-  acceptByProvider: (id: number, providerId: number) =>
-    apiFetch<boolean>("/api/ServiceRequest/accept-by-provider", { method: "PUT", body: JSON.stringify({ id, providerId }) }),
+  acceptByProvider: (id: number, providerId: number, scheduledDate?: string) =>
+    apiFetch<boolean>("/api/ServiceRequest/accept-by-provider", { method: "PUT", body: JSON.stringify({ id, providerId, scheduledDate }) }),
   rejectByProvider: (id: number, reason: string) =>
     apiFetch<boolean>("/api/ServiceRequest/reject-by-provider", { method: "PUT", body: JSON.stringify({ id, reason }) }),
   updateStatus: (id: number, status: "in_progress" | "completed") =>
@@ -500,7 +500,14 @@ export const serviceRequests = {
 export interface PriceListItem {
   name: string;
   unit?: string;
-  price: number;
+  priceFrom: number;
+  priceTo?: number;
+}
+
+export function formatPriceRange(p: PriceListItem): string {
+  const from = p.priceFrom.toLocaleString("vi-VN");
+  if (!p.priceTo || p.priceTo <= p.priceFrom) return `${from}đ`;
+  return `${from} - ${p.priceTo.toLocaleString("vi-VN")}đ`;
 }
 
 export interface ProviderServiceListing {

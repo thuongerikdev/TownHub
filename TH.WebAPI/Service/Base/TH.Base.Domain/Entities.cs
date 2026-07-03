@@ -492,6 +492,7 @@ namespace TH.TownHub.Domain.Entities
 
         public string? ProviderRejectionReason { get; set; }
 
+        // Thời điểm hẹn thợ đến — cư dân đề xuất khi tạo yêu cầu, NCC có thể điều chỉnh khi nhận việc
         public DateTime? ScheduledDate { get; set; }
         public DateTime? CompletedAt { get; set; }
 
@@ -528,7 +529,7 @@ namespace TH.TownHub.Domain.Entities
         public string? ContactEmail { get; set; }
         public string? ContactAddress { get; set; }
 
-        // Bảng giá — JSON array: [{"name":"...","unit":"...","price":150000}]
+        // Bảng giá theo khoảng — JSON array: [{"name":"...","unit":"...","priceFrom":100000,"priceTo":200000}]
         public string? PriceList { get; set; }
 
         [Required]

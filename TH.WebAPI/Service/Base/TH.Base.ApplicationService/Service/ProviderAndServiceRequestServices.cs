@@ -813,6 +813,8 @@ namespace TH.TownHub.ApplicationService.Service
 
                 entity.Status = "accepted_by_provider";
                 entity.ProviderId = request.providerId;
+                if (request.scheduledDate.HasValue)
+                    entity.ScheduledDate = request.scheduledDate.Value;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();

@@ -396,6 +396,8 @@ namespace TH.TownHub.Dtos
     {
         public int id { get; set; }
         public int providerId { get; set; }
+        // NCC xác nhận/điều chỉnh thời điểm thợ đến — nếu null thì giữ nguyên thời gian cư dân đã đề xuất
+        public DateTime? scheduledDate { get; set; }
     }
 
     public class RejectByProviderRequestDto
@@ -454,8 +456,8 @@ namespace TH.TownHub.Dtos
         public string? contactEmail { get; set; }
         public string? contactAddress { get; set; }
 
-        // Bảng giá — JSON array
-        // Ví dụ: [{"name":"Sửa ổ điện","unit":"cái","price":150000}]
+        // Bảng giá — JSON array, giá theo khoảng (báo giá thực tế tùy hiện trạng sửa chữa)
+        // Ví dụ: [{"name":"Sửa ổ điện","unit":"cái","priceFrom":100000,"priceTo":200000}]
         public string? priceList { get; set; }
     }
 
@@ -468,6 +470,7 @@ namespace TH.TownHub.Dtos
         public string? contactPhone { get; set; }
         public string? contactEmail { get; set; }
         public string? contactAddress { get; set; }
+        // Bảng giá — JSON array, giá theo khoảng. Ví dụ: [{"name":"...","unit":"...","priceFrom":100000,"priceTo":200000}]
         public string? priceList { get; set; }
     }
 

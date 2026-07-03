@@ -10,6 +10,7 @@ import {
   type Provider,
   type ProviderServiceListing,
   type PriceListItem,
+  formatPriceRange,
 } from "@/lib/api";
 import {
   Store, Phone, Mail, MapPin, Star, CheckCircle,
@@ -110,7 +111,7 @@ function ListingCard({
               <div key={i} className="flex items-center justify-between text-xs">
                 <span className="text-zinc-400">{p.name}</span>
                 <span className={`font-semibold ${theme.text}`}>
-                  {p.price.toLocaleString("vi-VN")}đ
+                  {formatPriceRange(p)}
                   {p.unit && <span className="text-zinc-600 font-normal">/{p.unit}</span>}
                 </span>
               </div>
@@ -159,7 +160,7 @@ interface ReqModalProps {
 const CAT_ENTRIES = Object.entries(CAT_META);
 
 function ReqModal({ provider, theme, authUserId, initialTitle = "", initialCategory = "other", onClose, onSuccess }: ReqModalProps) {
-  const [form, setForm] = useState({ title: initialTitle, description: "", category: initialCategory, note: "" });
+  const [form, setForm] = useState({ title: initialTitle, description: "", category: initialCategory, note: "", scheduledDate: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
 
@@ -175,6 +176,7 @@ function ReqModal({ provider, theme, authUserId, initialTitle = "", initialCateg
       providerId: provider.id,
       requestedByAuthUserId: authUserId,
       requiresMgtApproval: false,
+      scheduledDate: form.scheduledDate ? new Date(form.scheduledDate).toISOString() : undefined,
       note: form.note || undefined,
     });
     if (res.errorCode === 200) {
@@ -223,6 +225,13 @@ function ReqModal({ provider, theme, authUserId, initialTitle = "", initialCateg
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3} placeholder="Mô tả vấn đề cần hỗ trợ..."
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-amber-500/40 resize-none" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Thời gian mong muốn thợ đến</label>
+            <input type="datetime-local" value={form.scheduledDate}
+              onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:ring-1 focus:ring-amber-500/40 [color-scheme:dark]" />
           </div>
 
           <div>

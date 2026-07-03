@@ -18,6 +18,7 @@ import {
   type ServiceRequestStatus,
   type ProviderServiceListing,
   type PriceListItem,
+  formatPriceRange,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -110,7 +111,7 @@ export default function ProvidersPage() {
   const [listingForm, setListingForm] = useState({
     name: "", category: "electrical", description: "",
     contactPhone: "", contactEmail: "", contactAddress: "",
-    priceItems: [] as { name: string; unit: string; price: string }[],
+    priceItems: [] as { name: string; unit: string; priceFrom: string; priceTo: string }[],
   });
 
   const [addReqModal, setAddReqModal] = useState<Provider | null>(null);
@@ -118,7 +119,7 @@ export default function ProvidersPage() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const [reqForm, setReqForm] = useState({
-    title: "", description: "", category: "other", note: "",
+    title: "", description: "", category: "other", note: "", scheduledDate: "",
   });
 
   const showToast = (msg: string, ok = true) => {
@@ -236,14 +237,14 @@ export default function ProvidersPage() {
   }
 
   function addPriceRow() {
-    setListingForm((f) => ({ ...f, priceItems: [...f.priceItems, { name: "", unit: "lần", price: "" }] }));
+    setListingForm((f) => ({ ...f, priceItems: [...f.priceItems, { name: "", unit: "lần", priceFrom: "", priceTo: "" }] }));
   }
 
   function removePriceRow(idx: number) {
     setListingForm((f) => ({ ...f, priceItems: f.priceItems.filter((_, i) => i !== idx) }));
   }
 
-  function updatePriceRow(idx: number, field: "name" | "unit" | "price", value: string) {
+  function updatePriceRow(idx: number, field: "name" | "unit" | "priceFrom" | "priceTo", value: string) {
     setListingForm((f) => ({
       ...f,
       priceItems: f.priceItems.map((item, i) => i === idx ? { ...item, [field]: value } : item),
@@ -255,7 +256,7 @@ export default function ProvidersPage() {
     setListingSaving(true);
     const priceList = listingForm.priceItems
       .filter((p) => p.name.trim())
-      .map((p) => ({ name: p.name, unit: p.unit, price: Number(p.price) || 0 }));
+      .map((p) => ({ name: p.name, unit: p.unit, priceFrom: Number(p.priceFrom) || 0, priceTo: Number(p.priceTo) || undefined }));
 
     const res = await listingsApi.register({
       providerId: addListingModal.id,
@@ -291,12 +292,13 @@ export default function ProvidersPage() {
       providerId: addReqModal.id,
       requestedByAuthUserId: user.userID,
       requiresMgtApproval: false,
+      scheduledDate: reqForm.scheduledDate ? new Date(reqForm.scheduledDate).toISOString() : undefined,
       note: reqForm.note,
     });
     if (res.errorCode === 200) {
       showToast(`Đã gửi yêu cầu đến ${addReqModal.companyName}`);
       setAddReqModal(null);
-      setReqForm({ title: "", description: "", category: "other", note: "" });
+      setReqForm({ title: "", description: "", category: "other", note: "", scheduledDate: "" });
       fetchAll();
     } else {
       showToast(res.errorMessage || "Lỗi gửi yêu cầu", false);
@@ -583,7 +585,7 @@ export default function ProvidersPage() {
                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                     {prices.slice(0, 3).map((p, i) => (
                                       <span key={i} className="text-[10px] px-2 py-0.5 bg-white/5 text-zinc-400 rounded-full">
-                                        {p.name}: {p.price.toLocaleString("vi-VN")}đ/{p.unit}
+                                        {p.name}: {formatPriceRange(p)}/{p.unit}
                                       </span>
                                     ))}
                                     {prices.length > 3 && (
@@ -640,6 +642,7 @@ export default function ProvidersPage() {
                                     {req.requestedByName ?? (req.requestedBy === "management" ? "Ban quản lý" : "Cư dân")}
                                   </span>
                                   {req.apartmentCode && <><span className="text-zinc-600">·</span><span className="text-amber-400">{req.apartmentCode}</span></>}
+                                  {req.scheduledDate && <><span className="text-zinc-600">·</span><span className="text-amber-400">Hẹn {new Date(req.scheduledDate).toLocaleString("vi-VN")}</span></>}
                                   <span className="ml-auto flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
                                     {req.createdAt ? new Date(req.createdAt).toLocaleDateString("vi-VN") : ""}
@@ -816,6 +819,11 @@ export default function ProvidersPage() {
                           <Clock className="w-3 h-3" />
                           {req.createdAt ? new Date(req.createdAt).toLocaleDateString("vi-VN") : ""}
                         </span>
+                        {req.scheduledDate && (
+                          <span className="flex items-center gap-1 text-amber-400">
+                            <Clock className="w-3 h-3" /> Hẹn {new Date(req.scheduledDate).toLocaleString("vi-VN")}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${sm.cls} flex-shrink-0`}>
@@ -1026,14 +1034,15 @@ export default function ProvidersPage() {
                   ) : (
                     <div className="space-y-2">
                       {/* Header */}
-                      <div className="grid grid-cols-[1fr_80px_100px_32px] gap-2 px-1">
+                      <div className="grid grid-cols-[1fr_64px_84px_84px_32px] gap-2 px-1">
                         <p className="text-[10px] text-zinc-600">Tên mục</p>
                         <p className="text-[10px] text-zinc-600">Đơn vị</p>
-                        <p className="text-[10px] text-zinc-600">Giá (đ)</p>
+                        <p className="text-[10px] text-zinc-600">Giá từ (đ)</p>
+                        <p className="text-[10px] text-zinc-600">Giá đến (đ)</p>
                         <div />
                       </div>
                       {listingForm.priceItems.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-[1fr_80px_100px_32px] gap-2 items-center">
+                        <div key={idx} className="grid grid-cols-[1fr_64px_84px_84px_32px] gap-2 items-center">
                           <input
                             value={item.name}
                             onChange={(e) => updatePriceRow(idx, "name", e.target.value)}
@@ -1049,9 +1058,17 @@ export default function ProvidersPage() {
                           <input
                             type="number"
                             min={0}
-                            value={item.price}
-                            onChange={(e) => updatePriceRow(idx, "price", e.target.value)}
-                            placeholder="150000"
+                            value={item.priceFrom}
+                            onChange={(e) => updatePriceRow(idx, "priceFrom", e.target.value)}
+                            placeholder="100000"
+                            className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-emerald-500/50"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={item.priceTo}
+                            onChange={(e) => updatePriceRow(idx, "priceTo", e.target.value)}
+                            placeholder="200000"
                             className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-emerald-500/50"
                           />
                           <button onClick={() => removePriceRow(idx)}
@@ -1062,12 +1079,12 @@ export default function ProvidersPage() {
                       ))}
 
                       {/* Price summary */}
-                      {listingForm.priceItems.some((p) => p.price) && (
+                      {listingForm.priceItems.some((p) => p.priceFrom) && (
                         <div className="flex justify-end mt-1">
                           <p className="text-[10px] text-zinc-600">
-                            {listingForm.priceItems.filter((p) => p.name && p.price).length} mục ·{" "}
-                            {Math.min(...listingForm.priceItems.filter((p) => p.price).map((p) => Number(p.price))).toLocaleString("vi-VN")}đ –{" "}
-                            {Math.max(...listingForm.priceItems.filter((p) => p.price).map((p) => Number(p.price))).toLocaleString("vi-VN")}đ
+                            {listingForm.priceItems.filter((p) => p.name && p.priceFrom).length} mục ·{" "}
+                            {Math.min(...listingForm.priceItems.filter((p) => p.priceFrom).map((p) => Number(p.priceFrom))).toLocaleString("vi-VN")}đ –{" "}
+                            {Math.max(...listingForm.priceItems.filter((p) => p.priceFrom).map((p) => Number(p.priceTo || p.priceFrom))).toLocaleString("vi-VN")}đ
                           </p>
                         </div>
                       )}
@@ -1170,6 +1187,13 @@ export default function ProvidersPage() {
                   <textarea value={reqForm.description} onChange={(e) => setReqForm({ ...reqForm, description: e.target.value })}
                     rows={3} placeholder="Mô tả chi tiết yêu cầu..."
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Thời gian mong muốn thợ đến</label>
+                  <input type="datetime-local" value={reqForm.scheduledDate}
+                    onChange={(e) => setReqForm({ ...reqForm, scheduledDate: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-1 focus:ring-emerald-500/50 [color-scheme:dark]"
                   />
                 </div>
                 <div>
