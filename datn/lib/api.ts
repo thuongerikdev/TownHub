@@ -100,6 +100,20 @@ export const clearToken = () => {
   if (typeof window !== "undefined") localStorage.removeItem("token");
 };
 
+// Refresh token: lưu ở localStorage để gọi refresh theo body (backend ưu tiên
+// body, bỏ qua CSRF). Cookie HttpOnly `fz.refresh` chỉ dùng cho luồng cookie —
+// không hoạt động trên localhost http vì Secure=true.
+export const setRefreshToken = (rt: string) => {
+  if (typeof window !== "undefined") localStorage.setItem("refreshToken", rt);
+};
+export const getRefreshToken = (): string | null => {
+  if (typeof window !== "undefined") return localStorage.getItem("refreshToken");
+  return null;
+};
+export const clearRefreshToken = () => {
+  if (typeof window !== "undefined") localStorage.removeItem("refreshToken");
+};
+
 // ─── Permission cache ──────────────────────────────────────────────────────
 // Lưu permissions/roles của phiên đăng nhập để hasPermission() sống sót qua
 // reload trang (login response chỉ trả 1 lần; account.getMe không kèm quyền).
@@ -128,13 +142,61 @@ export const clearAuthCache = () => {
 // ─── Core fetch ───────────────────────────────────────────────────────────────
 type ApiFetchOptions = RequestInit & {
   silentStatuses?: number[];
+  /** Nội bộ: đánh dấu request đã là lần thử lại sau khi refresh (chống lặp vô hạn). */
+  _isRetry?: boolean;
 };
+
+const REFRESH_PATH = "/login/auth/refresh";
+
+// Khi access token hết hạn (401), tự động dùng refresh token lấy access token mới.
+// Nhiều request 401 đồng thời sẽ dùng chung 1 lần refresh (single-flight) để tránh
+// gọi refresh nhiều lần và làm xoay vòng refresh token liên tục.
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const rt = getRefreshToken();
+    if (!rt) return false;
+    try {
+      const res = await fetch(`${BASE_URL}${REFRESH_PATH}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: rt }),
+        credentials: "include",
+      });
+      if (!res.ok) return false;
+      const json = await res.json().catch(() => null);
+      const data = json?.data;
+      const newAccess: string | undefined = data?.accessToken;
+      if (!newAccess) return false;
+
+      setToken(newAccess);
+      if (data?.refreshToken) setRefreshToken(data.refreshToken);
+      // refresh trả về permissions mới → cập nhật cache (giữ nguyên roles).
+      if (Array.isArray(data?.permissions)) {
+        localStorage.setItem(PERMS_KEY, JSON.stringify(data.permissions));
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
 
 async function apiFetch<T>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<ApiResponse<T>> {
-  const { silentStatuses = [], ...fetchOptions } = options;
+  const { silentStatuses = [], _isRetry = false, ...fetchOptions } = options;
   const controller = new AbortController();
   const timeoutMs = 60_000;
   const timer = setTimeout(
@@ -168,9 +230,21 @@ async function apiFetch<T>(
     const data = isJson ? await res.json() : { errorCode: res.status, errorMessage: res.statusText, data: null };
 
     if (!res.ok) {
-      if (res.status === 401 && typeof window !== "undefined") {
+      if (
+        res.status === 401 &&
+        typeof window !== "undefined" &&
+        !_isRetry &&
+        path !== REFRESH_PATH
+      ) {
+        // Access token hết hạn → thử làm mới rồi gọi lại request gốc đúng 1 lần.
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          clearTimeout(timer);
+          return apiFetch<T>(path, { ...options, _isRetry: true });
+        }
+        // Refresh thất bại (hết/thu hồi refresh token) → coi như đăng xuất.
         clearToken();
-        localStorage.removeItem("refreshToken");
+        clearRefreshToken();
         clearAuthCache();
       }
       if (silentStatuses.includes(res.status)) {

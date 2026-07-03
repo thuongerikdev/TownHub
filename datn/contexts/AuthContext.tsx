@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   auth, account, setToken, getToken, clearToken,
+  setRefreshToken, clearRefreshToken,
   setAuthCache, getCachedPermissions, getCachedRoles, clearAuthCache,
   type GetUserResponse,
 } from "@/lib/api";
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setState((s) => ({ ...s, user: res.data, loading: false }));
       } else {
         clearToken();
+        clearRefreshToken();
         clearAuthCache();
         setState({
           user: null,
@@ -110,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setToken(d.token);
+        if (d.refreshToken) setRefreshToken(d.refreshToken);
         setAuthCache(d.permissions ?? [], d.roles ?? []);
         setState((s) => ({
           ...s,
@@ -139,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const d = res.data;
         setToken(d.token);
+        if (d.refreshToken) setRefreshToken(d.refreshToken);
         setAuthCache(d.permissions ?? [], d.roles ?? []);
         setState((s) => ({
           ...s,
@@ -203,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Continue with logout even if API fails
     } finally {
       clearToken();
+      clearRefreshToken();
       clearAuthCache();
       setState({
         user: null,
