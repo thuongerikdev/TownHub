@@ -31,13 +31,14 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         // VietOCR service fetch ảnh qua requests.get(fileUrl) → bắt buộc URL http(s) tải được.
         public bool RequiresHostedUrl => true;
 
-        public async Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default)
+        public async Task<OcrExtractionResult> ExtractAsync(string fileUrl, string model, CancellationToken ct = default)
         {
             try
             {
+                // Gửi kèm "model" để service Python chọn engine (gemini | vietocr | paddleocr).
                 using var req = new HttpRequestMessage(HttpMethod.Post, "extract")
                 {
-                    Content = JsonContent.Create(new { fileUrl })
+                    Content = JsonContent.Create(new { fileUrl, model })
                 };
                 if (!string.IsNullOrEmpty(_apiKey))
                     req.Headers.Add("X-API-Key", _apiKey);

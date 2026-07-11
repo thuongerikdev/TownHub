@@ -24,6 +24,14 @@ const DOC_TYPES = [
   { value: "CONTRACT", label: "Hợp đồng" },
 ];
 const DOC_LABEL: Record<string, string> = Object.fromEntries(DOC_TYPES.map((d) => [d.value, d.label]));
+
+// Engine OCR — khớp với service Python (field "model") và backend .NET.
+const OCR_ENGINES = [
+  { value: "gemini", label: "Gemini (API · chính xác cao)" },
+  { value: "vietocr", label: "VietOCR (tự train)" },
+  { value: "paddleocr", label: "PaddleOCR (tự train)" },
+];
+const ENGINE_LABEL: Record<string, string> = Object.fromEntries(OCR_ENGINES.map((e) => [e.value, e.label]));
 const OCR_STATUS: Record<string, { tone: Tone; label: string }> = {
   PENDING: { tone: "neutral", label: "Chờ xử lý" },
   QUEUED: { tone: "neutral", label: "Trong hàng đợi" },
@@ -83,6 +91,7 @@ export default function OCRUpload() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState("INVOICE");
+  const [engine, setEngine] = useState("gemini");
   const [file, setFile] = useState<File | null>(null);
   const [submittedBy, setSubmittedBy] = useState("Kế toán");
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +115,7 @@ export default function OCRUpload() {
       const fileUrl = await fileToDataUrl(file);
       const res = await ocrJobs.submit({
         documentType: docType,
+        ocrEngine: engine,
         fileUrl,
         fileName: file.name,
         fileSizeBytes: file.size,
@@ -139,12 +149,20 @@ export default function OCRUpload() {
 
       {/* Form tải chứng từ */}
       <div className="rounded-xl border border-border bg-surface p-6">
-        <div className="mb-4 grid gap-4 sm:grid-cols-2">
+        <div className="mb-4 grid gap-4 sm:grid-cols-3">
           <Field label="Loại chứng từ" required>
             <Select value={docType} onValueChange={setDocType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {DOC_TYPES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Engine AI" required>
+            <Select value={engine} onValueChange={setEngine}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {OCR_ENGINES.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
@@ -216,7 +234,9 @@ export default function OCRUpload() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{j.fileName ?? "(không tên)"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {DOC_LABEL[j.documentType] ?? j.documentType} · {fileSize(j.fileSizeBytes)} · {formatDateTime(j.submittedAt)}
+                      {DOC_LABEL[j.documentType] ?? j.documentType}
+                      {j.ocrEngine && ` · ${ENGINE_LABEL[j.ocrEngine] ?? j.ocrEngine}`}
+                      {" · "}{fileSize(j.fileSizeBytes)} · {formatDateTime(j.submittedAt)}
                     </p>
                     {j.status === "FAILED" && j.errorMessage && (
                       <p className="mt-0.5 text-xs text-danger">{j.errorMessage}</p>

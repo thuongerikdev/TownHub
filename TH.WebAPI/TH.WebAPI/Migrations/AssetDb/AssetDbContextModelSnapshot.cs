@@ -915,6 +915,11 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<string>("fileUrl")
                         .HasColumnType("text");
 
+                    b.Property<string>("ocrEngine")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("rawExtractedText")
                         .HasColumnType("text");
 

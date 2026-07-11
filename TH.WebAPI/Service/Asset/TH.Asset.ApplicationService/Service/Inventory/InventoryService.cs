@@ -1423,9 +1423,14 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
+                // Chỉ nhận 3 engine hợp lệ; giá trị lạ → mặc định "gemini".
+                var engine = (request.ocrEngine ?? "").Trim().ToLowerInvariant();
+                if (engine != "vietocr" && engine != "paddleocr") engine = "gemini";
+
                 var job = new OcrJob
                 {
                     documentType  = request.documentType,
+                    ocrEngine     = engine,
                     fileUrl       = request.fileUrl,
                     fileName      = request.fileName,
                     fileSizeBytes   = request.fileSizeBytes,
@@ -1511,6 +1516,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             id              = x.id,
             documentType    = x.documentType,
+            ocrEngine       = x.ocrEngine,
             status          = x.status,
             reviewedBy      = x.reviewedBy,
             reviewedByName  = x.reviewedByName,

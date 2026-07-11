@@ -941,7 +941,7 @@ export interface InvoiceItemResponse {
   description?: string; quantity?: number; unitPrice?: number; totalPrice?: number; poItemId?: string;
 }
 export interface OcrJobResponse {
-  id: string; documentType: string; status: string; reviewedBy?: string; reviewedByName?: string;
+  id: string; documentType: string; ocrEngine?: string; status: string; reviewedBy?: string; reviewedByName?: string;
   fileUrl?: string; fileName?: string; fileSizeBytes?: number; confidenceScore?: number;
   rawExtractedText?: string;   // JSON do worker OCR ghi: { rawText, fields, lineItems }
   errorMessage?: string; startedAt?: string; completedAt?: string; submittedBy?: string; submittedByName?: string; submittedAt: string;
@@ -1041,7 +1041,7 @@ export const ocrJobs = {
   // submittedBy là Guid? cross-service (Auth) — chưa có directory người dùng nên luôn gửi
   // EMPTY_GUID; tên người gửi (free-text) ghi riêng vào submittedByName (theo pattern
   // reportedByName/requestedByName). Tránh lỗi 400 khi serialize tên → Guid.
-  submit: (body: { documentType: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedByName?: string }) =>
+  submit: (body: { documentType: string; ocrEngine?: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedByName?: string }) =>
     apiFetch<string>(`/api/asset/ocr-job/submit`, { method: "POST", body: JSON.stringify({ ...body, submittedBy: EMPTY_GUID }) }),
   markReviewed: (id: string, reviewedByName?: string) =>
     apiFetch<boolean>(`/api/asset/ocr-job/mark-reviewed/${id}`, { method: "PUT", body: JSON.stringify({ reviewedBy: EMPTY_GUID, reviewedByName }) }),

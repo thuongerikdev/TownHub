@@ -16,9 +16,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         // Mock bỏ qua fileUrl (không fetch) → không cần URL http, không cần Cloudinary.
         public bool RequiresHostedUrl => false;
 
-        public async Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default)
+        public async Task<OcrExtractionResult> ExtractAsync(string fileUrl, string model, CancellationToken ct = default)
         {
-            _logger.LogInformation("[OCR-MOCK] Giả lập đọc hoá đơn từ: {Url}", fileUrl);
+            _logger.LogInformation("[OCR-MOCK] Giả lập đọc hoá đơn từ: {Url} (engine={Model})", fileUrl, model);
             await Task.Delay(800, ct); // giả lập độ trễ xử lý OCR
 
             return new OcrExtractionResult

@@ -409,6 +409,8 @@ namespace TH.Asset.Dtos
     public class CreateOcrJobDto
     {
         public required string documentType { get; set; }
+        // Engine OCR: "gemini" (API) | "vietocr" | "paddleocr". Mặc định "gemini" nếu bỏ trống.
+        public string? ocrEngine { get; set; }
         public string? fileUrl { get; set; }
         public string? fileName { get; set; }
         public int? fileSizeBytes { get; set; }
@@ -421,6 +423,7 @@ namespace TH.Asset.Dtos
     {
         public Guid id { get; set; }
         public string documentType { get; set; } = null!;
+        public string ocrEngine { get; set; } = "gemini";  // gemini | vietocr | paddleocr
         public string status { get; set; } = null!;  // QUEUED | PROCESSING | DONE | FAILED
         public Guid? reviewedBy { get; set; }
         public string? reviewedByName { get; set; }
