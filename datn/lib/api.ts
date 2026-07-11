@@ -978,10 +978,14 @@ export interface CreatePurchaseOrderInput {
   totalAmount?: number; currency?: string; paymentTerms?: string; notes?: string; createdBy?: string;
 }
 export interface UpdatePurchaseOrderInput extends CreatePurchaseOrderInput { id: string; status?: string; actualDelivery?: string; }
+export interface CreateInvoiceItemLine {
+  materialId: string; description?: string; quantity?: number; unitPrice?: number; totalPrice?: number;
+}
 export interface CreateInvoiceInput {
   invoiceCode: string; vendorId: string; poId?: string; ocrJobId?: string; invoiceDate?: string;
   invoiceNumber?: string; subtotal?: number; taxAmount?: number; totalAmount?: number;
   currency?: string; paymentDueDate?: string; notes?: string;
+  items?: CreateInvoiceItemLine[];   // hạng mục đã đối chiếu ra materialId, lưu cùng hóa đơn
 }
 export interface UpdateInvoiceInput extends CreateInvoiceInput {
   id: string; status?: string; paymentStatus?: string; paidDate?: string; paymentMethod?: string;

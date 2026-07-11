@@ -1167,7 +1167,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 if (codeExists)
                     return ResponseConst.Error<bool>(400, $"Mã hóa đơn '{request.invoiceCode}' đã tồn tại.");
 
-                _dbContext.Invoices.Add(new Invoice
+                var invoice = new Invoice
                 {
                     invoiceCode    = request.invoiceCode,
                     vendorId       = request.vendorId,
@@ -1181,7 +1181,25 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     currency       = request.currency,
                     paymentDueDate = request.paymentDueDate,
                     notes          = request.notes
-                });
+                };
+
+                // Lưu kèm hạng mục đã đối chiếu (materialId). EF gán invoiceId qua navigation.
+                if (request.items != null && request.items.Count > 0)
+                {
+                    invoice.items = request.items
+                        .Where(it => it.materialId != Guid.Empty)
+                        .Select(it => new InvoiceItem
+                        {
+                            materialId  = it.materialId,
+                            description = it.description,
+                            quantity    = it.quantity,
+                            unitPrice   = it.unitPrice,
+                            totalPrice  = it.totalPrice ?? (it.quantity * it.unitPrice)
+                        })
+                        .ToList();
+                }
+
+                _dbContext.Invoices.Add(invoice);
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Thêm hóa đơn thành công.", true);
             }

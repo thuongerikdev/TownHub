@@ -14,7 +14,7 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
 ## 0. Chuẩn bị (Colab)
 ```bash
 !pip install paddlepaddle-gpu==2.6.1
-!git clone https://github.com/PaddlePaddle/PaddleOCR.git
+!git clone --depth 1 -b release/2.7 https://github.com/PaddlePaddle/PaddleOCR.git   # khớp paddleocr==2.7.3
 %cd PaddleOCR
 !pip install -r requirements.txt
 ```
@@ -22,7 +22,7 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
 ## 1. Fine-tune RECOGNITION (PP-OCRv4 rec)
 Tải pretrain rec (latin/vi) về `./pretrain/`, rồi:
 ```bash
-!python tools/train.py -c configs/rec/PP-OCRv4/PP-OCRv4_rec.yml \
+!python tools/train.py -c configs/rec/PP-OCRv4/ch_PP-OCRv4_rec.yml \
   -o Global.pretrained_model=./pretrain/rec_vi \
      Global.character_dict_path=../dataset/dict_vi.txt \
      Global.use_space_char=True \
@@ -37,7 +37,7 @@ Tải pretrain rec (latin/vi) về `./pretrain/`, rồi:
 ## 2. Fine-tune DETECTION (PP-OCRv4 det)
 Tải pretrain det về `./pretrain/`, rồi:
 ```bash
-!python tools/train.py -c configs/det/PP-OCRv4/PP-OCRv4_det_student.yml \
+!python tools/train.py -c configs/det/ch_PP-OCRv4/ch_PP-OCRv4_det_student.yml \
   -o Global.pretrained_model=./pretrain/det \
      Global.epoch_num=200 \
      Global.save_model_dir=./output/det_vi \
@@ -49,11 +49,11 @@ Tải pretrain det về `./pretrain/`, rồi:
 
 ## 3. Export sang inference model (BẮT BUỘC để service dùng)
 ```bash
-!python tools/export_model.py -c configs/rec/PP-OCRv4/PP-OCRv4_rec.yml \
+!python tools/export_model.py -c configs/rec/PP-OCRv4/ch_PP-OCRv4_rec.yml \
   -o Global.pretrained_model=./output/rec_vi/best_accuracy \
      Global.save_inference_dir=./inference/rec_vi
 
-!python tools/export_model.py -c configs/det/PP-OCRv4/PP-OCRv4_det_student.yml \
+!python tools/export_model.py -c configs/det/ch_PP-OCRv4/ch_PP-OCRv4_det_student.yml \
   -o Global.pretrained_model=./output/det_vi/best_accuracy \
      Global.save_inference_dir=./inference/det_vi
 ```

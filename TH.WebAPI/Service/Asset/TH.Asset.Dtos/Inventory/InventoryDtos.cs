@@ -336,6 +336,18 @@ namespace TH.Asset.Dtos
         public string currency { get; set; } = "VND";
         public DateTime? paymentDueDate { get; set; }
         public string? notes { get; set; }
+        // Hạng mục kèm theo (đối chiếu OCR → materialId). Lưu cùng lúc với hóa đơn.
+        public List<CreateInvoiceItemLine>? items { get; set; }
+    }
+
+    /// <summary>Một dòng hàng gửi kèm khi tạo hóa đơn (đã đối chiếu ra materialId).</summary>
+    public class CreateInvoiceItemLine
+    {
+        public Guid materialId { get; set; }
+        public string? description { get; set; }
+        public decimal? quantity { get; set; }
+        public decimal? unitPrice { get; set; }
+        public decimal? totalPrice { get; set; }
     }
 
     public class UpdateInvoiceDto : CreateInvoiceDto

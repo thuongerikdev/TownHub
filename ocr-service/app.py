@@ -63,8 +63,9 @@ def _to_images(content):
     return [Image.open(io.BytesIO(content)).convert('RGB')]
 
 def _strip(s):
-    return ''.join(c for c in unicodedata.normalize('NFD', s)
-                   if unicodedata.category(c) != 'Mn').lower()
+    s = ''.join(c for c in unicodedata.normalize('NFD', s)
+                if unicodedata.category(c) != 'Mn').lower()
+    return s.replace('đ', 'd')   # đ/Đ không tách được bằng NFD → gộp thủ công về 'd'
 
 def _num(s):
     s = re.sub(r'[^\d.,]', '', s)
@@ -111,15 +112,19 @@ def parse_invoice_vietocr(lines):
     def row_h(l): return max(l['box'][3] - l['box'][1], 8)
 
     def same_row_number(anchor, min_val=1000):
+        # Lấy số CÙNG DÒNG với nhãn: chọn box gần theo phương dọc nhất, dung sai chặt (0.9×
+        # chiều cao dòng) để không "rỉ" sang dòng kế (tránh lấy nhầm Tổng cộng khi đọc Tiền thuế).
         ay = (anchor['box'][1] + anchor['box'][3]) / 2
         rh = row_h(anchor)
-        best = None
+        best = None; best_dy = None
         for c in lines:
             if c is anchor or '%' in c['text']: continue
             cy = (c['box'][1] + c['box'][3]) / 2
-            if abs(cy - ay) > rh * 1.8: continue
+            dy = abs(cy - ay)
+            if dy > rh * 0.9: continue
             v = _last_number(c['text'])
-            if v is not None and v >= min_val: best = v
+            if v is not None and v >= min_val and (best_dy is None or dy < best_dy):
+                best = v; best_dy = dy
         return best
 
     def next_row_number(anchor, min_val=1000, max_rows=3):
@@ -140,9 +145,12 @@ def parse_invoice_vietocr(lines):
         for l in lines:
             n = _strip(l['text'])
             if not any(k in n for k in keys): continue
-            v = same_row_number(l, min_val)
+            if '%' not in l['text']:                     # số nằm ngay trên dòng nhãn (1 box)
+                v = _last_number(l['text'])
+                if v is not None and v >= min_val: return v
+            v = same_row_number(l, min_val)              # số ở box khác cùng dòng
             if v is not None: return v
-            v = next_row_number(l, min_val)
+            v = next_row_number(l, min_val)              # số ở dòng dưới
             if v is not None: return v
         return None
 
@@ -154,7 +162,10 @@ def parse_invoice_vietocr(lines):
 
     for i, l in enumerate(lines):
         n = _strip(l['text'])
-        if 'don vi ban hang' in n or 'nha cung cap' in n or ('ban hang' in n and 'nguoi' not in n):
+        if 'hoa don' in n:                               # bỏ qua dòng tiêu đề "HÓA ĐƠN ..."
+            continue
+        if ('don vi ban hang' in n or 'nha cung cap' in n or 'ben ban' in n or 'don vi ban' in n
+                or ('ban hang' in n and 'nguoi' not in n)):
             parts = l['text'].split(':', 1)
             name = parts[1].strip() if len(parts) > 1 else ''
             if not name and i + 1 < len(lines):
@@ -179,14 +190,17 @@ def parse_invoice_vietocr(lines):
         d, mo, y = m.groups()
         fields['invoiceDate'] = f"{y}-{int(mo):02d}-{int(d):02d}"
 
-    fields['subtotal']    = find_amount(['cong tien hang', 'tien hang', 'subtotal'])
-    fields['taxAmount']   = find_amount(['tien thue', 'thue gtgt', 'thue gia tri gia tang', 'thue suat vat'])
+    fields['subtotal']    = find_amount(['cong tien hang', 'tien hang', 'thanh tien chua thue',
+                                          'tong tien hang', 'cong tien chua thue', 'subtotal'])
+    fields['taxAmount']   = find_amount(['tien thue', 'thue gtgt', 'thue gia tri gia tang',
+                                         'thue suat vat', 'thue vat'])
     if fields['taxAmount'] is None:
         for l in lines:
             if 'vat' in _strip(l['text']) or 'thue suat' in _strip(l['text']):
                 v = same_row_number(l, 1000) or next_row_number(l, 1000)
                 if v: fields['taxAmount'] = v; break
     fields['totalAmount'] = find_amount(['tong cong tien thanh toan', 'tong tien thanh toan',
+                                          'tong cong thanh toan', 'tong tien phai thanh toan',
                                           'tong cong tien', 'tong thanh toan', 'total amount'])
     if fields['totalAmount'] is None:
         fields['totalAmount'] = find_amount(['tong cong', 'total'])

@@ -484,27 +484,48 @@ def build_invoice(font_paths):
     tax  = round(subtotal * rate / 100)
     total = subtotal + tax
 
-    # ── Lên danh sách phần tử (x, y, text, font) + đường kẻ ──
-    cx = [42, 92, 430, 500, 590, 700]     # STT | Tên | ĐVT | SL | Đơn giá | Thành tiền
+    # ── Biến thể layout (mô phỏng hóa đơn của nhiều nhà cung cấp khác nhau) ──
+    TITLE        = random.choice(["HÓA ĐƠN GIÁ TRỊ GIA TĂNG", "HÓA ĐƠN GTGT", "HÓA ĐƠN BÁN HÀNG"])
+    SELLER_LABEL = random.choice(["Đơn vị bán hàng", "Nhà cung cấp", "Bên bán", "Đơn vị bán"])
+    MST_LABEL    = random.choice(["Mã số thuế", "MST", "Mã số thuế (MST)"])
+
     elems, hlines = [], []
     y = 24
-    elems.append((W // 2 - 175, y, "HÓA ĐƠN GIÁ TRỊ GIA TĂNG", FT)); y += 44
+    elems.append((W // 2 - len(TITLE) * 7, y, TITLE, FT)); y += 44
     elems.append((W // 2 - 90, y, f"Ký hiệu: {sym}", F)); y += 26
     elems.append((W // 2 - 55, y, f"Số: {no}", F)); y += 28
     elems.append((40, y, f"Ngày {d} tháng {mo} năm {yr}", F)); y += 34
-    elems.append((40, y, "Đơn vị bán hàng: " + seller, FB)); y += 30
-    elems.append((40, y, "Mã số thuế: " + mst, F)); y += 26
+    elems.append((40, y, f"{SELLER_LABEL}: " + seller, FB)); y += 30
+    elems.append((40, y, f"{MST_LABEL}: " + mst, F)); y += 26
     elems.append((40, y, "Địa chỉ: " + addr, F)); y += 26
-    elems.append((40, y, "Hình thức thanh toán: " + random.choice(PAYMENTS), F)); y += 36
+    elems.append((40, y, "Hình thức thanh toán: " + random.choice(PAYMENTS), F)); y += 32
+    # Khối "người mua" (tùy chọn) — thêm 1 MST khác để giống hóa đơn thật (MST người bán vẫn ở trên)
+    if random.random() < 0.5:
+        elems.append((40, y, "Họ tên người mua hàng: " + random.choice(["Nguyễn Văn An", "Trần Thị Bình", "Ban quản lý tòa nhà"]), F)); y += 26
+        elems.append((40, y, "Tên đơn vị: CÔNG TY QUẢN LÝ VẬN HÀNH TOWNHUB", F)); y += 26
+        elems.append((40, y, "Mã số thuế: " + rand_mst(), F)); y += 32
+    else:
+        y += 4
 
+    # Bảng hàng hóa: 2 biến thể (có/không cột ĐVT) + nhãn cột biến thể
+    name_h = random.choice(["Tên hàng hóa, dịch vụ", "Diễn giải", "Nội dung", "Tên hàng hóa"])
+    has_unit = random.random() < 0.6
+    if has_unit:
+        cx = [42, 92, 430, 500, 590, 700]     # STT | Tên | ĐVT | SL | Đơn giá | Thành tiền
+        headers = ["STT", name_h, "ĐVT", "SL", "Đơn giá", "Thành tiền"]
+    else:
+        cx = [42, 92, 480, 610, 740]          # STT | Tên | SL | Đơn giá | Thành tiền
+        headers = ["STT", name_h, "SL", "Đơn giá", "Thành tiền"]
     hlines.append(y - 4)
-    for h, x in zip(["STT", "Tên hàng hóa, dịch vụ", "ĐVT", "SL", "Đơn giá", "Thành tiền"], cx):
+    for h, x in zip(headers, cx):
         elems.append((x, y, h, FB))
     y += 30
     hlines.append(y - 4)
     for stt, name, unit, qty, price, amt in rows:
-        elems += [(cx[0], y, str(stt), F), (cx[1], y, name, F), (cx[2], y, unit, F),
-                  (cx[3], y, str(qty), F), (cx[4], y, money(price), F), (cx[5], y, money(amt), F)]
+        cells = ([str(stt), name, unit, str(qty), money(price), money(amt)] if has_unit
+                 else [str(stt), name, str(qty), money(price), money(amt)])
+        for xx, val in zip(cx, cells):
+            elems.append((xx, y, val, F))
         y += 28
     hlines.append(y - 2)
     y += 12
@@ -512,12 +533,12 @@ def build_invoice(font_paths):
     # Tổng kết: canh số tiền ngay sau nhãn (theo độ rộng thật) để không đè nhau.
     lx = 440
     def wd(text, font): return int(font.getlength(text))
-    l1 = "Cộng tiền hàng:"
+    l1 = random.choice(["Cộng tiền hàng:", "Thành tiền chưa thuế:", "Tổng tiền hàng:"])
     elems += [(lx, y, l1, F), (lx + wd(l1, F) + 18, y, money(subtotal), F)]; y += 28
     elems.append((lx, y, f"Thuế suất GTGT: {rate}%", F)); y += 28
-    l3 = "Tiền thuế GTGT:"
+    l3 = random.choice(["Tiền thuế GTGT:", "Thuế GTGT:", "Thuế VAT:"])
     elems += [(lx, y, l3, F), (lx + wd(l3, F) + 18, y, money(tax), F)]; y += 28
-    l4 = "Tổng cộng tiền thanh toán:"
+    l4 = random.choice(["Tổng cộng tiền thanh toán:", "Tổng tiền thanh toán:", "Tổng cộng:"])
     elems += [(lx, y, l4, FB), (lx + wd(l4, FB) + 18, y, money(total), FB)]; y += 44
 
     # Khu vực ký tên (để chỗ cho chữ ký + dấu mộc)

@@ -9,12 +9,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  invoices, ocrJobs, vendorsApi, purchaseOrders, parseOcrPayload,
-  type OcrJobResponse, type VendorResponse, type PurchaseOrderResponse,
+  invoices, ocrJobs, vendorsApi, purchaseOrders, materials, parseOcrPayload,
+  type OcrJobResponse, type VendorResponse, type PurchaseOrderResponse, type MaterialResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
 import { mockOcrJobs, mockPurchaseOrders } from "@/lib/mock/procurement";
 import { mockVendors } from "@/lib/mock/vendor";
+import { mockMaterials } from "@/lib/mock/inventory";
 import {
   PageHeader, MockBanner, LoadingState, ErrorState, Field,
 } from "@/components/shared";
@@ -32,7 +33,36 @@ const DOC_LABEL: Record<string, string> = {
 };
 const NONE = "__none__";
 
-interface LineItem { name: string; quantity: number; unitPrice: number; }
+interface LineItem { name: string; quantity: number; unitPrice: number; materialId: string; }
+
+/** Chuẩn hóa chuỗi để so khớp: bỏ dấu tiếng Việt, thường hóa, gộp khoảng trắng. */
+function normText(s?: string | null): string {
+  return (s ?? "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+/** Đối chiếu mô tả OCR → materialId gần nhất (trùng khít > chứa nhau > Jaccard theo từ). */
+function bestMaterialId(name: string, mats: MaterialResponse[]): string {
+  const q = normText(name);
+  if (!q) return "";
+  const qt = new Set(q.split(" ").filter(Boolean));
+  let best = "", bestScore = 0;
+  for (const m of mats) {
+    const t = normText(m.name);
+    if (!t) continue;
+    let score: number;
+    if (t === q) score = 1;
+    else if (t.includes(q) || q.includes(t)) score = 0.8;
+    else {
+      const tt = new Set(t.split(" ").filter(Boolean));
+      let inter = 0; qt.forEach((w) => { if (tt.has(w)) inter++; });
+      const uni = new Set([...qt, ...tt]).size;
+      score = uni ? inter / uni : 0;
+    }
+    if (score > bestScore) { bestScore = score; best = m.id; }
+  }
+  return bestScore >= 0.5 ? best : "";
+}
 
 function genInvoiceCode(): string {
   const y = new Date().getFullYear();
@@ -79,6 +109,7 @@ export default function InvoiceVerify() {
   );
   const vendorsQ = useApiList<VendorResponse>(() => vendorsApi.getAll(), { mock: mockVendors });
   const poQ = useApiList<PurchaseOrderResponse>(() => purchaseOrders.getAll(), { mock: mockPurchaseOrders });
+  const materialsQ = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
 
   const [invoiceCode] = useState(genInvoiceCode);
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -88,7 +119,7 @@ export default function InvoiceVerify() {
   const [poId, setPoId] = useState(NONE);
   const [taxRate, setTaxRate] = useState(10);
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<LineItem[]>([{ name: "", quantity: 1, unitPrice: 0 }]);
+  const [items, setItems] = useState<LineItem[]>([{ name: "", quantity: 1, unitPrice: 0, materialId: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
   // Preselect mapped PO from ?po= (avoid useSearchParams — Next 16 Suspense rule).
@@ -111,7 +142,7 @@ export default function InvoiceVerify() {
   const totalAmount = subtotal + taxAmount;
 
   const job = jobQ.data;
-  const anyMock = jobQ.isMock || vendorsQ.isMock || poQ.isMock;
+  const anyMock = jobQ.isMock || vendorsQ.isMock || poQ.isMock || materialsQ.isMock;
 
   // ── Tiền điền từ dữ liệu AI OCR (chạy 1 lần khi có payload + vendors đã tải) ──
   const ocr = useMemo(() => parseOcrPayload(job?.rawExtractedText), [job?.rawExtractedText]);
@@ -120,7 +151,7 @@ export default function InvoiceVerify() {
   const prefilledRef = useRef(false);
   useEffect(() => {
     if (prefilledRef.current) return;
-    if (!ocr || vendorsQ.loading) return;
+    if (!ocr || vendorsQ.loading || materialsQ.loading) return;
     prefilledRef.current = true;
 
     const f = ocr.fields ?? {};
@@ -136,24 +167,31 @@ export default function InvoiceVerify() {
       .map((it) => {
         const qty = it.quantity && it.quantity > 0 ? it.quantity : 1;
         const unit = it.unitPrice ?? (it.totalPrice != null ? it.totalPrice / qty : 0);
-        return { name: (it.description ?? "").trim(), quantity: qty, unitPrice: Math.round(unit) };
+        const nm = (it.description ?? "").trim();
+        return { name: nm, quantity: qty, unitPrice: Math.round(unit), materialId: bestMaterialId(nm, materialsQ.items) };
       })
       .filter((it) => it.name || it.unitPrice > 0);
     if (li.length) setItems(li);
     else if (f.subtotal && f.subtotal > 0) {
-      setItems([{
-        name: f.sellerName ? `Hàng hóa/dịch vụ — ${f.sellerName}` : "Theo chứng từ OCR",
-        quantity: 1, unitPrice: Math.round(f.subtotal),
-      }]);
+      const nm = f.sellerName ? `Hàng hóa/dịch vụ — ${f.sellerName}` : "Theo chứng từ OCR";
+      setItems([{ name: nm, quantity: 1, unitPrice: Math.round(f.subtotal), materialId: bestMaterialId(nm, materialsQ.items) }]);
     }
 
+    let vid = "";
     if (f.sellerTaxCode) {
       const v = vendorsQ.items.find((vd) => normTax(vd.taxId) === normTax(f.sellerTaxCode));
-      if (v) setVendorId((cur) => cur || v.id);
+      if (v) vid = v.id;
     }
+    if (!vid && f.sellerName) {   // không khớp MST → thử khớp theo tên
+      const nq = normText(f.sellerName);
+      const v = vendorsQ.items.find((vd) => normText(vd.name) === nq)
+        ?? vendorsQ.items.find((vd) => { const t = normText(vd.name); return !!t && (t.includes(nq) || nq.includes(t)); });
+      if (v) vid = v.id;
+    }
+    if (vid) setVendorId((cur) => cur || vid);
     setAiPrefilled(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ocr, vendorsQ.loading, vendorsQ.items]);
+  }, [ocr, vendorsQ.loading, vendorsQ.items, materialsQ.loading, materialsQ.items]);
 
   const selectedPo = poId === NONE ? undefined : poQ.items.find((p) => p.id === poId);
   const selectedVendor = vendorsQ.items.find((v) => v.id === vendorId);
@@ -174,7 +212,7 @@ export default function InvoiceVerify() {
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   }
   function addItem() {
-    setItems((prev) => [...prev, { name: "", quantity: 1, unitPrice: 0 }]);
+    setItems((prev) => [...prev, { name: "", quantity: 1, unitPrice: 0, materialId: "" }]);
   }
   function removeItem(i: number) {
     setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)));
@@ -182,7 +220,8 @@ export default function InvoiceVerify() {
   function applyPoTotal() {
     if (!selectedPo?.totalAmount) return;
     const unit = Math.round(selectedPo.totalAmount / (1 + taxRate / 100));
-    setItems([{ name: `Theo đơn mua ${selectedPo.poCode}`, quantity: 1, unitPrice: unit }]);
+    const nm = `Theo đơn mua ${selectedPo.poCode}`;
+    setItems([{ name: nm, quantity: 1, unitPrice: unit, materialId: bestMaterialId(nm, materialsQ.items) }]);
     toast.success("Đã lấy tổng tiền từ PO vào hạng mục.");
   }
 
@@ -195,6 +234,23 @@ export default function InvoiceVerify() {
       );
       if (!ok) return;
     }
+
+    // Chỉ lưu hạng mục đã đối chiếu ra materialId; cảnh báo dòng chưa khớp sẽ bị bỏ.
+    const lineItems = items
+      .filter((it) => it.materialId && (it.quantity > 0 || it.unitPrice > 0))
+      .map((it) => ({
+        materialId: it.materialId,
+        description: it.name || undefined,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        totalPrice: Math.round(it.quantity * it.unitPrice),
+      }));
+    const skipped = items.filter((it) => (it.name.trim() || it.unitPrice > 0) && !it.materialId).length;
+    if (skipped > 0) {
+      const ok = window.confirm(`${skipped} hạng mục CHƯA khớp vật tư sẽ không được lưu vào hóa đơn. Vẫn tiếp tục?`);
+      if (!ok) return;
+    }
+
     setSubmitting(true);
     const res = await invoices.create({
       invoiceCode,
@@ -209,6 +265,7 @@ export default function InvoiceVerify() {
       currency: "VND",
       paymentDueDate: dueDate || undefined,
       notes: notes || undefined,
+      items: lineItems,
     });
     setSubmitting(false);
     if (res.errorCode === 200) {
@@ -238,7 +295,7 @@ export default function InvoiceVerify() {
 
       {anyMock && <MockBanner />}
 
-      {vendorsQ.loading || poQ.loading ? (
+      {vendorsQ.loading || poQ.loading || materialsQ.loading ? (
         <LoadingState />
       ) : vendorsQ.error ? (
         <ErrorState message={vendorsQ.error} onRetry={vendorsQ.refetch} />
@@ -438,44 +495,67 @@ export default function InvoiceVerify() {
                 </Button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {items.map((it, i) => (
-                  <div key={i} className="flex items-end gap-2">
-                    <div className="flex-1">
-                      {i === 0 && <label className="mb-1 block text-xs text-muted-foreground">Hạng mục</label>}
-                      <Input
-                        value={it.name}
-                        onChange={(e) => updateItem(i, { name: e.target.value })}
-                        placeholder="VD: Cáp thép thang máy"
-                      />
+                  <div key={i} className="space-y-2 rounded-lg border border-border bg-surface-2/40 p-3">
+                    <div className="flex items-end gap-2">
+                      <div className="min-w-0 flex-1">
+                        <label className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+                          Vật tư (đối chiếu → kho)
+                          {it.name && (it.materialId
+                            ? <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">đã khớp</span>
+                            : <span className="rounded-full bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning">chưa khớp</span>)}
+                        </label>
+                        <Select value={it.materialId || NONE} onValueChange={(v) => updateItem(i, { materialId: v === NONE ? "" : v })}>
+                          <SelectTrigger><SelectValue placeholder="Chọn vật tư trong kho" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE}>— Chưa chọn (dòng này sẽ không được lưu) —</SelectItem>
+                            {materialsQ.items.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.name}{m.materialCode ? ` (${m.materialCode})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(i)}
+                        disabled={items.length === 1}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </div>
-                    <div className="w-14 shrink-0">
-                      {i === 0 && <label className="mb-1 block text-xs text-muted-foreground">SL</label>}
-                      <Input
-                        type="number"
-                        min={0}
-                        value={it.quantity}
-                        onChange={(e) => updateItem(i, { quantity: Number(e.target.value) || 0 })}
-                      />
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <label className="mb-1 block text-xs text-muted-foreground">Mô tả (AI đọc)</label>
+                        <Input
+                          value={it.name}
+                          onChange={(e) => updateItem(i, { name: e.target.value })}
+                          placeholder="VD: Cáp thép thang máy"
+                        />
+                      </div>
+                      <div className="w-14 shrink-0">
+                        <label className="mb-1 block text-xs text-muted-foreground">SL</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={it.quantity}
+                          onChange={(e) => updateItem(i, { quantity: Number(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="w-28 shrink-0">
+                        <label className="mb-1 block text-xs text-muted-foreground">Đơn giá</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={it.unitPrice}
+                          onChange={(e) => updateItem(i, { unitPrice: Number(e.target.value) || 0 })}
+                        />
+                      </div>
                     </div>
-                    <div className="w-28 shrink-0">
-                      {i === 0 && <label className="mb-1 block text-xs text-muted-foreground">Đơn giá</label>}
-                      <Input
-                        type="number"
-                        min={0}
-                        value={it.unitPrice}
-                        onChange={(e) => updateItem(i, { unitPrice: Number(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItem(i)}
-                      disabled={items.length === 1}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
