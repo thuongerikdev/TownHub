@@ -14,15 +14,20 @@ với field `model`:
 ocr-service/
   app.py                     # service FastAPI 3 engine (port 7860)
   requirements.txt
-  finetune_colab.ipynb       # ⭐ notebook Colab BẤM-CHẠY-HẾT: sinh data → train VietOCR+Paddle → export
+  finetune_colab.ipynb       # ⭐ notebook Colab 3 mục: A.Cấu hình · B.Training · C.Chạy (chạy từng mục)
+  run_service_colab.ipynb    # notebook CHỈ CHẠY service (đã train sẵn, nạp weight từ Drive)
   training/
     make_dataset.py          # SINH dataset hóa đơn tiếng Việt synthetic (det + rec) — không gán tay
     finetune_vietocr.py      # fine-tune VietOCR recognition
     finetune_paddle.md       # lệnh fine-tune PaddleOCR det + rec
 ```
 
-**Nhanh nhất:** mở [finetune_colab.ipynb](finetune_colab.ipynb) trên Google Colab (bật GPU T4),
-Runtime → Run all. Notebook tự clone repo, sinh data, train cả 2 engine, export, lưu Drive.
+**Nhanh nhất:** mở [finetune_colab.ipynb](finetune_colab.ipynb) trên Google Colab (bật GPU T4). Notebook chia 3 mục:
+- **A. Cấu hình** — luôn chạy đầu (cài lib + pin numpy 1.x + mount Drive + trỏ đường dẫn weight). A.2 tự báo đã có weight chưa.
+- **B. Training** — chỉ chạy khi chưa có weight; sinh dataset + train VietOCR + Paddle, **tự lưu dataset & weight lên Drive**.
+- **C. Chạy service** — nạp weight từ Drive rồi chạy; **bỏ qua B nếu đã train**.
+
+Đã train rồi, chỉ muốn chạy lại: mở [run_service_colab.ipynb](run_service_colab.ipynb) → Run all (nạp weight từ Drive, ~2–3 phút).
 
 ## Quy trình đầy đủ (Colab)
 
