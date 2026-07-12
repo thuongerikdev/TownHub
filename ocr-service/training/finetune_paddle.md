@@ -25,7 +25,7 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
 !mkdir -p pretrain
 !cd pretrain && wget -c https://paddleocr.bj.bcebos.com/PP-OCRv4/chinese/ch_PP-OCRv4_rec_train.tar && tar xf ch_PP-OCRv4_rec_train.tar
 !cd pretrain && wget -c https://paddleocr.bj.bcebos.com/PP-OCRv4/chinese/ch_PP-OCRv4_det_train.tar && tar xf ch_PP-OCRv4_det_train.tar
-!find pretrain -name "*.pdparams"   # phải ra 2 file best_accuracy.pdparams
+!find pretrain -name "*.pdparams"   # rec: student.pdparams | det: best_accuracy.pdparams
 ```
 > Dùng `wget -c` (KHÔNG dùng `-q`) để thấy lỗi nếu tải hỏng — thiếu file này sẽ báo
 > `best_accuracy.pdparams does not exists!` khi train.
@@ -33,7 +33,7 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
 ## 1. Fine-tune RECOGNITION (PP-OCRv4 rec)
 ```bash
 !python tools/train.py -c configs/rec/PP-OCRv4/ch_PP-OCRv4_rec.yml \
-  -o Global.pretrained_model=./pretrain/ch_PP-OCRv4_rec_train/best_accuracy \
+  -o Global.pretrained_model=./pretrain/ch_PP-OCRv4_rec_train/student \
      Global.character_dict_path=../dataset/dict_vi.txt \
      Global.use_space_char=True \
      Global.epoch_num=100 \
