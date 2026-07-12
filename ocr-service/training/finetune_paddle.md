@@ -38,6 +38,8 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
      Global.use_space_char=True \
      Global.epoch_num=100 \
      Global.save_model_dir=./output/rec_vi \
+     Train.loader.batch_size_per_card=64 Train.sampler.first_bs=64 \
+     Eval.loader.batch_size_per_card=64 \
      Train.dataset.data_dir=../dataset/rec \
      Train.dataset.label_file_list=[../dataset/rec/train.txt] \
      Eval.dataset.data_dir=../dataset/rec \
@@ -50,6 +52,7 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
   -o Global.pretrained_model=./pretrain/ch_PP-OCRv4_det_train/best_accuracy \
      Global.epoch_num=200 \
      Global.save_model_dir=./output/det_vi \
+     Train.loader.batch_size_per_card=8 Eval.loader.batch_size_per_card=8 \
      Train.dataset.data_dir=../dataset/det \
      Train.dataset.label_file_list=[../dataset/det/train_label.txt] \
      Eval.dataset.data_dir=../dataset/det \
