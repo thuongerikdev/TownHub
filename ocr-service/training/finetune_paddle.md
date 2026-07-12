@@ -19,11 +19,21 @@ Format nhãn do script sinh ra **đã khớp sẵn** với PaddleOCR — không 
 !pip install -r requirements.txt
 ```
 
+## 0.5. Tải model pretrain (fine-tune từ đây)
+```bash
+%cd PaddleOCR
+!mkdir -p pretrain
+!cd pretrain && wget -c https://paddleocr.bj.bcebos.com/PP-OCRv4/chinese/ch_PP-OCRv4_rec_train.tar && tar xf ch_PP-OCRv4_rec_train.tar
+!cd pretrain && wget -c https://paddleocr.bj.bcebos.com/PP-OCRv4/chinese/ch_PP-OCRv4_det_train.tar && tar xf ch_PP-OCRv4_det_train.tar
+!find pretrain -name "*.pdparams"   # phải ra 2 file best_accuracy.pdparams
+```
+> Dùng `wget -c` (KHÔNG dùng `-q`) để thấy lỗi nếu tải hỏng — thiếu file này sẽ báo
+> `best_accuracy.pdparams does not exists!` khi train.
+
 ## 1. Fine-tune RECOGNITION (PP-OCRv4 rec)
-Tải pretrain rec (latin/vi) về `./pretrain/`, rồi:
 ```bash
 !python tools/train.py -c configs/rec/PP-OCRv4/ch_PP-OCRv4_rec.yml \
-  -o Global.pretrained_model=./pretrain/rec_vi \
+  -o Global.pretrained_model=./pretrain/ch_PP-OCRv4_rec_train/best_accuracy \
      Global.character_dict_path=../dataset/dict_vi.txt \
      Global.use_space_char=True \
      Global.epoch_num=100 \
@@ -35,10 +45,9 @@ Tải pretrain rec (latin/vi) về `./pretrain/`, rồi:
 ```
 
 ## 2. Fine-tune DETECTION (PP-OCRv4 det)
-Tải pretrain det về `./pretrain/`, rồi:
 ```bash
 !python tools/train.py -c configs/det/ch_PP-OCRv4/ch_PP-OCRv4_det_student.yml \
-  -o Global.pretrained_model=./pretrain/det \
+  -o Global.pretrained_model=./pretrain/ch_PP-OCRv4_det_train/best_accuracy \
      Global.epoch_num=200 \
      Global.save_model_dir=./output/det_vi \
      Train.dataset.data_dir=../dataset/det \
