@@ -6,6 +6,7 @@ requests
 numpy
 pillow
 pdf2image
+pdfplumber
 opencv-python-headless
 google-generativeai
 

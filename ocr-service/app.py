@@ -7,6 +7,13 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import uvicorn
 
+# Đọc hóa đơn điện tử PDF (lớp text) — không cần OCR. Thiếu thư viện thì tự bỏ qua nhánh PDF.
+try:
+    import pdfplumber
+    _HAS_PDFPLUMBER = True
+except ImportError:
+    _HAS_PDFPLUMBER = False
+
 # ── Cấu hình ──
 GEMINI_API_KEY = os.environ.get("GEMINIKEY", "")
 API_KEY        = os.environ.get("OCRKEY", "doan-ocr-2026")
@@ -207,8 +214,7 @@ def parse_invoice_vietocr(lines):
 
     return raw, fields
 
-def extract_vietocr(url):
-    content  = _download(url)
+def extract_vietocr(content):
     images   = _to_images(content)
     all_lines = []
     for im in images:
@@ -239,8 +245,7 @@ def _paddle_to_lines(result):
     lines.sort(key=lambda l: (l['box'][1] // 10, l['box'][0]))
     return lines
 
-def extract_paddle(url):
-    content   = _download(url)
+def extract_paddle(content):
     images    = _to_images(content)
     all_lines = []
     for im in images:
@@ -281,8 +286,7 @@ def _resize_for_gemini(img, max_dim=1200):
     buf.seek(0)
     return Image.open(buf)
 
-def extract_gemini(url):
-    content = _download(url)
+def extract_gemini(content):
     images  = _to_images(content)
     if len(images) == 1:
         img = _resize_for_gemini(images[0])
@@ -313,6 +317,40 @@ def extract_gemini(url):
     return json.dumps(data, ensure_ascii=False, indent=2), fields, data.get("lineItems") or [], 0.95
 
 # ════════════════════════════════════════
+# PIPELINE PDF — hóa đơn điện tử có lớp text (đọc trực tiếp, KHÔNG OCR → chính xác nhất)
+# ════════════════════════════════════════
+def _pdf_to_lines(content):
+    """Trích từng dòng text + toạ độ từ PDF (bản thể hiện hóa đơn điện tử), dựng về format 'lines'."""
+    lines, yo = [], 0.0
+    with pdfplumber.open(io.BytesIO(content)) as pdf:
+        for page in pdf.pages:
+            try:
+                tl = page.extract_text_lines()
+            except Exception:
+                tl = []
+            for ln in tl:
+                t = (ln.get("text") or "").strip()
+                if not t:
+                    continue
+                lines.append({"text": t,
+                              "box": [int(ln["x0"]), int(ln["top"] + yo),
+                                      int(ln["x1"]), int(ln["bottom"] + yo)],
+                              "prob": 1.0})
+            yo += float(page.height or 0)
+    lines.sort(key=lambda l: (l["box"][1] // 10, l["box"][0]))
+    return lines
+
+def extract_pdf(content):
+    """Đọc hóa đơn từ lớp text PDF. Trả None nếu PDF không có text (bản scan) → để OCR xử lý."""
+    if not _HAS_PDFPLUMBER:
+        return None
+    lines = _pdf_to_lines(content)
+    if len(lines) < 3:                       # gần như không có chữ → PDF scan → chuyển OCR
+        return None
+    raw, fields = parse_invoice_vietocr(lines)   # tái dùng đúng parser đang có
+    return raw, fields, [], 1.0
+
+# ════════════════════════════════════════
 # FASTAPI
 # ════════════════════════════════════════
 app = FastAPI(title="Invoice OCR Service")
@@ -329,17 +367,33 @@ class ExtractReq(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "engines": list(ENGINES.keys())}
+    return {"status": "ok", "engines": list(ENGINES.keys()), "pdfTextLayer": _HAS_PDFPLUMBER}
 
 @app.post("/extract")
 def extract(req: ExtractReq, x_api_key: str = Header(default="")):
     if API_KEY and x_api_key != API_KEY:
         raise HTTPException(401, "Sai X-API-Key")
-    runner = ENGINES.get(req.model, extract_gemini)
     try:
-        raw, fields, line_items, confidence = runner(req.fileUrl)
-        return {"status": "DONE", "confidence": confidence,
-                "rawText": raw, "fields": fields, "lineItems": line_items, "model": req.model}
+        content = _download(req.fileUrl)   # tải 1 lần, dùng cho cả 2 nhánh
+
+        # ── Nhánh 1: PDF hóa đơn điện tử có lớp text → đọc thẳng, KHÔNG OCR ──
+        if content[:4] == b"%PDF":
+            try:
+                pr = extract_pdf(content)
+            except Exception:
+                pr = None
+            if pr:
+                raw, fields, line_items, confidence = pr
+                return {"status": "DONE", "confidence": confidence, "rawText": raw,
+                        "fields": fields, "lineItems": line_items,
+                        "model": req.model, "source": "pdf-text"}
+
+        # ── Nhánh 2: ảnh (hoặc PDF scan không có text) → OCR bằng engine đã chọn ──
+        runner = ENGINES.get(req.model, extract_gemini)
+        raw, fields, line_items, confidence = runner(content)
+        return {"status": "DONE", "confidence": confidence, "rawText": raw,
+                "fields": fields, "lineItems": line_items,
+                "model": req.model, "source": "ocr"}
     except Exception as e:
         return {"status": "FAILED", "errorMessage": str(e)}
 
