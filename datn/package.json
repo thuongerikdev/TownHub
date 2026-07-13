@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname localhost",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -48,21 +48,19 @@
     "date-fns": "3.6.0",
     "embla-carousel-react": "8.6.0",
     "input-otp": "1.4.2",
+    "jsqr": "^1.4.0",
     "lucide-react": "0.487.0",
     "motion": "12.23.24",
     "next": "16.2.1",
     "next-themes": "0.4.6",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
     "react-dom": "19.2.4",
     "react-hook-form": "7.55.0",
-    "react-popper": "2.3.0",
     "react-resizable-panels": "2.1.7",
-    "react-responsive-masonry": "2.7.1",
-    "react-router": "7.13.0",
-    "react-slick": "0.31.0",
     "recharts": "2.15.2",
     "sonner": "2.0.3",
     "tailwind-merge": "3.2.0",
@@ -73,11 +71,16 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom"
   }
 }

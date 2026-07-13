@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using TH.Auth.ApplicationService.StartUp;
 using TH.Base.ApplicationService.StartUp;
+using TH.Asset.ApplicationService.StartUp;
 
 namespace TH.WebAPI
 {
@@ -74,8 +75,20 @@ namespace TH.WebAPI
             // === 3) Modules (đăng ký DbContext sẽ đọc từ Configuration ở trên) ===
             builder.ConfigureAuth(typeof(Program).Namespace);
             builder.ConfigureBase(typeof(Program).Namespace);
+            builder.ConfigureAsset(typeof(Program).Namespace);
             //builder.ConfigureMovie(typeof(Program).Namespace);
             builder.Services.AddHealthChecks();
+
+            // === MCP Server (Model Context Protocol) ===
+            // Expose nghiệp vụ TownHub thành "tools" cho LLM (Claude) gọi qua HTTP tại /mcp.
+            // Các tool nằm trong namespace TH.WebAPI.Mcp, dùng lại trực tiếp tầng Service qua DI.
+            builder.Services
+                .AddMcpServer(options =>
+                {
+                    options.ServerInfo = new() { Name = "TownHub", Version = "1.0.0" };
+                })
+                .WithHttpTransport()
+                .WithToolsFromAssembly();
 
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
@@ -126,6 +139,12 @@ namespace TH.WebAPI
 
             await app.SeedAuthDataAsync();
 
+            // Asset module chạy migration khi khởi động CHỈ khi bật cờ ASSET_AUTO_MIGRATE=true.
+            // Mặc định tắt để không tự ý thay đổi schema trên DB dùng chung (Neon) — bật khi đã sẵn sàng.
+            // Gọi tường minh AssetStartUp để tránh nhập nhằng với BaseStartUp.SeedAssetDataAsync (trùng tên).
+            if (app.Configuration.GetValue<bool>("ASSET_AUTO_MIGRATE"))
+                await AssetStartUp.SeedAssetDataAsync(app);
+
 
             app.UseSwagger();
             app.UseSwaggerUI();
@@ -174,6 +193,14 @@ namespace TH.WebAPI
             app.UseAuthorization();
 
             app.MapControllers();
+
+            // Endpoint MCP (Streamable HTTP). Client kết nối tới: {host}/mcp
+            // Bắt buộc JWT mặc định (dùng default policy = RequireAuthenticatedUser của JwtBearer).
+            // Đặt MCP_REQUIRE_AUTH=false để tắt khi demo cục bộ.
+            var mcpEndpoint = app.MapMcp("/mcp");
+            if (app.Configuration.GetValue("MCP_REQUIRE_AUTH", true))
+                mcpEndpoint.RequireAuthorization();
+
             await app.RunAsync();
         }
 

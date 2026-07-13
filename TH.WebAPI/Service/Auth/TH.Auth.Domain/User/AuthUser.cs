@@ -22,6 +22,9 @@ namespace TH.Auth.Domain.User
         [Required, MaxLength(100)]
         public required string userName { get; set; }
 
+        // email có thể NULL trong DB (user tạo qua phone/Google không có email).
+        // Entity phải nullable để EF dùng reader nullable, tránh InvalidCastException
+        // "Column 'email' is null" khi materialize GetAllUserAsync/GetUserByIDAsync.
         [MaxLength(255)]
         public string? email { get; set; }
 

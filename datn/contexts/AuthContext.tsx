@@ -1,6 +1,11 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { auth, account, setToken, getToken, clearToken, type GetUserResponse } from "@/lib/api";
+import {
+  auth, account, setToken, getToken, clearToken,
+  setRefreshToken, clearRefreshToken,
+  setAuthCache, getCachedPermissions, getCachedRoles, clearAuthCache,
+  type GetUserResponse,
+} from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 interface AuthState {
@@ -55,8 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.errorCode === 200 && res.data) {
         setState((s) => ({ ...s, user: res.data, loading: false }));
       } else {
-        setState((s) => ({ ...s, user: null, loading: false }));
         clearToken();
+        clearRefreshToken();
+        clearAuthCache();
+        setState({
+          user: null,
+          permissions: [],
+          roles: [],
+          loading: false,
+          sessionId: null,
+          token: null,
+        });
       }
     } catch {
       setState((s) => ({ ...s, user: null, loading: false }));
@@ -66,9 +80,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = getToken();
     if (token) {
-      const storedPermissions: string[] = JSON.parse(localStorage.getItem("permissions") ?? "[]");
-      const storedRoles: { roleID: number; roleName: string }[] = JSON.parse(localStorage.getItem("roles") ?? "[]");
-      setState((s) => ({ ...s, token, permissions: storedPermissions, roles: storedRoles }));
+      // Khôi phục permissions/roles đã cache để hasPermission() hoạt động ngay
+      // sau khi reload (không phải đợi đăng nhập lại).
+      setState((s) => ({
+        ...s,
+        token,
+        permissions: getCachedPermissions(),
+        roles: getCachedRoles(),
+      }));
       refreshUser();
     } else {
       setState((s) => ({ ...s, loading: false }));
@@ -98,8 +117,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setToken(d.token);
-        localStorage.setItem("permissions", JSON.stringify(d.permissions ?? []));
-        localStorage.setItem("roles", JSON.stringify(d.roles ?? []));
+        if (d.refreshToken) setRefreshToken(d.refreshToken);
+        setAuthCache(d.permissions ?? [], d.roles ?? []);
         setState((s) => ({
           ...s,
           token: d.token,
@@ -128,8 +147,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const d = res.data;
         setToken(d.token);
-        localStorage.setItem("permissions", JSON.stringify(d.permissions ?? []));
-        localStorage.setItem("roles", JSON.stringify(d.roles ?? []));
+        if (d.refreshToken) setRefreshToken(d.refreshToken);
+        setAuthCache(d.permissions ?? [], d.roles ?? []);
         setState((s) => ({
           ...s,
           token: d.token,
@@ -193,8 +212,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Continue with logout even if API fails
     } finally {
       clearToken();
-      localStorage.removeItem("permissions");
-      localStorage.removeItem("roles");
+      clearRefreshToken();
+      clearAuthCache();
       setState({
         user: null,
         permissions: [],
@@ -207,12 +226,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
+  // Vai trò "admin" là siêu quản trị — luôn có mọi quyền (an toàn kể cả khi
+  // thiếu 1 code nào đó trong cache). Ngoài ra mới xét theo danh sách quyền.
+  const isAdmin = state.roles.some((r) => r.roleName?.toLowerCase() === "admin");
   const hasPermission = useCallback(
-    (code: string) => state.permissions.includes(code),
-    [state.permissions]
+    (code: string) => isAdmin || state.permissions.includes(code),
+    [isAdmin, state.permissions]
   );
-
-  const isAdmin = state.permissions.includes("user.create_bql");
 
   return (
     <AuthContext.Provider

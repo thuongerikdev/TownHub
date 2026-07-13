@@ -77,6 +77,9 @@ namespace TH.TownHub.Domain.Entities
         [ForeignKey(nameof(ApartmentId))]
         public virtual Apartment? Apartment { get; set; }
 
+        // UC: unit_id — FK đến bảng units (schema base) dùng trong module Asset
+        public Guid? UnitId { get; set; }
+
         public bool IsOwner { get; set; } = false;     // true = chủ hộ, false = thuê
 
         // Cư dân có hoạt động kinh doanh dịch vụ → được phép đăng ký làm NCC
@@ -90,8 +93,70 @@ namespace TH.TownHub.Domain.Entities
         // ID của user bên service Auth — KHÔNG dùng FK, liên kết qua service trung gian
         public int? AuthUserId { get; set; }
 
+        // UC: user_id (Guid) — liên kết đến AuthUser.userID khi dùng Guid
+        public Guid? UserId { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public virtual FaceProfile? FaceProfile { get; set; }
+        public virtual ICollection<AccessEvent>? AccessEvents { get; set; }
+    }
+
+    [Table("face_profiles", Schema = Constant.Database.DbSchema.TownHub)]
+    public class FaceProfile
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        public int ResidentId { get; set; }
+        [ForeignKey(nameof(ResidentId))]
+        public virtual Resident Resident { get; set; } = null!;
+
+        [Required]
+        public required string ImageUrl { get; set; }
+
+        [MaxLength(30)]
+        public string AiStatus { get; set; } = "pending";
+
+        public string? EmbeddingRef { get; set; }
+        public string? FailureReason { get; set; }
+        public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    [Table("access_events", Schema = Constant.Database.DbSchema.TownHub)]
+    public class AccessEvent
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
+
+        public int? ResidentId { get; set; }
+        [ForeignKey(nameof(ResidentId))]
+        public virtual Resident? Resident { get; set; }
+
+        [Required, MaxLength(20)]
+        public required string PersonType { get; set; } = "stranger";
+
+        [Required, MaxLength(10)]
+        public required string Direction { get; set; }
+
+        [Required, MaxLength(100)]
+        public required string CameraName { get; set; }
+
+        public string? SnapshotUrl { get; set; }
+        public double? Confidence { get; set; }
+
+        [MaxLength(20)]
+        public string Status { get; set; } = "new";
+
+        public string? Note { get; set; }
+        public int? HandledByAuthUserId { get; set; }
+        public DateTime? HandledAt { get; set; }
+        public DateTime DetectedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
     // ============================================================
@@ -166,6 +231,23 @@ namespace TH.TownHub.Domain.Entities
 
         // ID người tạo bên service Auth — KHÔNG dùng FK
         public int CreatedByAuthUserId { get; set; }
+
+        // ── Individual notification fields (UC63) ──
+        // Dùng khi gửi thông báo tới từng cá nhân (inbox), thay vì broadcast
+        public Guid? RecipientId { get; set; }      // UUID cư dân / nhân viên nhận
+
+        [MaxLength(30)]
+        public string? ReferenceType { get; set; }  // loại nguồn: TICKET | WORK_ORDER | INVOICE…
+
+        public Guid? ReferenceId { get; set; }      // UUID bản ghi nguồn
+
+        public string? Body { get; set; }           // nội dung chi tiết (cho individual notification)
+
+        public bool IsRead { get; set; } = false;
+        public DateTime? ReadAt { get; set; }
+
+        [MaxLength(20)]
+        public string SendStatus { get; set; } = "PENDING"; // PENDING | SENT | FAILED
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -367,8 +449,15 @@ namespace TH.TownHub.Domain.Entities
 
         public bool IsPublic { get; set; } = false;
 
+        // UC: scope — phạm vi cấu hình (GLOBAL | BUILDING | MODULE)
+        [MaxLength(100)]
+        public string? Scope { get; set; }
+
         // ID bên service Auth — KHÔNG dùng FK
         public int? UpdatedByAuthUserId { get; set; }
+
+        // UC: UpdatedBy (Guid) — khi cần trace cross-service bằng UUID
+        public Guid? UpdatedBy { get; set; }
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
@@ -400,6 +489,14 @@ namespace TH.TownHub.Domain.Entities
         public string? IpAddress { get; set; }
 
         public string? UserAgent { get; set; }
+
+        // ── DB-level audit fields (từ Asset module) ──
+        [MaxLength(100)]
+        public string? TableName { get; set; }   // tên bảng bị thay đổi (thay cho TargetType khi trace DB-level)
+
+        public Guid? RecordId { get; set; }      // UUID bản ghi bị thay đổi
+
+        public Guid? ChangedBy { get; set; }     // UUID người thực hiện (khi cross-service cần Guid)
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

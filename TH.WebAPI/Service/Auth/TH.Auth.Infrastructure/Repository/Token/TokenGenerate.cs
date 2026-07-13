@@ -54,6 +54,9 @@ namespace TH.Auth.Infrastructure.Repository.Token
         Task<(AuthRefreshToken token, AuthUser user)?> GetActiveAsync(string refreshToken);
         Task<AuthRefreshToken> GenerateUniqueRefreshTokenAsync(int userId, int sessionId, string? ip, TimeSpan ttl);
         Task AddTokenAsync(AuthRefreshToken token, CancellationToken ct);
+
+        // 6. Mã MCP dài hạn — jti cố định (dùng để tra soát/thu hồi qua Redis), mang quyền hiện tại của user.
+        Task<string> CreateMcpTokenAsync(AuthUser user, TimeSpan ttl, string jti);
     }
     public sealed class TokenGenerate : ITokenGenerate
     {
@@ -129,6 +132,35 @@ namespace TH.Auth.Infrastructure.Repository.Token
         private static string CacheKeyAccess(int userId, int sessionId) => $"user:{userId}:sess:{sessionId}:access";
         private static string CacheKeyRefresh(int userId, int sessionId) => $"user:{userId}:sess:{sessionId}:refresh";
 
+        private async Task TryCacheTokenPairAsync(
+            int userId,
+            int sessionId,
+            string accessToken,
+            string refreshToken,
+            TimeSpan accessTtl,
+            TimeSpan refreshTtl)
+        {
+            var multiplexer = _redisDb.Multiplexer;
+            if (!multiplexer.IsConnected)
+                return;
+
+            try
+            {
+                await Task.WhenAll(
+                    _redisDb.StringSetAsync(CacheKeyAccess(userId, sessionId), accessToken, accessTtl),
+                    _redisDb.StringSetAsync(CacheKeyRefresh(userId, sessionId), refreshToken, refreshTtl)
+                ).WaitAsync(TimeSpan.FromSeconds(2));
+            }
+            catch (RedisException)
+            {
+                // PostgreSQL is the source of truth for refresh tokens. Redis is only a cache.
+            }
+            catch (TimeoutException)
+            {
+                // Do not make login fail because the optional cache is unavailable.
+            }
+        }
+
         // ================= 1. Issue Pair (Login logic cũ) =================
         public async Task<(string accessToken, AuthRefreshToken refreshToken)> IssuePairAsync(
             AuthUser user,
@@ -149,12 +181,13 @@ namespace TH.Auth.Infrastructure.Repository.Token
             _db.authRefreshTokens.Add(refresh);
             await _db.SaveChangesAsync();
 
-            try
-            {
-                await _redisDb.StringSetAsync(CacheKeyAccess(user.userID, sessionId), access, TimeSpan.FromHours(1));
-                await _redisDb.StringSetAsync(CacheKeyRefresh(user.userID, sessionId), refresh.Token, TimeSpan.FromDays(7));
-            }
-            catch (RedisException) { }
+            await TryCacheTokenPairAsync(
+                user.userID,
+                sessionId,
+                access,
+                refresh.Token,
+                accessTtl ?? TimeSpan.FromMinutes(30),
+                refreshTtl ?? TimeSpan.FromDays(7));
 
             return (access, refresh);
         }
@@ -179,12 +212,13 @@ namespace TH.Auth.Infrastructure.Repository.Token
             _db.authRefreshTokens.Add(refresh);
             await _db.SaveChangesAsync();
 
-            try
-            {
-                await _redisDb.StringSetAsync(CacheKeyAccess(user.userID, sessionId), access, TimeSpan.FromHours(1));
-                await _redisDb.StringSetAsync(CacheKeyRefresh(user.userID, sessionId), refresh.Token, TimeSpan.FromDays(7));
-            }
-            catch (RedisException) { }
+            await TryCacheTokenPairAsync(
+                user.userID,
+                sessionId,
+                access,
+                refresh.Token,
+                accessTtl,
+                refreshTtl);
 
             return (access, refresh);
         }
@@ -254,12 +288,14 @@ namespace TH.Auth.Infrastructure.Repository.Token
 
             await _db.SaveChangesAsync();
 
-            try
-            {
-                await _redisDb.StringSetAsync(CacheKeyAccess(current.userID, current.sessionID), access, TimeSpan.FromHours(1));
-                await _redisDb.StringSetAsync(CacheKeyRefresh(current.userID, current.sessionID), newRefresh.Token, TimeSpan.FromDays(7));
-            }
-            catch (RedisException) { }
+            // Cache
+            await TryCacheTokenPairAsync(
+                current.userID,
+                current.sessionID,
+                access,
+                newRefresh.Token,
+                accessTtl ?? TimeSpan.FromMinutes(30),
+                refreshTtl ?? TimeSpan.FromDays(7));
 
             return (access, newRefresh, freshPermissions);
         }
@@ -345,6 +381,52 @@ namespace TH.Auth.Infrastructure.Repository.Token
                 Created = DateTime.UtcNow,
                 CreatedByIp = ip
             };
+        }
+
+        // ================= 6. Mã MCP dài hạn =================
+        public async Task<string> CreateMcpTokenAsync(AuthUser user, TimeSpan ttl, string jti)
+        {
+            var roleIds = await _db.authUserRoles
+                .Where(x => x.userID == user.userID)
+                .Select(x => new { x.roleID, x.role.roleName })
+                .ToListAsync();
+
+            var permissions = await (from ur in _db.authUserRoles
+                                      join rp in _db.authRolePermissions on ur.roleID equals rp.roleID
+                                      join p in _db.authPermissions on rp.permissionID equals p.permissionID
+                                      where ur.userID == user.userID && !string.IsNullOrEmpty(p.code)
+                                      select p.code)
+                                      .Distinct()
+                                      .ToListAsync();
+
+            var profile = await _db.authProfiles.FirstOrDefaultAsync(x => x.userID == user.userID);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+            {
+                new Claim("name", profile?.lastName ?? string.Empty),
+                new Claim("email", user.email),
+                new Claim("userName", user.userName),
+                new Claim("userId", user.userID.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.userID.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, user.userID.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, jti),
+                new Claim("token_use", "mcp")
+            };
+
+            foreach (var r in roleIds) claims.Add(new Claim("role", r.roleName));
+            foreach (var p in permissions) claims.Add(new Claim("permission", p));
+
+            var tokenDescriptor = new JwtSecurityToken(
+                issuer: null,
+                audience: null,
+                claims: claims,
+                expires: DateTime.UtcNow.Add(ttl),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
 
         // ================= PRIVATE HELPER - ĐÃ CẬP NHẬT =================

@@ -7,6 +7,8 @@ namespace TH.TownHub.Infrastructure.Database
     {
         public DbSet<Apartment> Apartments { get; set; }
         public DbSet<Resident> Residents { get; set; }
+        public DbSet<FaceProfile> FaceProfiles { get; set; }
+        public DbSet<AccessEvent> AccessEvents { get; set; }
         public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<NotificationLog> NotificationLogs { get; set; }
@@ -36,6 +38,10 @@ namespace TH.TownHub.Infrastructure.Database
             modelBuilder.Entity<Resident>()
                 .HasIndex(x => x.IdCard).IsUnique()
                 .HasFilter($"\"{nameof(Resident.IdCard)}\" IS NOT NULL");
+            modelBuilder.Entity<FaceProfile>()
+                .HasIndex(x => x.ResidentId).IsUnique();
+            modelBuilder.Entity<AccessEvent>()
+                .HasIndex(x => new { x.PersonType, x.DetectedAt });
 
             modelBuilder.Entity<NotificationTemplate>()
                 .HasIndex(x => x.Name).IsUnique();

@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useState, useEffect, useCallback } from "react";
 import { users, apartments, notifications, auditLogs, type AuditLog } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StatCard {
   title: string;
@@ -35,6 +36,7 @@ const incidentData = [
 ];
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatCard[]>([]);
   const [recentLogs, setRecentLogs] = useState<AuditLog[]>([]);
@@ -112,7 +114,7 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { if (!authLoading && user) fetchData(); }, [fetchData, authLoading, user]);
 
   const actionLabel = (action?: string): string => {
     const m: Record<string, string> = {

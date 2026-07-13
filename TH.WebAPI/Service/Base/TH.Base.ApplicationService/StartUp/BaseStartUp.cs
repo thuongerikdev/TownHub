@@ -116,6 +116,7 @@ namespace TH.Base.ApplicationService.StartUp
             // === APPLICATION SERVICES DI ===
             builder.Services.AddScoped<IApartmentService, ApartmentService>();
             builder.Services.AddScoped<IResidentService, ResidentService>();
+            builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 
             builder.Services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
 

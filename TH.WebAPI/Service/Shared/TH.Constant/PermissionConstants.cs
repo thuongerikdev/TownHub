@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,124 +6,146 @@ using System.Threading.Tasks;
 
 namespace TH.Constant
 {
+    /// <summary>
+    /// Danh mục quyền của hệ thống QUẢN LÝ KHU CHUNG CƯ.
+    ///
+    /// Key   = tên Policy (PascalCase) dùng cho [Authorize(Policy = "...")] trên controller
+    ///         và đồng thời là permissionName lưu DB.
+    /// Value = "code" của quyền (dạng "&lt;resource&gt;.&lt;action&gt;") — chính là claim "permission"
+    ///         nhúng trong JWT và là chuỗi FE kiểm tra qua hasPermission(code).
+    ///
+    /// Quy ước resource khớp 100% với FE datn/lib/rbac.ts để RBAC thông suốt
+    /// đầu-cuối: seed DB → gán role → claim JWT → FE gate → BE [Authorize].
+    ///
+    /// 2 nhóm lớn:
+    ///   • CORE   : nền tảng (tài khoản, vai trò, phân quyền, cư dân, căn hộ, thông báo, nhật ký…)
+    ///   • MODULE : nghiệp vụ kỹ thuật/tài sản (tài sản, PM, CM, kho, mua sắm, nhà thầu, báo cáo)
+    /// Nhóm được suy ra từ tiền tố code (xem AuthDataSeeder) nên không cần cột DB riêng.
+    /// </summary>
     public static class PermissionConstants
     {
         public static readonly Dictionary<string, string> Permissions = new()
         {
-            // --- Account & Auth ---
-            { "AccountMfaSetup", "account.mfa_setup" },
-            { "AccountChangePassword", "account.change_password" },
-            { "AuthForgotPassword", "auth.forgot_password" },
-            { "AuthLogout", "auth.logout" },
-            { "AuthRefresh", "auth.refresh" },
+            // ══════════════════════════ CORE ══════════════════════════
+
+            // --- Hệ thống & Xác thực (public/universal, gán cho mọi tài khoản) ---
+            { "SystemHealth", "system.health" },
             { "AuthLogin", "auth.login" },
             { "AuthLoginGoogle", "auth.login_google" },
-            { "AuthMfaVerify", "auth.mfa_verify" },
             { "AuthRegister", "auth.register" },
+            { "AuthForgotPassword", "auth.forgot_password" },
+            { "AuthRefresh", "auth.refresh" },
+            { "AuthLogout", "auth.logout" },
+            { "AuthMfaVerify", "auth.mfa_verify" },
 
             // --- User ---
             { "UserCreate", "user.create" },             // BQL + Admin tạo tài khoản Resident/Provider
             { "UserCreateBQL", "user.create_bql" },      // Admin tạo tài khoản BQL
-            { "UserDelete", "user.delete" },
+
+            // --- Tài khoản cá nhân (mọi user đã đăng nhập) ---
+            { "AccountMfaSetup", "account.mfa_setup" },
+            { "AccountChangePassword", "account.change_password" },
             { "UserReadProfile", "user.read_profile" },
             { "UserUpdateProfile", "user.update_profile" },
+
+            // --- Quản lý tài khoản người dùng (Core) ---
             { "UserReadDetails", "user.read_details" },
             { "UserReadDetailsAdmin", "user.read_details.admin" },
+            { "UserDelete", "user.delete" },
 
-            // --- Role & Permission ---
+            // --- Vai trò (nhóm người dùng) ---
             { "RoleRead", "role.read" },
             { "RoleManage", "role.manage" },
             { "RoleManageAdmin", "role.manage.admin" },
             { "RoleAssign", "role.assign" },
             { "RoleAssignAdmin", "role.assign.admin" },
-            { "PermissionManage", "permission.manage" },
-            { "PermissionManageAdmin", "permission.manage.admin" },
+
+            // --- Phân quyền (nhóm quyền) ---
             { "PermissionRead", "permission.read" },
             { "PermissionReadAdmin", "permission.read.admin" },
+            { "PermissionManage", "permission.manage" },
+            { "PermissionManageAdmin", "permission.manage.admin" },
             { "PermissionAssign", "permission.assign" },
             { "PermissionAssignAdmin", "permission.assign.admin" },
 
+            // --- Nhật ký hệ thống & Phiên đăng nhập ---
             { "AuditLogManage", "audit_log.manage" },
             { "UserSessionManage", "usersession.manage" },
 
-            // --- Movie & Content ---
-            { "MovieReadDetails", "movie.read_details" },
-            { "MovieBrowse", "movie.browse" },
-            { "MovieWatchStream", "movie.watch_stream" },
-            { "MovieManage", "movie.manage" },
-            { "MovieWatchVip", "movie.watch_vip" },
-            { "SavedMovieManage", "saved_movie.manage" },
-            { "SavedMovieRead", "saved_movie.read" },
+            // --- Căn hộ ---
+            { "ApartmentView", "apartment.view" },
+            { "ApartmentCreate", "apartment.create" },
+            { "ApartmentUpdate", "apartment.update" },
+            { "ApartmentDelete", "apartment.delete" },
 
-            // --- Episode ---
-            { "EpisodeRead", "episode.read" },
-            { "EpisodeManage", "episode.manage" },
+            // --- Cư dân ---
+            { "ResidentView", "resident.view" },
+            { "ResidentCreate", "resident.create" },
+            { "ResidentUpdate", "resident.update" },
+            { "ResidentDelete", "resident.delete" },
 
-            // --- Person (Actor/Director) ---
-            { "PersonRead", "person.read" },
-            { "PersonManage", "person.manage" },
-            { "MoviePersonRead", "movie_person.read" },
-            { "MoviePersonManage", "movie_person.manage" },
+            // --- Thông báo ---
+            { "NotificationView", "notification.view" },
+            { "NotificationSend", "notification.send" },
+            { "NotificationManage", "notification.manage" },
 
-            // --- Tags ---
-            { "TagRead", "tag.read" },
-            { "TagManage", "tag.manage" },
-            { "MovieTagRead", "movie_tag.read" },
-            { "MovieTagManage", "movie_tag.manage" },
+            // ══════════════════════════ MODULE ══════════════════════════
 
-            // --- Subtitles ---
-            { "SubtitleRead", "subtitle.read" },
-            { "SubtitleCallback", "subtitle.callback" },
-            { "SubtitleUpload", "subtitle.upload" },
-            { "SubtitleTranslate", "subtitle.translate" },
-            { "SubtitleManage", "subtitle.manage" },
+            // --- Tài sản ---
+            { "AssetView", "asset.view" },
+            { "AssetCreate", "asset.create" },
+            { "AssetUpdate", "asset.update" },
+            { "AssetDelete", "asset.delete" },
 
-            // --- Comment & Rating ---
-            { "CommentRead", "comment.read" },
-            { "CommentCreate", "comment.create" },
-            { "CommentUpdateOwn", "comment.update_own" },
-            { "CommentDeleteOwn", "comment.delete_own" },
-            { "RatingRead", "rating.read" },
-            { "RatingCreate", "rating.create" },
-            { "RatingUpdate", "rating.update" },
-            { "RatingDelete", "rating.delete" },
+            // --- Bảo trì định kỳ (PM / Work Order) ---
+            { "WorkOrderView", "workorder.view" },
+            { "WorkOrderCreate", "workorder.create" },
+            { "WorkOrderAssign", "workorder.assign" },
+            { "WorkOrderExecute", "workorder.execute" },
+            { "WorkOrderReview", "workorder.review" },
+            { "WorkOrderClose", "workorder.close" },
 
-            // --- Subscription & Payment ---
-            { "SubscriptionReadAll", "subscription.read_all" },
-            { "SubscriptionManage", "subscription.manage" },
-            { "SubscriptionReadOwn", "subscription.read_own" },
-            { "SubscriptionCancel", "subscription.cancel" },
-            { "OrderReadOwn", "order.read_own" },
-            { "OrderReadAll", "order.read_all" },
-            { "InvoiceReadOwn", "invoice.read_own" },
-            { "InvoiceReadAll", "invoice.read_all" },
-            { "PaymentCheckout", "payment.checkout" },
-            { "PaymentCallback", "payment.callback" },
-            { "PlanRead", "plan.read" },
-            { "PlanManage", "plan.manage" },
-            { "PriceRead", "price.read" },
-            { "PriceManage", "price.manage" },
+            // --- Sự cố (CM / Ticket) ---
+            { "TicketView", "ticket.view" },
+            { "TicketCreate", "ticket.create" },
+            { "TicketAssign", "ticket.assign" },
+            { "TicketResolve", "ticket.resolve" },
+            { "TicketClose", "ticket.close" },
 
-            // --- System & Upload ---
-            { "SystemHealth", "system.health" },
-            { "UploadArchive", "upload.archive" },
-            { "UploadVimeo", "upload.vimeo" },
-            { "UploadYoutube", "upload.youtube" },
-            { "ImageRead", "image.read" },
-            { "ImageManage", "image.manage" },
-            { "SourceRead", "source.read" },
-            { "SourceManage", "source.manage" },
-            { "RegionRead", "region.read" },
-            { "RegionManage", "region.manage" },
+            // --- Kho vật tư ---
+            { "InventoryView", "inventory.view" },
+            { "InventoryTransaction", "inventory.transaction" },
+            { "InventoryAudit", "inventory.audit" },
 
-            // --- Search & Progress ---
-            { "SearchManage", "search.manage" },
-            { "SearchMovie", "search.movie" },
-            { "SearchSuggest", "search.suggest" },
-            { "SearchPerson", "search.person" },
-            { "SearchAdvanced", "search.advanced" },
-            { "ProgressTrack", "progress.track" },
-            { "ProgressRead", "progress.read" }
+            // --- Mua sắm ---
+            { "ProcurementView", "procurement.view" },
+            { "ProcurementRequest", "procurement.request" },
+            { "ProcurementApprove", "procurement.approve" },
+            { "ProcurementOrder", "procurement.order" },
+            { "ProcurementInvoice", "procurement.invoice" },
+
+            // --- Nhà thầu ---
+            { "VendorView", "vendor.view" },
+            { "VendorCreate", "vendor.create" },
+            { "VendorUpdate", "vendor.update" },
+            { "VendorEvaluate", "vendor.evaluate" },
+
+            // --- Báo cáo ---
+            { "ReportKpi", "report.kpi" },
+            { "ReportCost", "report.cost" },
+        };
+
+        /// <summary>
+        /// Quyền "công khai" — cấp cho MỌI tài khoản (kể cả cư dân) khi seed,
+        /// không cần admin gán thủ công. Dùng trong AuthDataSeeder.
+        /// </summary>
+        public static readonly HashSet<string> UniversalCodes = new()
+        {
+            "system.health",
+            "auth.login", "auth.login_google", "auth.register", "auth.forgot_password",
+            "auth.refresh", "auth.logout", "auth.mfa_verify",
+            "account.mfa_setup", "account.change_password",
+            "user.read_profile", "user.update_profile",
         };
     }
 }

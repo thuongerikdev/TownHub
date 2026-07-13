@@ -1,3 +1,5 @@
+﻿'use client';
+
 "use client";
 
 import { motion } from "motion/react";
@@ -16,7 +18,7 @@ export function PlaceholderPage({ title, description }: { title: string; descrip
       </div>
 
       <div className="h-96 rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center text-slate-400">
-        <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+        <div className="h-16 w-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-sm mb-4">
           <Wrench className="w-8 h-8 text-indigo-500" />
         </div>
         <p className="text-sm font-medium">Module đang trong quá trình phát triển</p>

@@ -22,6 +22,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TH.Auth.ApplicationService.Service;
 using TH.Auth.ApplicationService.Service.Email;
+using TH.Auth.ApplicationService.Service.Mcp;
 using TH.Auth.ApplicationService.Service.MFA;
 using TH.Auth.ApplicationService.Service.Role;
 using TH.Auth.ApplicationService.Service.User;
@@ -272,6 +273,7 @@ namespace TH.Auth.ApplicationService.StartUp
             builder.Services.AddScoped<IAuthUserService, AuthUserService>();
             builder.Services.AddScoped<IPasswordChangeService, PasswordChangeService>();
             builder.Services.AddScoped<IMfaService, MfaService>();
+            builder.Services.AddScoped<IMcpTokenService, McpTokenService>();
 
             //builder.Services.AddScoped<IVnPayService, VnPayService>();
             //builder.Services.AddScoped<IOrderService, OrderService>();
@@ -344,6 +346,28 @@ namespace TH.Auth.ApplicationService.StartUp
                         if (ctx.Exception is SecurityTokenExpiredException)
                             ctx.Response.Headers["x-token-expired"] = "true";
                         return Task.CompletedTask;
+                    },
+                    // MCP: nếu là token MCP (claim token_use=mcp) thì kiểm tra cờ thu hồi trong Redis.
+                    OnTokenValidated = async ctx =>
+                    {
+                        var principal = ctx.Principal;
+                        if (principal?.FindFirst("token_use")?.Value != "mcp") return;
+
+                        var jti = principal.FindFirst("jti")?.Value;
+                        if (string.IsNullOrEmpty(jti)) { ctx.Fail("MCP token không hợp lệ."); return; }
+
+                        try
+                        {
+                            var mux = ctx.HttpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+                            var revoked = await mux.GetDatabase().HashGetAsync($"mcp:token:{jti}", "revoked");
+                            // Không còn bản ghi (hết hạn/đã xoá) hoặc revoked=1 → từ chối.
+                            if (revoked.IsNullOrEmpty || revoked == "1")
+                                ctx.Fail("MCP token đã bị thu hồi hoặc hết hạn.");
+                        }
+                        catch
+                        {
+                            // Redis lỗi tạm thời: token vẫn hợp lệ về chữ ký & hạn → cho qua (fail-open).
+                        }
                     },
                     OnChallenge = ctx =>
                     {

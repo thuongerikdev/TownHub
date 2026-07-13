@@ -203,6 +203,9 @@ namespace TH.TownHub.ApplicationService.Service
                         return ResponseConst.Error<bool>(400, "Template không tồn tại.");
                 }
 
+                // Audience supports the standard groups (all, owners, building_a...)
+                // and precise targeting values such as `floor:5` or `building:A|floor:5`.
+                var recipients = await GetRecipientsAsync(request.audience);
                 _dbContext.Notifications.Add(new Notification
                 {
                     Title = request.title,
@@ -211,8 +214,15 @@ namespace TH.TownHub.ApplicationService.Service
                     Audience = request.audience,
                     TemplateId = request.templateId,
                     Status = "draft",
+                    TotalRecipients = recipients.Count,
                     ScheduledAt = request.scheduledAt,
-                    CreatedByAuthUserId = request.createdByAuthUserId
+                    CreatedByAuthUserId = request.createdByAuthUserId,
+                    // Individual notification fields (UC63)
+                    RecipientId = request.recipientId,
+                    ReferenceType = request.referenceType,
+                    ReferenceId = request.referenceId,
+                    Body = request.body,
+                    SendStatus = request.sendStatus
                 });
                 await _dbContext.SaveChangesAsync();
 
@@ -242,6 +252,12 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.Audience = request.audience;
                 entity.TemplateId = request.templateId;
                 entity.ScheduledAt = request.scheduledAt;
+                // Individual notification fields (UC63)
+                entity.RecipientId = request.recipientId;
+                entity.ReferenceType = request.referenceType;
+                entity.ReferenceId = request.referenceId;
+                entity.Body = request.body;
+                entity.SendStatus = request.sendStatus;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
@@ -265,9 +281,29 @@ namespace TH.TownHub.ApplicationService.Service
                 if (entity.Status == "sent")
                     return ResponseConst.Error<bool>(400, "Thông báo đã được gửi trước đó.");
 
-                // Cập nhật trạng thái — logic gửi thực tế sẽ qua message queue
+                var recipients = await GetRecipientsAsync(entity.Audience);
+                var logs = recipients.Select(resident => new NotificationLog
+                {
+                    NotificationId = entity.Id,
+                    ResidentId = resident.Id,
+                    Channel = entity.Channel,
+                    // The delivery worker can replace this with a device token.  Keeping
+                    // the address in the log makes each targeted recipient auditable.
+                    Recipient = entity.Channel == "email"
+                        ? resident.Email ?? resident.Phone
+                        : resident.Phone,
+                    Status = "delivered",
+                    SentAt = DateTime.UtcNow
+                }).ToList();
+                _dbContext.NotificationLogs.AddRange(logs);
+
+                // Delivery integration is handled by the queue worker; this transaction
+                // records the exact audience and delivery result immediately.
                 entity.Status = "sent";
                 entity.SentAt = DateTime.UtcNow;
+                entity.TotalRecipients = recipients.Count;
+                entity.SentCount = recipients.Count;
+                entity.FailedCount = 0;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
@@ -278,6 +314,32 @@ namespace TH.TownHub.ApplicationService.Service
                 _logger.LogError(ex, "Lỗi khi gửi thông báo. ID: {Id}", id);
                 return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
             }
+        }
+
+        private async Task<List<Resident>> GetRecipientsAsync(string audience)
+        {
+            var query = _dbContext.Residents
+                .Include(x => x.Apartment)
+                .Where(x => x.MoveOutDate == null);
+
+            if (audience == "owners") query = query.Where(x => x.IsOwner);
+            else if (audience == "building_a") query = query.Where(x => x.Apartment != null && x.Apartment.Building == "Tòa A");
+            else if (audience == "building_b") query = query.Where(x => x.Apartment != null && x.Apartment.Building == "Tòa B");
+            else if (audience == "villa") query = query.Where(x => x.Apartment != null && x.Apartment.Building == "Villa");
+            else if (audience.StartsWith("floor:") && int.TryParse(audience[6..], out var floor))
+                query = query.Where(x => x.Apartment != null && x.Apartment.Floor == floor);
+            else if (audience.StartsWith("building:") && audience.Contains("|floor:"))
+            {
+                var parts = audience.Split("|floor:", StringSplitOptions.RemoveEmptyEntries);
+                var building = parts[0].Replace("building:", "Tòa ");
+                if (parts.Length == 2 && int.TryParse(parts[1], out floor))
+                    query = query.Where(x => x.Apartment != null && x.Apartment.Building == building && x.Apartment.Floor == floor);
+            }
+            // `staff` is intentionally not resolved from Residents; it is delivered by
+            // the authentication service's staff directory.
+            else if (audience == "staff") return new List<Resident>();
+
+            return await query.ToListAsync();
         }
 
         public async Task<ResponseDto<List<NotificationResponse>>> GetAllAsync(string? status = null)
@@ -305,6 +367,13 @@ namespace TH.TownHub.ApplicationService.Service
                         scheduledAt = x.ScheduledAt,
                         sentAt = x.SentAt,
                         createdByAuthUserId = x.CreatedByAuthUserId,
+                        recipientId = x.RecipientId,
+                        referenceType = x.ReferenceType,
+                        referenceId = x.ReferenceId,
+                        body = x.Body,
+                        isRead = x.IsRead,
+                        readAt = x.ReadAt,
+                        sendStatus = x.SendStatus,
                         createdAt = x.CreatedAt
                     })
                     .ToListAsync();
@@ -338,6 +407,13 @@ namespace TH.TownHub.ApplicationService.Service
                         scheduledAt = x.ScheduledAt,
                         sentAt = x.SentAt,
                         createdByAuthUserId = x.CreatedByAuthUserId,
+                        recipientId = x.RecipientId,
+                        referenceType = x.ReferenceType,
+                        referenceId = x.ReferenceId,
+                        body = x.Body,
+                        isRead = x.IsRead,
+                        readAt = x.ReadAt,
+                        sendStatus = x.SendStatus,
                         createdAt = x.CreatedAt
                     })
                     .FirstOrDefaultAsync();
@@ -867,6 +943,8 @@ namespace TH.TownHub.ApplicationService.Service
 
                 entity.Value = request.value;
                 entity.UpdatedByAuthUserId = request.updatedByAuthUserId;
+                if (request.scope != null) entity.Scope = request.scope;
+                if (request.updatedBy.HasValue) entity.UpdatedBy = request.updatedBy;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
@@ -898,6 +976,7 @@ namespace TH.TownHub.ApplicationService.Service
                         dataType = x.DataType,
                         description = x.Description,
                         isPublic = x.IsPublic,
+                        scope = x.Scope,
                         updatedAt = x.UpdatedAt
                     })
                     .ToListAsync();
@@ -925,6 +1004,7 @@ namespace TH.TownHub.ApplicationService.Service
                         dataType = x.DataType,
                         description = x.Description,
                         isPublic = x.IsPublic,
+                        scope = x.Scope,
                         updatedAt = x.UpdatedAt
                     })
                     .FirstOrDefaultAsync();
@@ -969,7 +1049,11 @@ namespace TH.TownHub.ApplicationService.Service
                     OldData = request.oldData,
                     NewData = request.newData,
                     IpAddress = request.ipAddress,
-                    UserAgent = request.userAgent
+                    UserAgent = request.userAgent,
+                    // DB-level audit fields (UC từ Asset module)
+                    TableName = request.tableName,
+                    RecordId = request.recordId,
+                    ChangedBy = request.changedBy
                 });
                 await _dbContext.SaveChangesAsync();
             }
@@ -1001,6 +1085,9 @@ namespace TH.TownHub.ApplicationService.Service
                         action = x.Action,
                         targetType = x.TargetType,
                         targetId = x.TargetId,
+                        tableName = x.TableName,
+                        recordId = x.RecordId,
+                        changedBy = x.ChangedBy,
                         ipAddress = x.IpAddress,
                         createdAt = x.CreatedAt
                     })

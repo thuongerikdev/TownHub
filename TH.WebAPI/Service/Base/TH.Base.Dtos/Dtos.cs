@@ -49,10 +49,14 @@ namespace TH.TownHub.Dtos
         public string? gender { get; set; }
         // Căn hộ chỉ dùng để ở — không kinh doanh tại đây
         public int? apartmentId { get; set; }
+        // UC: unit_id — FK đến units (uuid) trong schema asset
+        public Guid? unitId { get; set; }
         public bool isOwner { get; set; } = false;      // true = chủ hộ, false = thuê
         public DateTime? moveInDate { get; set; }
         public string? avatarUrl { get; set; }
         public int? authUserId { get; set; }
+        // UC: userId (Guid) — liên kết AuthUser khi dùng uuid
+        public Guid? userId { get; set; }
         // Đánh dấu cư dân có hoạt động kinh doanh (là NCC)
         public bool isBusinessOwner { get; set; } = false;
     }
@@ -74,13 +78,94 @@ namespace TH.TownHub.Dtos
         public string? gender { get; set; }
         public int? apartmentId { get; set; }
         public string? apartmentCode { get; set; }
+        public Guid? unitId { get; set; }
         public bool isOwner { get; set; }           // Chủ hộ / người thuê
         public bool isBusinessOwner { get; set; }   // Có kinh doanh dịch vụ
         public DateTime? moveInDate { get; set; }
         public DateTime? moveOutDate { get; set; }
         public string? avatarUrl { get; set; }
         public int? authUserId { get; set; }
+        public Guid? userId { get; set; }
         public DateTime createdAt { get; set; }
+    }
+
+    public class RegisterFaceRequestDto
+    {
+        public int residentId { get; set; }
+        public required string imageUrl { get; set; }
+    }
+
+    public class UpdateFaceAiResultRequestDto
+    {
+        public required string aiStatus { get; set; }
+        public string? embeddingRef { get; set; }
+        public string? failureReason { get; set; }
+    }
+
+    public class FaceProfileResponse
+    {
+        public int id { get; set; }
+        public int residentId { get; set; }
+        public string residentName { get; set; } = null!;
+        public string imageUrl { get; set; } = null!;
+        public string aiStatus { get; set; } = null!;
+        public string? failureReason { get; set; }
+        public DateTime registeredAt { get; set; }
+    }
+
+    public class CreateAccessEventRequestDto
+    {
+        public int? residentId { get; set; }
+        public string personType { get; set; } = "stranger";
+        public required string direction { get; set; }
+        public required string cameraName { get; set; }
+        public string? snapshotUrl { get; set; }
+        public double? confidence { get; set; }
+        public DateTime? detectedAt { get; set; }
+    }
+
+    public class HandleAccessEventRequestDto
+    {
+        public string status { get; set; } = "resolved";
+        public string? note { get; set; }
+        public int? handledByAuthUserId { get; set; }
+    }
+
+    public class AccessEventResponse
+    {
+        public long id { get; set; }
+        public int? residentId { get; set; }
+        public string? residentName { get; set; }
+        public string personType { get; set; } = null!;
+        public string direction { get; set; } = null!;
+        public string cameraName { get; set; } = null!;
+        public string? snapshotUrl { get; set; }
+        public double? confidence { get; set; }
+        public string status { get; set; } = null!;
+        public string? note { get; set; }
+        public int? handledByAuthUserId { get; set; }
+        public DateTime? handledAt { get; set; }
+        public DateTime detectedAt { get; set; }
+    }
+
+    public class AnalyzeCameraFrameRequestDto
+    {
+        public required string imageDataUrl { get; set; }
+        public required string cameraName { get; set; }
+        public string direction { get; set; } = "in";
+    }
+
+    public class CameraRecognitionResponse
+    {
+        public bool faceDetected { get; set; }
+        public bool matched { get; set; }
+        public int? residentId { get; set; }
+        public string? residentName { get; set; }
+        public double? confidence { get; set; }
+        public bool eventCreated { get; set; }
+        public long? eventId { get; set; }
+        public string result { get; set; } = "no_face";
+        public string message { get; set; } = null!;
     }
 
     // ============================================================
@@ -126,6 +211,14 @@ namespace TH.TownHub.Dtos
         public int? templateId { get; set; }
         public DateTime? scheduledAt { get; set; }
         public int createdByAuthUserId { get; set; }
+
+        // ── Individual notification fields (UC63) ──
+        // Dùng khi push tới 1 người cụ thể (không bắt buộc với broadcast)
+        public Guid? recipientId { get; set; }
+        public string? referenceType { get; set; }  // TICKET | WORK_ORDER | INVOICE…
+        public Guid? referenceId { get; set; }
+        public string? body { get; set; }           // nội dung chi tiết
+        public string sendStatus { get; set; } = "PENDING"; // PENDING | SENT | FAILED
     }
 
     public class UpdateNotificationRequestDto : CreateNotificationRequestDto
@@ -147,6 +240,16 @@ namespace TH.TownHub.Dtos
         public DateTime? scheduledAt { get; set; }
         public DateTime? sentAt { get; set; }
         public int createdByAuthUserId { get; set; }
+
+        // Individual notification fields
+        public Guid? recipientId { get; set; }
+        public string? referenceType { get; set; }
+        public Guid? referenceId { get; set; }
+        public string? body { get; set; }
+        public bool isRead { get; set; }
+        public DateTime? readAt { get; set; }
+        public string sendStatus { get; set; } = "PENDING";
+
         public DateTime createdAt { get; set; }
     }
 
@@ -266,6 +369,10 @@ namespace TH.TownHub.Dtos
         public required string key { get; set; }
         public required string value { get; set; }
         public int? updatedByAuthUserId { get; set; }
+        // UC: scope — phạm vi cấu hình (GLOBAL | BUILDING | MODULE)
+        public string? scope { get; set; }
+        // UC: updatedBy (Guid) — khi cần trace cross-service bằng UUID
+        public Guid? updatedBy { get; set; }
     }
 
     public class SystemConfigResponse
@@ -276,6 +383,7 @@ namespace TH.TownHub.Dtos
         public string dataType { get; set; } = null!;
         public string? description { get; set; }
         public bool isPublic { get; set; }
+        public string? scope { get; set; }
         public DateTime updatedAt { get; set; }
     }
 
@@ -292,6 +400,11 @@ namespace TH.TownHub.Dtos
         public string? newData { get; set; }
         public string? ipAddress { get; set; }
         public string? userAgent { get; set; }
+
+        // ── DB-level audit fields (từ Asset module) ──
+        public string? tableName { get; set; }   // tên bảng bị thay đổi
+        public Guid? recordId { get; set; }      // UUID bản ghi
+        public Guid? changedBy { get; set; }     // UUID người thực hiện (cross-service)
     }
 
     public class AuditLogResponse
@@ -301,6 +414,9 @@ namespace TH.TownHub.Dtos
         public string action { get; set; } = null!;
         public string? targetType { get; set; }
         public int? targetId { get; set; }
+        public string? tableName { get; set; }
+        public Guid? recordId { get; set; }
+        public Guid? changedBy { get; set; }
         public string? ipAddress { get; set; }
         public DateTime createdAt { get; set; }
     }

@@ -55,11 +55,13 @@ namespace TH.TownHub.ApplicationService.Service
                     DateOfBirth = request.dateOfBirth,
                     Gender = request.gender,
                     ApartmentId = request.apartmentId,
+                    UnitId = request.unitId,
                     IsOwner = request.isOwner,
                     IsBusinessOwner = request.isBusinessOwner,
                     MoveInDate = request.moveInDate,
                     AvatarUrl = request.avatarUrl,
-                    AuthUserId = request.authUserId
+                    AuthUserId = request.authUserId,
+                    UserId = request.userId
                 };
 
                 _dbContext.Residents.Add(entity);
@@ -103,12 +105,14 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.DateOfBirth = request.dateOfBirth;
                 entity.Gender = request.gender;
                 entity.ApartmentId = request.apartmentId;
+                entity.UnitId = request.unitId;
                 entity.IsOwner = request.isOwner;
                 entity.IsBusinessOwner = request.isBusinessOwner;
                 entity.MoveInDate = request.moveInDate;
                 entity.MoveOutDate = request.moveOutDate;
                 entity.AvatarUrl = request.avatarUrl;
                 entity.AuthUserId = request.authUserId;
+                entity.UserId = request.userId;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 _dbContext.Residents.Update(entity);
@@ -127,14 +131,50 @@ namespace TH.TownHub.ApplicationService.Service
         {
             try
             {
-                var entity = await _dbContext.Residents.FirstOrDefaultAsync(x => x.Id == id);
-                if (entity == null)
-                    return ResponseConst.Error<bool>(404, "Không tìm thấy cư dân.");
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+                return await strategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var entity = await _dbContext.Residents.FirstOrDefaultAsync(x => x.Id == id);
+                        if (entity == null)
+                            return ResponseConst.Error<bool>(404, "Không tìm thấy cư dân.");
 
-                _dbContext.Residents.Remove(entity);
-                await _dbContext.SaveChangesAsync();
+                        // Preserve historical records while removing references that would
+                        // otherwise violate nullable foreign-key constraints in PostgreSQL.
+                        await _dbContext.AccessEvents
+                            .Where(x => x.ResidentId == id)
+                            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.ResidentId, (int?)null));
 
-                return ResponseConst.Success("Xóa cư dân thành công.", true);
+                        await _dbContext.NotificationLogs
+                            .Where(x => x.ResidentId == id)
+                            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.ResidentId, (int?)null));
+
+                        await _dbContext.FaceProfiles
+                            .Where(x => x.ResidentId == id)
+                            .ExecuteDeleteAsync();
+
+                        _dbContext.Residents.Remove(entity);
+                        await _dbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return ResponseConst.Success("Xóa cư dân thành công.", true);
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Không thể xóa cư dân do dữ liệu liên quan. ID: {Id}", id);
+                return ResponseConst.Error<bool>(
+                    409,
+                    "Không thể xóa cư dân vì vẫn còn dữ liệu liên quan chưa được xử lý."
+                );
             }
             catch (Exception ex)
             {
@@ -167,12 +207,14 @@ namespace TH.TownHub.ApplicationService.Service
                         gender = x.Gender,
                         apartmentId = x.ApartmentId,
                         apartmentCode = x.Apartment != null ? x.Apartment.Code : null,
+                        unitId = x.UnitId,
                         isOwner = x.IsOwner,
                         isBusinessOwner = x.IsBusinessOwner,
                         moveInDate = x.MoveInDate,
                         moveOutDate = x.MoveOutDate,
                         avatarUrl = x.AvatarUrl,
                         authUserId = x.AuthUserId,
+                        userId = x.UserId,
                         createdAt = x.CreatedAt
                     })
                     .ToListAsync();
@@ -204,12 +246,14 @@ namespace TH.TownHub.ApplicationService.Service
                         gender = x.Gender,
                         apartmentId = x.ApartmentId,
                         apartmentCode = x.Apartment != null ? x.Apartment.Code : null,
+                        unitId = x.UnitId,
                         isOwner = x.IsOwner,
                         isBusinessOwner = x.IsBusinessOwner,
                         moveInDate = x.MoveInDate,
                         moveOutDate = x.MoveOutDate,
                         avatarUrl = x.AvatarUrl,
                         authUserId = x.AuthUserId,
+                        userId = x.UserId,
                         createdAt = x.CreatedAt
                     })
                     .FirstOrDefaultAsync();

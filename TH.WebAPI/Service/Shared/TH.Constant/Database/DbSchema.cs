@@ -14,5 +14,6 @@ namespace TH.Constant.Database
         public const string Movie = "movie";
 
         public const string TownHub = "townhub";
+        public const string Asset = "asset";
     }
 }

@@ -41,7 +41,9 @@ namespace TH.Auth.Infrastructure.Repository
                 }
                 catch
                 {
-                    await tx.RollbackAsync(ct);
+                    // The request token may already be cancelled. Rollback still has to run
+                    // so the connection is returned to the pool in a clean state.
+                    await tx.RollbackAsync(CancellationToken.None);
                     throw;
                 }
             });

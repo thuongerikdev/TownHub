@@ -6,7 +6,6 @@ import {
   Search,
   Filter,
   Plus,
-  MoreVertical,
   Shield,
   RefreshCw,
   Loader2,
@@ -21,6 +20,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { users, roles as rolesApi, residents as residentsApi, apartments as apartmentsApi, type GetUserResponse, type Role, type ApartmentResponse } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import UserRoleModal from "@/components/UserRoleModal";
 
 function fullName(u: GetUserResponse) {
   const first = u.profile?.firstName?.trim() ?? "";
@@ -607,6 +607,7 @@ export default function UsersPage() {
   const [error, setError]             = useState("");
   const [showCreate, setShowCreate]   = useState(false);
   const [toast, setToast]             = useState<string | null>(null);
+  const [roleTarget, setRoleTarget]   = useState<GetUserResponse | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -630,7 +631,11 @@ export default function UsersPage() {
     }
   }, [isAdmin]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    // Initial remote data synchronization for this client-only administration screen.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchUsers();
+  }, [fetchUsers]);
 
   const filtered = userList.filter((u) => {
     const q = searchTerm.toLowerCase();
@@ -787,8 +792,12 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                        <MoreVertical className="w-4 h-4" />
+                      <button
+                        onClick={() => setRoleTarget(user)}
+                        title="Sửa vai trò"
+                        className="p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                      >
+                        <UserCog className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
@@ -822,6 +831,17 @@ export default function UsersPage() {
           isAdmin
             ? <CreateBqlModal onClose={() => setShowCreate(false)} onSuccess={(msg) => { fetchUsers(); showToast(msg); }} />
             : <CreateResidentModal onClose={() => setShowCreate(false)} onSuccess={(msg) => { fetchUsers(); showToast(msg); }} />
+        )}
+      </AnimatePresence>
+
+      {/* Role Modal */}
+      <AnimatePresence>
+        {roleTarget && (
+          <UserRoleModal
+            user={{ userID: roleTarget.userID, userName: roleTarget.userName, email: roleTarget.email, profile: roleTarget.profile }}
+            onClose={() => setRoleTarget(null)}
+            onSaved={fetchUsers}
+          />
         )}
       </AnimatePresence>
 

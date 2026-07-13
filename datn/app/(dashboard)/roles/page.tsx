@@ -1,519 +1,390 @@
 "use client";
 
-import { motion, AnimatePresence } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
-  Shield,
-  Search,
-  RefreshCw,
-  Loader2,
-  AlertCircle,
-  FileX,
-  Plus,
-  Users,
-  Briefcase,
-  Star,
-  X,
-  Trash2,
+  Shield, Plus, Pencil, Trash2, Loader2, Briefcase, Users, Star,
+  ShieldCheck, UserCog, Check, Search as SearchIcon, CircleUser,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
-import { roles, type Role } from "@/lib/api";
+import { toast } from "sonner";
+import {
+  roles as rolesApi, users as usersApi, type Role, type UserSlim,
+} from "@/lib/api";
+import { useApiList } from "@/lib/use-api";
+import {
+  PageHeader, StatCard, FilterBar, EntityModal, Field, ToneBadge,
+} from "@/components/shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
-function scopeStyle(scope = "") {
-  return scope === "staff"
-    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-    : "bg-violet-500/10 text-violet-400 border-violet-500/20";
+// ─── Mock cho NEXT_PUBLIC_USE_MOCK=1 ──────────────────────────────────────────
+const mockRoles: Role[] = [
+  { roleID: 1, roleName: "Quản trị hệ thống", roleDescription: "Toàn quyền hệ thống", isDefault: false, scope: "staff" },
+  { roleID: 2, roleName: "Quản lý kỹ thuật", roleDescription: "Điều hành bảo trì & tài sản", isDefault: false, scope: "staff" },
+  { roleID: 3, roleName: "Kỹ thuật viên", roleDescription: "Thực hiện công việc hiện trường", isDefault: false, scope: "staff" },
+  { roleID: 4, roleName: "Thủ kho", roleDescription: "Quản lý kho vật tư", isDefault: false, scope: "staff" },
+  { roleID: 5, roleName: "Cư dân", roleDescription: "Tài khoản cư dân", isDefault: true, scope: "user" },
+];
+const mockUsers: UserSlim[] = [
+  { userID: 1, userName: "admin", email: "admin@townhub.vn", status: "active", isEmailVerified: true, profile: { firstName: "Quản", lastName: "Trị" }, roles: [{ roleID: 1, roleName: "Quản trị hệ thống", roleDescription: "" }] },
+  { userID: 2, userName: "ktv.nam", email: "nam@townhub.vn", status: "active", isEmailVerified: true, profile: { firstName: "Văn", lastName: "Nam" }, roles: [{ roleID: 3, roleName: "Kỹ thuật viên", roleDescription: "" }] },
+  { userID: 3, userName: "ktv.linh", email: "linh@townhub.vn", status: "active", isEmailVerified: true, profile: { firstName: "Mỹ", lastName: "Linh" }, roles: [{ roleID: 3, roleName: "Kỹ thuật viên", roleDescription: "" }] },
+  { userID: 4, userName: "thukho", email: "kho@townhub.vn", status: "active", isEmailVerified: true, profile: { firstName: "Thu", lastName: "Kho" }, roles: [{ roleID: 4, roleName: "Thủ kho", roleDescription: "" }] },
+];
+
+function fullName(u: UserSlim) {
+  const n = `${u.profile?.firstName ?? ""} ${u.profile?.lastName ?? ""}`.trim();
+  return n || u.userName;
 }
 
-function scopeLabel(scope = "") {
-  return scope === "staff" ? "Staff" : "User";
-}
+// ─── Modal thành viên (Quản lý nhóm người dùng) ───────────────────────────────
+function MembersModal({ role, onClose, onSaved }: { role: Role; onClose: () => void; onSaved: () => void }) {
+  const usersQ = useApiList<UserSlim>(() => usersApi.getAllSlim(), { mock: mockUsers });
+  const [search, setSearch] = useState("");
+  const [members, setMembers] = useState<Set<number>>(new Set());
+  const [base, setBase] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const inited = useRef(false);
 
-function ScopeIcon({ scope }: { scope?: string }) {
-  return scope === "staff"
-    ? <Briefcase className="w-3.5 h-3.5" />
-    : <Users className="w-3.5 h-3.5" />;
-}
+  useEffect(() => {
+    if (usersQ.loading || inited.current) return;
+    inited.current = true;
+    const init = new Set(
+      usersQ.items.filter((u) => u.roles?.some((r) => r.roleID === role.roleID)).map((u) => u.userID),
+    );
+    setMembers(new Set(init));
+    setBase(new Set(init));
+  }, [usersQ.loading, usersQ.items, role.roleID]);
 
-// ─── Add Role Modal ───────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return usersQ.items;
+    return usersQ.items.filter((u) => `${fullName(u)} ${u.userName} ${u.email}`.toLowerCase().includes(s));
+  }, [usersQ.items, search]);
 
-interface AddRoleModalProps {
-  onClose: () => void;
-  onCreated: (role: Role) => void;
-}
-
-function AddRoleModal({ onClose, onCreated }: AddRoleModalProps) {
-  const [roleName, setRoleName]           = useState("");
-  const [roleDescription, setRoleDescription] = useState("");
-  const [isDefault, setIsDefault]         = useState(false);
-  const [submitting, setSubmitting]       = useState(false);
-  const [error, setError]                 = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!roleName.trim()) { setError("Tên vai trò không được để trống"); return; }
-    setSubmitting(true);
-    setError("");
-    try {
-      const res = await roles.add({ roleName: roleName.trim(), roleDescription: roleDescription.trim(), isDefault });
-      if (res.errorCode === 200 && res.data) {
-        onCreated(res.data);
-        onClose();
-      } else {
-        setError(res.errorMessage || "Không thể thêm vai trò");
-      }
-    } catch {
-      setError("Lỗi kết nối server");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 16 }}
-        className="relative w-full max-w-md bg-[#141414] border border-white/10 rounded-2xl shadow-2xl"
-      >
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-amber-500" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white">Thêm vai trò mới</h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Tạo một vai trò trong hệ thống</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Tên vai trò <span className="text-rose-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
-              placeholder="vd: bao_ve, ke_toan..."
-              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all font-mono"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Mô tả
-            </label>
-            <input
-              type="text"
-              value={roleDescription}
-              onChange={(e) => setRoleDescription(e.target.value)}
-              placeholder="Mô tả vai trò..."
-              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
-            />
-          </div>
-
-          <label className="flex items-center gap-3 cursor-pointer select-none group">
-            <div
-              onClick={() => setIsDefault((v) => !v)}
-              className={`w-10 h-5 rounded-full transition-all border ${
-                isDefault
-                  ? "bg-amber-500 border-amber-500"
-                  : "bg-white/5 border-white/10"
-              } relative`}
-            >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                isDefault ? "left-5" : "left-0.5"
-              }`} />
-            </div>
-            <div>
-              <p className="text-sm text-zinc-300 font-medium">Vai trò mặc định</p>
-              <p className="text-xs text-zinc-600">Tự động gán khi tạo tài khoản mới</p>
-            </div>
-          </label>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 hover:text-white hover:bg-white/10 transition-all"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(251,191,36,0.2)]"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Tạo vai trò
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
+  const changed = useMemo(
+    () => usersQ.items.filter((u) => members.has(u.userID) !== base.has(u.userID)).length,
+    [usersQ.items, members, base],
   );
-}
 
-// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+  function toggle(id: number) {
+    setMembers((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
 
-interface DeleteConfirmProps {
-  role: Role;
-  onClose: () => void;
-  onDeleted: (roleID: number) => void;
-}
-
-function DeleteConfirmModal({ role, onClose, onDeleted }: DeleteConfirmProps) {
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError]       = useState("");
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    setError("");
-    try {
-      const res = await roles.delete(role.roleID);
-      if (res.errorCode === 200) {
-        onDeleted(role.roleID);
-        onClose();
-      } else {
-        setError(res.errorMessage || "Không thể xóa vai trò");
-      }
-    } catch {
-      setError("Lỗi kết nối server");
-    } finally {
-      setDeleting(false);
-    }
-  };
+  async function save() {
+    setSaving(true);
+    const changedUsers = usersQ.items.filter((u) => members.has(u.userID) !== base.has(u.userID));
+    const results = await Promise.all(
+      changedUsers.map((u) => {
+        const cur = (u.roles ?? []).map((r) => r.roleID);
+        const next = members.has(u.userID)
+          ? Array.from(new Set([...cur, role.roleID]))
+          : cur.filter((id) => id !== role.roleID);
+        return rolesApi.assignToUser(u.userID, next);
+      }),
+    );
+    setSaving(false);
+    const ok = results.filter((r) => r.errorCode === 200).length;
+    if (ok === results.length) toast.success(`Đã cập nhật ${ok} thành viên cho “${role.roleName}”.`);
+    else toast.warning(`Cập nhật ${ok}/${results.length} thành viên (có lỗi).`);
+    onSaved();
+    onClose();
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 16 }}
-        className="relative w-full max-w-sm bg-[#141414] border border-white/10 rounded-2xl shadow-2xl p-6 space-y-4"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
-            <Trash2 className="w-5 h-5 text-rose-400" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-white">Xóa vai trò</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Hành động này không thể hoàn tác</p>
+    <EntityModal
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={<span className="flex items-center gap-2"><UserCog className="size-4 text-brand" /> Thành viên · {role.roleName}</span>}
+      description="Tích chọn người dùng thuộc nhóm vai trò này"
+      size="lg"
+      footer={
+        <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">{members.size}</strong> thành viên
+            {changed > 0 && <> · <span className="text-brand">{changed} thay đổi</span></>}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} disabled={saving}>Huỷ</Button>
+            <Button onClick={save} disabled={saving || changed === 0}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} Lưu
+            </Button>
           </div>
         </div>
-
-        <p className="text-sm text-zinc-400">
-          Bạn có chắc muốn xóa vai trò{" "}
-          <span className="text-white font-semibold font-mono">{role.roleName}</span>?
-        </p>
-
-        {error && (
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {error}
-          </div>
+      }
+    >
+      <div className="space-y-3">
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm theo tên, username, email…" className="h-9 pl-8" />
+        </div>
+        {usersQ.loading ? (
+          <div className="flex justify-center py-10 text-muted-foreground"><Loader2 className="size-5 animate-spin" /></div>
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">Không có người dùng phù hợp.</p>
+        ) : (
+          <ul className="max-h-[48vh] space-y-1 overflow-y-auto pr-1">
+            {filtered.map((u) => {
+              const on = members.has(u.userID);
+              return (
+                <li key={u.userID}>
+                  <button
+                    onClick={() => toggle(u.userID)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors",
+                      on ? "border-brand/40 bg-brand/5" : "border-border hover:bg-accent/40",
+                    )}
+                  >
+                    <span className={cn(
+                      "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border",
+                      on ? "border-brand bg-brand text-brand-foreground" : "border-border bg-card",
+                    )}>
+                      {on && <Check className="size-3" />}
+                    </span>
+                    <div className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <CircleUser className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{fullName(u)}</p>
+                      <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                    </div>
+                    {u.roles && u.roles.length > 0 && (
+                      <ToneBadge tone="neutral" className="shrink-0">{u.roles.length} vai trò</ToneBadge>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 hover:text-white hover:bg-white/10 transition-all"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="flex-1 px-4 py-2.5 bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2"
-          >
-            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            Xóa
-          </button>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </EntityModal>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Trang chính ──────────────────────────────────────────────────────────────
+interface RoleForm { roleID?: number; roleName: string; roleDescription: string; isDefault: boolean; scope: string }
+const emptyRole: RoleForm = { roleName: "", roleDescription: "", isDefault: false, scope: "staff" };
 
 export default function RolesPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [scopeFilter, setScopeFilter] = useState("all");
-  const [roleList, setRoleList] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
+  const q = useApiList<Role>(() => rolesApi.getAll(), { mock: mockRoles });
+  const [search, setSearch] = useState("");
+  const [scopeF, setScopeF] = useState<"all" | "staff" | "user">("all");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<RoleForm>(emptyRole);
+  const [submitting, setSubmitting] = useState(false);
+  const [confirmDel, setConfirmDel] = useState<Role | null>(null);
+  const [membersOf, setMembersOf] = useState<Role | null>(null);
 
-  const fetchRoles = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await roles.getAll();
-      if (res.errorCode === 200 && res.data) {
-        setRoleList(res.data);
-      } else {
-        setError(res.errorMessage || "Không tải được danh sách vai trò");
-      }
-    } catch {
-      setError("Lỗi kết nối server");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const stats = useMemo(() => {
+    const staff = q.items.filter((r) => r.scope === "staff").length;
+    return { total: q.items.length, staff, user: q.items.length - staff, def: q.items.filter((r) => r.isDefault).length };
+  }, [q.items]);
 
-  useEffect(() => { fetchRoles(); }, [fetchRoles]);
+  const groups = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    const list = q.items.filter((r) => {
+      const okS = !s || `${r.roleName} ${r.roleDescription}`.toLowerCase().includes(s);
+      const okScope = scopeF === "all" || (r.scope ?? "user") === scopeF;
+      return okS && okScope;
+    });
+    return {
+      staff: list.filter((r) => r.scope === "staff"),
+      user: list.filter((r) => r.scope !== "staff"),
+    };
+  }, [q.items, search, scopeF]);
 
-  const handleCreated = (role: Role) => setRoleList((prev) => [...prev, role]);
-  const handleDeleted = (roleID: number) => setRoleList((prev) => prev.filter((r) => r.roleID !== roleID));
+  function openCreate() { setForm(emptyRole); setEditing(false); setOpen(true); }
+  function openEdit(r: Role) {
+    setForm({ roleID: r.roleID, roleName: r.roleName, roleDescription: r.roleDescription ?? "", isDefault: r.isDefault, scope: r.scope ?? "staff" });
+    setEditing(true); setOpen(true);
+  }
 
-  const filtered = roleList.filter((r) => {
-    const q = searchTerm.toLowerCase();
-    const matchSearch =
-      !q ||
-      r.roleName.toLowerCase().includes(q) ||
-      r.roleDescription.toLowerCase().includes(q) ||
-      String(r.roleID).includes(q);
-    const matchScope = scopeFilter === "all" || r.scope === scopeFilter;
-    return matchSearch && matchScope;
-  });
+  async function submit() {
+    if (!form.roleName.trim()) { toast.error("Nhập tên vai trò."); return; }
+    setSubmitting(true);
+    const res = editing
+      ? await rolesApi.update({ roleID: form.roleID!, roleName: form.roleName.trim(), roleDescription: form.roleDescription.trim(), isDefault: form.isDefault })
+      : await rolesApi.adminAdd({ roleName: form.roleName.trim(), roleDescription: form.roleDescription.trim(), isDefault: form.isDefault, scope: form.scope });
+    setSubmitting(false);
+    if (res.errorCode === 200) {
+      toast.success(editing ? "Đã cập nhật vai trò." : "Đã tạo vai trò.");
+      setOpen(false); q.refetch();
+    } else toast.error(res.errorMessage || "Thao tác thất bại.");
+  }
 
-  const staffRoles = filtered.filter((r) => r.scope === "staff");
-  const userRoles  = filtered.filter((r) => r.scope === "user");
+  async function doDelete() {
+    if (!confirmDel) return;
+    const res = await rolesApi.delete(confirmDel.roleID);
+    if (res.errorCode === 200) { toast.success("Đã xoá vai trò."); setConfirmDel(null); q.refetch(); }
+    else toast.error(res.errorMessage || "Xoá thất bại.");
+  }
 
   return (
-    <>
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#111] p-6 rounded-2xl border border-white/5"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-amber-500" />
+    <div>
+      <PageHeader
+        title="Vai trò & nhóm người dùng"
+        description="Mỗi vai trò là một nhóm người dùng gắn với một nhóm quyền"
+        icon={Shield}
+        actions={<Button onClick={openCreate}><Plus className="size-4" /> Thêm vai trò</Button>}
+      />
+
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Tổng vai trò" value={stats.total} icon={Shield} tone="brand" loading={q.loading} />
+        <StatCard label="Nhóm nhân sự" value={stats.staff} icon={Briefcase} tone="info" loading={q.loading} />
+        <StatCard label="Nhóm cư dân" value={stats.user} icon={Users} tone="success" loading={q.loading} />
+        <StatCard label="Vai trò mặc định" value={stats.def} icon={Star} tone="warning" loading={q.loading} />
+      </div>
+
+      <FilterBar search={search} onSearch={setSearch} placeholder="Tìm vai trò theo tên, mô tả…">
+        <div className="flex gap-1 rounded-lg border border-border bg-card p-0.5">
+          {([["all", "Tất cả"], ["staff", "Nhân sự"], ["user", "Cư dân"]] as const).map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setScopeF(v)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                scopeF === v ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </FilterBar>
+
+      {q.loading ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground"><Loader2 className="size-6 animate-spin" /></div>
+      ) : (
+        <div className="space-y-8">
+          {([["staff", "Nhóm nhân sự vận hành", Briefcase], ["user", "Nhóm cư dân", Users]] as const).map(([key, label, Icon]) =>
+            groups[key].length === 0 ? null : (
+              <section key={key}>
+                <div className="mb-3 flex items-center gap-2">
+                  <Icon className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-foreground">{label}</h2>
+                  <ToneBadge tone="neutral">{groups[key].length}</ToneBadge>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {groups[key].map((r) => (
+                    <div key={r.roleID} className="group flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-brand/30">
+                      <div className="mb-3 flex items-start gap-3">
+                        <div className={cn(
+                          "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                          r.scope === "staff" ? "bg-info/15 text-info" : "bg-success/15 text-success",
+                        )}>
+                          {r.scope === "staff" ? <Briefcase className="size-5" /> : <Users className="size-5" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="truncate text-sm font-semibold text-foreground">{r.roleName}</h3>
+                            {r.isDefault && <ToneBadge tone="warning" className="shrink-0 gap-1 px-1.5"><Star className="size-3" /> Mặc định</ToneBadge>}
+                          </div>
+                          <p className="mt-0.5 text-xs text-muted-foreground">#{r.roleID} · {r.scope === "staff" ? "Nhân sự" : "Cư dân"}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(r)}><Pencil className="size-3.5" /></Button>
+                          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(r)}><Trash2 className="size-3.5" /></Button>
+                        </div>
+                      </div>
+                      <p className="mb-4 line-clamp-2 min-h-[2.5rem] text-sm text-muted-foreground">
+                        {r.roleDescription || <span className="italic text-muted-foreground/60">Không có mô tả</span>}
+                      </p>
+                      <div className="mt-auto grid grid-cols-2 gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/permissions/assign?role=${r.roleID}`}>
+                            <ShieldCheck className="size-3.5" /> Nhóm quyền
+                          </Link>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setMembersOf(r)}>
+                          <UserCog className="size-3.5" /> Thành viên
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ),
+          )}
+          {groups.staff.length === 0 && groups.user.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border py-16 text-center">
+              <Shield className="mx-auto mb-3 size-8 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">Không tìm thấy vai trò nào.</p>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Thêm / sửa vai trò */}
+      <EntityModal
+        open={open}
+        onOpenChange={setOpen}
+        title={editing ? "Sửa vai trò" : "Thêm vai trò"}
+        size="md"
+        onSubmit={submit}
+        submitting={submitting}
+        submitLabel={editing ? "Lưu" : "Tạo"}
+      >
+        <div className="space-y-4">
+          <Field label="Tên vai trò" required>
+            <Input value={form.roleName} onChange={(e) => setForm((f) => ({ ...f, roleName: e.target.value }))} placeholder="vd: Quản lý kỹ thuật" />
+          </Field>
+          <Field label="Mô tả">
+            <Textarea rows={2} value={form.roleDescription} onChange={(e) => setForm((f) => ({ ...f, roleDescription: e.target.value }))} placeholder="Phạm vi trách nhiệm của vai trò…" />
+          </Field>
+          <Field label="Loại nhóm" hint={editing ? "Không đổi loại nhóm khi sửa." : "Nhân sự: tài khoản vận hành nội bộ · Cư dân: tài khoản cư dân."}>
+            <div className="flex gap-1 rounded-lg border border-border bg-card p-0.5">
+              {([["staff", "Nhân sự", Briefcase], ["user", "Cư dân", Users]] as const).map(([v, label, Icon]) => (
+                <button
+                  key={v}
+                  type="button"
+                  disabled={editing}
+                  onClick={() => setForm((f) => ({ ...f, scope: v }))}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60",
+                    form.scope === v ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3">
+            <input type="checkbox" checked={form.isDefault} onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))} className="size-4 accent-[var(--brand)]" />
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">
-                Quản Lý <span className="text-amber-500">Vai Trò</span>
-              </h1>
-              <p className="text-sm text-zinc-400 mt-1">Phân quyền và vai trò truy cập hệ thống</p>
+              <p className="text-sm font-medium text-foreground">Vai trò mặc định</p>
+              <p className="text-xs text-muted-foreground">Tự động gán khi tạo tài khoản mới cùng loại nhóm.</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchRoles}
-              disabled={loading}
-              className="p-2.5 bg-white/5 border border-white/10 rounded-lg text-zinc-400 hover:text-white transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-lg shadow-[0_0_15px_rgba(251,191,36,0.3)] transition-all flex items-center gap-2 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Thêm Vai Trò
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Error */}
-        {error && (
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {error}
-          </div>
-        )}
-
-        {/* Search / Filter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-col md:flex-row gap-3"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên vai trò, mô tả..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#111] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
-            />
-          </div>
-          <div className="flex gap-2">
-            {(["all", "staff", "user"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setScopeFilter(s)}
-                className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${
-                  scopeFilter === s
-                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                    : "bg-[#111] border-white/10 text-zinc-400 hover:text-white hover:border-white/20"
-                }`}
-              >
-                {s === "all" ? "Tất cả" : s === "staff" ? "Staff" : "User"}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
-            <FileX className="w-10 h-10 mb-2 opacity-30" />
-            <p className="text-sm">Không tìm thấy vai trò nào</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {staffRoles.length > 0 && (
-              <RoleSection title="Nhóm Staff" icon="staff" items={staffRoles} onDelete={setDeleteTarget} />
-            )}
-            {userRoles.length > 0 && (
-              <RoleSection title="Nhóm User" icon="user" items={userRoles} onDelete={setDeleteTarget} />
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Modals */}
-      <AnimatePresence>
-        {showAddModal && (
-          <AddRoleModal
-            onClose={() => setShowAddModal(false)}
-            onCreated={handleCreated}
-          />
-        )}
-        {deleteTarget && (
-          <DeleteConfirmModal
-            role={deleteTarget}
-            onClose={() => setDeleteTarget(null)}
-            onDeleted={handleDeleted}
-          />
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
-
-// ─── Role Section & Card ──────────────────────────────────────────────────────
-
-function RoleSection({
-  title, icon, items, onDelete,
-}: {
-  title: string;
-  icon: "staff" | "user";
-  items: Role[];
-  onDelete: (role: Role) => void;
-}) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
-          icon === "staff" ? "bg-blue-500/10 text-blue-400" : "bg-violet-500/10 text-violet-400"
-        }`}>
-          {icon === "staff" ? <Briefcase className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+          </label>
         </div>
-        <span className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">{title}</span>
-        <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-xs text-zinc-500 font-mono">
-          {items.length}
-        </span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((role) => (
-          <RoleCard key={role.roleID} role={role} onDelete={onDelete} />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
+      </EntityModal>
 
-function RoleCard({ role, onDelete }: { role: Role; onDelete: (role: Role) => void }) {
-  return (
-    <div className="group bg-[#111] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all hover:bg-white/2">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            role.scope === "staff"
-              ? "bg-blue-500/10 border border-blue-500/20"
-              : "bg-violet-500/10 border border-violet-500/20"
-          }`}>
-            <ScopeIcon scope={role.scope} />
+      {/* Xoá vai trò */}
+      <EntityModal
+        open={!!confirmDel}
+        onOpenChange={(o) => !o && setConfirmDel(null)}
+        title="Xoá vai trò?"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
+            <Button variant="outline" onClick={() => setConfirmDel(null)}>Huỷ</Button>
+            <Button variant="destructive" onClick={doDelete}>Xoá</Button>
           </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-white font-mono text-sm group-hover:text-amber-400 transition-colors truncate">
-              {role.roleName}
-            </div>
-            <div className="text-xs text-zinc-500 font-mono mt-0.5">#{role.roleID}</div>
-          </div>
-        </div>
-        {role.isDefault && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-xs font-semibold shrink-0">
-            <Star className="w-3 h-3" />
-            Mặc định
-          </div>
-        )}
-      </div>
+        }
+      >
+        <p className="text-sm text-muted-foreground">
+          Xoá vai trò <strong className="text-foreground">{confirmDel?.roleName}</strong>? Người dùng đang thuộc vai trò này sẽ mất các quyền tương ứng.
+        </p>
+      </EntityModal>
 
-      <p className="text-sm text-zinc-400 mb-4 leading-relaxed min-h-[1.25rem]">
-        {role.roleDescription || <span className="text-zinc-600 italic">Không có mô tả</span>}
-      </p>
-
-      <div className="flex items-center justify-between">
-        <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${scopeStyle(role.scope)}`}>
-          <ScopeIcon scope={role.scope} />
-          {scopeLabel(role.scope)}
-        </span>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => onDelete(role)}
-            className="px-3 py-1.5 text-xs bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 hover:bg-rose-500/20 transition-all flex items-center gap-1"
-          >
-            <Trash2 className="w-3 h-3" />
-            Xóa
-          </button>
-        </div>
-      </div>
+      {/* Thành viên */}
+      {membersOf && (
+        <MembersModal role={membersOf} onClose={() => setMembersOf(null)} onSaved={() => { /* danh sách user tự cập nhật ở modal kế tiếp */ }} />
+      )}
     </div>
   );
 }
