@@ -374,21 +374,25 @@ def extract(req: ExtractReq, x_api_key: str = Header(default="")):
     if API_KEY and x_api_key != API_KEY:
         raise HTTPException(401, "Sai X-API-Key")
     try:
-        content = _download(req.fileUrl)   # tải 1 lần, dùng cho cả 2 nhánh
+        content = _download(req.fileUrl)
 
-        # ── Nhánh 1: PDF hóa đơn điện tử có lớp text → đọc thẳng, KHÔNG OCR ──
-        if content[:4] == b"%PDF":
+        # ── CHẾ ĐỘ PDF (hóa đơn điện tử): chỉ đọc lớp text, KHÔNG OCR ──
+        if req.model == "pdf":
+            if content[:4] != b"%PDF":
+                return {"status": "FAILED", "errorMessage": "Chế độ PDF chỉ nhận tệp PDF."}
             try:
                 pr = extract_pdf(content)
-            except Exception:
-                pr = None
-            if pr:
-                raw, fields, line_items, confidence = pr
-                return {"status": "DONE", "confidence": confidence, "rawText": raw,
-                        "fields": fields, "lineItems": line_items,
-                        "model": req.model, "source": "pdf-text"}
+            except Exception as e:
+                return {"status": "FAILED", "errorMessage": "Lỗi đọc PDF: " + str(e)}
+            if not pr:
+                return {"status": "FAILED",
+                        "errorMessage": "PDF không có lớp text (có thể là bản scan). Hãy dùng chế độ OCR ảnh."}
+            raw, fields, line_items, confidence = pr
+            return {"status": "DONE", "confidence": confidence, "rawText": raw,
+                    "fields": fields, "lineItems": line_items,
+                    "model": req.model, "source": "pdf-text"}
 
-        # ── Nhánh 2: ảnh (hoặc PDF scan không có text) → OCR bằng engine đã chọn ──
+        # ── CHẾ ĐỘ OCR ẢNH: dùng engine đã chọn (ảnh, hoặc PDF scan sẽ được rasterize) ──
         runner = ENGINES.get(req.model, extract_gemini)
         raw, fields, line_items, confidence = runner(content)
         return {"status": "DONE", "confidence": confidence, "rawText": raw,
