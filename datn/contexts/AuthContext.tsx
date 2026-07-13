@@ -18,7 +18,8 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (userName: string, password: string) => Promise<{ requiresMfa?: boolean; mfaTicket?: string; error?: string }>;
+  isAdmin: boolean;
+  login: (userName: string, password: string) => Promise<{ requiresMfa?: boolean; mfaTicket?: string; error?: string; isResident?: boolean }>;
   completeMfa: (mfaTicket: string, code: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   hasPermission: (code: string) => boolean;
@@ -96,18 +97,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (userName: string, password: string) => {
       try {
-        let res = await auth.userLogin(userName, password);
-        if (res.errorCode !== 200 || !res.data) {
-          res = await auth.staffLogin(userName, password);
-        }
+        // Thử staff login trước
+        let res = await auth.staffLogin(userName, password);
+        let isResident = false;
 
         if (res.errorCode !== 200 || !res.data) {
-          return { error: res.errorMessage || "Sai tài khoản hoặc mật khẩu" };
+          // Fallback sang user login (cư dân)
+          res = await auth.userLogin(userName, password);
+          if (res.errorCode !== 200 || !res.data) {
+            return { error: res.errorMessage || "Sai tài khoản hoặc mật khẩu" };
+          }
+          isResident = true;
         }
 
         const d = res.data;
 
-        if (d.requiresMFA) {
+        if (d.requiresMfa) {
           return { requiresMfa: true, mfaTicket: d.mfaTicket };
         }
 
@@ -123,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
 
         await refreshUser();
-        return {};
+        return { isResident };
       } catch (error) {
         return { error: error instanceof Error ? error.message : "Lỗi kết nối" };
       }
@@ -134,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const completeMfa = useCallback(
     async (mfaTicket: string, code: string) => {
       try {
-        const res = await auth.verifyMFA(mfaTicket, code);
+        const res = await auth.verifyMfa(mfaTicket, code);
 
         if (res.errorCode !== 200 || !res.data) {
           return { error: res.errorMessage || "Mã MFA không đúng hoặc đã hết hạn" };
@@ -233,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         ...state,
+        isAdmin,
         login,
         completeMfa,
         logout,

@@ -128,6 +128,9 @@ namespace TH.Base.ApplicationService.StartUp
             builder.Services.AddScoped<IFeeService, FeeService>();
             builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
             builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+            builder.Services.AddScoped<IProviderService, ProviderService>();
+            builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
+            builder.Services.AddScoped<IProviderServiceListingService, ProviderServiceListingService>();
 
 
 
@@ -143,15 +146,7 @@ namespace TH.Base.ApplicationService.StartUp
                 try
                 {
                     var context = services.GetRequiredService<TownHubDbContext>();
-
-                    logger.LogInformation("Applying migrations for Asset module...");
-                    await context.Database.MigrateAsync();
-
-                    // Chạy Seeder cho các dữ liệu mặc định của module Tài sản (nếu cần)
-                    // logger.LogInformation("Starting Asset Seeding...");
-                    // await AssetDataSeeder.SeedDefaultConfigAsync(context);
-                    // await AssetDataSeeder.SeedDefaultCategoriesAsync(context);
-                    // logger.LogInformation("Asset Seeding completed successfully.");
+                    logger.LogInformation("Asset module initialized (migrations managed externally).");
                 }
                 catch (Exception ex)
                 {

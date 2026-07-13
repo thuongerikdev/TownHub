@@ -80,7 +80,10 @@ namespace TH.TownHub.Domain.Entities
         // UC: unit_id — FK đến bảng units (schema base) dùng trong module Asset
         public Guid? UnitId { get; set; }
 
-        public bool IsOwner { get; set; } = false;
+        public bool IsOwner { get; set; } = false;     // true = chủ hộ, false = thuê
+
+        // Cư dân có hoạt động kinh doanh dịch vụ → được phép đăng ký làm NCC
+        public bool IsBusinessOwner { get; set; } = false;
 
         public DateTime? MoveInDate { get; set; }
         public DateTime? MoveOutDate { get; set; }
@@ -496,6 +499,147 @@ namespace TH.TownHub.Domain.Entities
         public Guid? ChangedBy { get; set; }     // UUID người thực hiện (khi cross-service cần Guid)
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // ============================================================
+    // PROVIDERS — Nhà cung cấp dịch vụ
+    // ============================================================
+    [Table("providers", Schema = Constant.Database.DbSchema.TownHub)]
+    public class Provider
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public required string CompanyName { get; set; }
+
+        [Required]
+        public required string ContactName { get; set; }
+
+        [Required]
+        public required string Phone { get; set; }
+
+        public string? Email { get; set; }
+
+        public string? Address { get; set; }
+
+        public string? ServiceCategories { get; set; }   // JSON array: ["plumbing","electrical"]
+
+        // Nếu NCC là cư dân trong toà nhà — KHÔNG dùng FK cứng, link qua service
+        public int? ResidentId { get; set; }
+        [ForeignKey(nameof(ResidentId))]
+        public virtual Resident? Resident { get; set; }
+
+        [Required]
+        public required string RegistrationStatus { get; set; } = "pending"; // pending | approved | rejected
+
+        public string? RejectionReason { get; set; }
+
+        // ID bên service Auth — KHÔNG dùng FK
+        public int? ApprovedByAuthUserId { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public virtual ICollection<ServiceRequest>? ServiceRequests { get; set; }
+        public virtual ICollection<ProviderServiceListing>? ServiceListings { get; set; }
+    }
+
+    // ============================================================
+    // SERVICE REQUESTS — Yêu cầu dịch vụ
+    // ============================================================
+    [Table("service_requests", Schema = Constant.Database.DbSchema.TownHub)]
+    public class ServiceRequest
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public required string Title { get; set; }
+
+        public string? Description { get; set; }
+
+        [Required]
+        public required string Category { get; set; }   // plumbing | electrical | cleaning | renovation | camera | other
+
+        public int? ApartmentId { get; set; }
+        [ForeignKey(nameof(ApartmentId))]
+        public virtual Apartment? Apartment { get; set; }
+
+        public bool RequiresMgtApproval { get; set; } = false;
+
+        [Required]
+        public required string Status { get; set; } = "pending_provider";
+        // pending_approval | pending_provider | accepted_by_provider | rejected_by_provider
+        // rejected_by_mgt | in_progress | completed
+
+        public int? ProviderId { get; set; }
+        [ForeignKey(nameof(ProviderId))]
+        public virtual Provider? Provider { get; set; }
+
+        // ID bên service Auth — KHÔNG dùng FK
+        public int RequestedByAuthUserId { get; set; }
+
+        public int? MgtApprovedByAuthUserId { get; set; }
+        public DateTime? MgtApprovedAt { get; set; }
+        public string? MgtRejectionReason { get; set; }
+
+        public string? ProviderRejectionReason { get; set; }
+
+        // Thời điểm hẹn thợ đến — cư dân đề xuất khi tạo yêu cầu, NCC có thể điều chỉnh khi nhận việc
+        public DateTime? ScheduledDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
+
+        public string? Note { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // ============================================================
+    // PROVIDER SERVICE LISTINGS — Dịch vụ do NCC đăng ký
+    // ============================================================
+    [Table("provider_service_listings", Schema = Constant.Database.DbSchema.TownHub)]
+    public class ProviderServiceListing
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        public int ProviderId { get; set; }
+        [ForeignKey(nameof(ProviderId))]
+        public virtual Provider? Provider { get; set; }
+
+        [Required]
+        public required string Name { get; set; }                // Tên dịch vụ
+
+        [Required]
+        public required string Category { get; set; }            // plumbing | electrical | cleaning | renovation | camera | other
+
+        public string? Description { get; set; }
+
+        // Thông tin liên hệ riêng cho dịch vụ này
+        public string? ContactPhone { get; set; }
+        public string? ContactEmail { get; set; }
+        public string? ContactAddress { get; set; }
+
+        // Bảng giá theo khoảng — JSON array: [{"name":"...","unit":"...","priceFrom":100000,"priceTo":200000}]
+        public string? PriceList { get; set; }
+
+        [Required]
+        public string Status { get; set; } = "pending";          // pending | approved | rejected
+
+        public string? RejectionReason { get; set; }
+
+        // ID bên service Auth — KHÔNG dùng FK
+        public int? ApprovedByAuthUserId { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 
     // ============================================================

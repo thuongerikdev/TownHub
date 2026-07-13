@@ -46,7 +46,7 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const [userRes, aptRes, notifRes, logRes] = await Promise.allSettled([
-        users.getAllAdmin(),
+        users.getAllSlim(),
         apartments.getAll(),
         notifications.getAll(),
         auditLogs.getAll(),

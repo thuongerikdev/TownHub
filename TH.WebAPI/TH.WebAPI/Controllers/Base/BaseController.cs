@@ -404,4 +404,246 @@ namespace TH.TownHub.WebAPI.Controllers
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
     }
+
+    // ============================================================
+    // PROVIDER CONTROLLER
+    // Luồng 3: NCC nộp đơn → pending → approve/reject
+    // ============================================================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProviderController : ControllerBase
+    {
+        private readonly IProviderService _service;
+        public ProviderController(IProviderService service) => _service = service;
+
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll([FromQuery] string? registrationStatus)
+        {
+            var result = await _service.GetAllAsync(registrationStatus);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // Hộ dân xem hồ sơ NCC của chính mình
+        [HttpGet("my-profile")]
+        public async Task<IActionResult> GetMyProfile([FromQuery] int authUserId)
+        {
+            var result = await _service.GetMyProfileAsync(authUserId);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // BQL/Admin đăng ký NCC (có thể truyền residentId tùy chọn)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterProviderRequestDto request)
+        {
+            var result = await _service.RegisterAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        // Hộ dân tự nộp đơn đăng ký NCC — hệ thống tự tra residentId qua authUserId
+        [HttpPost("self-register")]
+        public async Task<IActionResult> SelfRegister([FromBody] SelfRegisterProviderRequestDto request)
+        {
+            var result = await _service.SelfRegisterAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        [HttpPut("approve")]
+        public async Task<IActionResult> Approve([FromBody] ApproveProviderRequestDto request)
+        {
+            var result = await _service.ApproveAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        [HttpPut("reject")]
+        public async Task<IActionResult> Reject([FromBody] RejectProviderRequestDto request)
+        {
+            var result = await _service.RejectAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+    }
+
+    // ============================================================
+    // PROVIDER SERVICE LISTING CONTROLLER
+    // NCC đăng ký dịch vụ → BQL duyệt / từ chối
+    // ============================================================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProviderServiceListingController : ControllerBase
+    {
+        private readonly IProviderServiceListingService _service;
+        public ProviderServiceListingController(IProviderServiceListingService service) => _service = service;
+
+        // BQL xem toàn bộ danh sách đăng ký (lọc theo status / providerId)
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? status,
+            [FromQuery] int? providerId)
+        {
+            var result = await _service.GetAllAsync(status, providerId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // NCC đăng ký dịch vụ mới
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterServiceListingDto request)
+        {
+            var result = await _service.RegisterAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        // NCC chỉnh sửa dịch vụ (chỉ khi pending hoặc rejected)
+        [HttpPut("update")]
+        public async Task<IActionResult> Update([FromBody] UpdateServiceListingDto request)
+        {
+            var result = await _service.UpdateAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // BQL phê duyệt
+        [HttpPut("approve")]
+        public async Task<IActionResult> Approve([FromBody] ApproveServiceListingDto request)
+        {
+            var result = await _service.ApproveAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // BQL từ chối
+        [HttpPut("reject")]
+        public async Task<IActionResult> Reject([FromBody] RejectServiceListingDto request)
+        {
+            var result = await _service.RejectAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // NCC xóa dịch vụ chưa được duyệt
+        [HttpDelete("delete/{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _service.DeleteAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+    }
+
+    // ============================================================
+    // SERVICE REQUEST CONTROLLER
+    // Luồng 1: không cần BQL duyệt
+    // Luồng 2: cần BQL duyệt trước
+    // ============================================================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ServiceRequestController : ControllerBase
+    {
+        private readonly IServiceRequestService _service;
+        public ServiceRequestController(IServiceRequestService service) => _service = service;
+
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? status,
+            [FromQuery] int? providerId,
+            [FromQuery] int? apartmentId)
+        {
+            var result = await _service.GetAllAsync(status, providerId, apartmentId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] CreateServiceRequestDto request)
+        {
+            var result = await _service.CreateAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        // Luồng 2: BQL duyệt → chuyển sang pending_provider
+        [HttpPut("approve-by-mgt")]
+        public async Task<IActionResult> ApproveByMgt([FromBody] ApproveByMgtRequestDto request)
+        {
+            var result = await _service.ApproveByMgtAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // Luồng 2: BQL từ chối → kết thúc
+        [HttpPut("reject-by-mgt")]
+        public async Task<IActionResult> RejectByMgt([FromBody] RejectByMgtRequestDto request)
+        {
+            var result = await _service.RejectByMgtAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // NCC nhận yêu cầu → accepted_by_provider
+        [HttpPut("accept-by-provider")]
+        public async Task<IActionResult> AcceptByProvider([FromBody] AcceptByProviderRequestDto request)
+        {
+            var result = await _service.AcceptByProviderAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // NCC từ chối → kết thúc
+        [HttpPut("reject-by-provider")]
+        public async Task<IActionResult> RejectByProvider([FromBody] RejectByProviderRequestDto request)
+        {
+            var result = await _service.RejectByProviderAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        // Cập nhật tiến độ: in_progress | completed
+        [HttpPut("update-status")]
+        public async Task<IActionResult> UpdateStatus([FromBody] UpdateServiceRequestStatusDto request)
+        {
+            var result = await _service.UpdateStatusAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+    }
 }

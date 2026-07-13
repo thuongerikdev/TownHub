@@ -43,7 +43,7 @@ namespace TH.Auth.Infrastructure
             // ====== AUTH CORE CONFIGURATION ======
             modelBuilder.Entity<AuthUser>().HasOne(u => u.profile).WithOne(p => p.user).HasForeignKey<AuthProfile>(p => p.userID);
             modelBuilder.Entity<AuthUser>().HasMany(u => u.userRoles).WithOne(ur => ur.user).HasForeignKey(ur => ur.userID);
-            modelBuilder.Entity<AuthUser>().HasMany(u => u.auditLogs).WithOne(al => al.user).HasForeignKey(al => al.userID);
+            modelBuilder.Entity<AuthUser>().HasMany(u => u.auditLogs).WithOne(al => al.user).HasForeignKey(al => al.userID).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<AuthUser>().HasOne(u => u.mfaSecret).WithOne(ms => ms.user).HasForeignKey<AuthMfaSecret>(ms => ms.userID);
             modelBuilder.Entity<AuthUser>().HasMany(u => u.sessions).WithOne(s => s.user).HasForeignKey(s => s.userID);
             modelBuilder.Entity<AuthUser>().HasMany(u => u.emailVerifications).WithOne(ev => ev.user).HasForeignKey(ev => ev.userID);

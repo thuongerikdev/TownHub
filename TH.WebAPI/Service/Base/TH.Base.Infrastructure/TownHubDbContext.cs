@@ -19,6 +19,9 @@ namespace TH.TownHub.Infrastructure.Database
         public DbSet<SystemConfig> SystemConfigs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<FileStorage> FileStorages { get; set; }
+        public DbSet<Provider> Providers { get; set; }
+        public DbSet<ServiceRequest> ServiceRequests { get; set; }
+        public DbSet<ProviderServiceListing> ProviderServiceListings { get; set; }
 
         public TownHubDbContext(DbContextOptions<TownHubDbContext> options) : base(options) { }
 

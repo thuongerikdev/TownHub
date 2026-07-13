@@ -3,14 +3,22 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Building2, MapPin, Home, Search, Plus, CheckCircle2, AlertCircle,
   Loader2, X, RefreshCw, Users, Phone, Mail, CreditCard, Pencil,
-  Trash2, Crown, UserPlus, ChevronRight,
+  Trash2, Crown, UserPlus, ChevronRight, Box, LayoutList,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { apartments, residents, users } from "@/lib/api";
 import type { ApartmentResponse, ResidentResponse, GetUserResponse } from "@/lib/api";
+import type { ApartmentInfo } from "@/components/Building3DModel";
+
+const Building3DModel = dynamic(() => import("@/components/Building3DModel"), { ssr: false });
 import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+const BUILDING_CODE_MAP: Record<string, string> = {
+  "Tòa A": "A", "Tòa B": "B", "Villa": "V",
+};
+
 const STATUS_LABELS: Record<string, string> = {
   occupied: "Đã có cư dân",
   vacant: "Đang trống",
@@ -18,6 +26,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 const APARTMENT_TYPES = ["Studio", "1PN", "2PN", "3PN", "Penthouse"];
 const BUILDINGS = ["Tòa A", "Tòa B", "Villa"];
+
+// Cấu hình 3D cố định — model là biểu diễn trực quan, không phụ thuộc số căn thực tế từ API
+const BUILDING_3D_CONFIG: Record<string, { floors: number; aptsPerFloor: number }> = {
+  "Tòa A": { floors: 15, aptsPerFloor: 8 },
+  "Tòa B": { floors: 12, aptsPerFloor: 6 },
+  "Villa": { floors:  5, aptsPerFloor: 4 },
+};
 const STATUS_OPTIONS = ["occupied", "vacant", "maintenance"];
 const GENDERS = [
   { value: "male", label: "Nam" },
@@ -115,6 +130,10 @@ export default function ApartmentsPage() {
   const [deletingResident, setDeletingResident] = useState<ResidentResponse | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // 3D model view
+  const [viewMode, setViewMode] = useState<"grid" | "model3d">("grid");
+  const [selected3dApt, setSelected3dApt] = useState<ApartmentInfo | null>(null);
+
   // ── Fetch apartments ──────────────────────────────────────────────────────
   const fetchApartments = useCallback(async () => {
     setLoading(true);
@@ -163,7 +182,7 @@ export default function ApartmentsPage() {
   };
 
   // ── Create apartment ──────────────────────────────────────────────────────
-  const handleCreateApt = async (e: React.FormEvent) => {
+  const handleCreateApt = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAptError(null);
     if (!aptForm.code || !aptForm.floor || !aptForm.unitNumber || !aptForm.areaM2) {
@@ -197,7 +216,7 @@ export default function ApartmentsPage() {
     if (systemUsers.length > 0) return;
     setLoadingUsers(true);
     try {
-      const res = await users.getAllAdmin();
+      const res = await users.getAll();
       if (res.errorCode === 200) setSystemUsers(res.data ?? []);
     } finally {
       setLoadingUsers(false);
@@ -228,7 +247,7 @@ export default function ApartmentsPage() {
     fetchSystemUsers();
   };
 
-  const handleResidentSubmit = async (e: React.FormEvent) => {
+  const handleResidentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedApt) return;
     setResidentError(null);
@@ -297,6 +316,33 @@ export default function ApartmentsPage() {
     return onFloor && matchSearch;
   });
 
+  // 3D model dùng config cố định để luôn hiển thị đẹp
+  const cfg3d = BUILDING_3D_CONFIG[selectedBuilding] ?? { floors: 10, aptsPerFloor: 6 };
+  const buildingCode = BUILDING_CODE_MAP[selectedBuilding] ?? "A";
+
+  // Map aptId 3D → status thực tế từ API (sort by code để đồng nhất với Sơ đồ)
+  const statusMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const byFloor = new Map<number, typeof data>();
+    data.forEach((apt) => {
+      if (!byFloor.has(apt.floor)) byFloor.set(apt.floor, []);
+      byFloor.get(apt.floor)!.push(apt);
+    });
+    byFloor.forEach((apts, floor) => {
+      apts.sort((a, b) => a.code.localeCompare(b.code));
+      apts.forEach((apt, idx) => {
+        const aptId = `${buildingCode}${String(floor).padStart(2, "0")}${String(idx + 1).padStart(2, "0")}`;
+        map[aptId] = apt.status;
+      });
+    });
+    return map;
+  }, [data, buildingCode]);
+
+  // Real apartments on the floor selected in 3D
+  const floorApts = selected3dApt
+    ? data.filter((a) => a.floor === selected3dApt.floor)
+    : [];
+
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -334,6 +380,21 @@ export default function ApartmentsPage() {
             className="p-2 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
+          {/* View toggle */}
+          <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${viewMode === "grid" ? "bg-indigo-500 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              <LayoutList className="w-3.5 h-3.5" /> Sơ đồ
+            </button>
+            <button
+              onClick={() => { setViewMode("model3d"); setSelected3dApt(null); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${viewMode === "model3d" ? "bg-indigo-500 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              <Box className="w-3.5 h-3.5" /> Mô hình 3D
+            </button>
+          </div>
         </div>
       </motion.div>
 
@@ -343,8 +404,102 @@ export default function ApartmentsPage() {
         </div>
       )}
 
+      {/* ── 3D Model View ──────────────────────────────────────────────────── */}
+      {viewMode === "model3d" && (
+        <div className="relative h-[620px] rounded-2xl overflow-hidden border border-white/5">
+          {/* Canvas — luôn full width, không bị đẩy */}
+          <div className="absolute inset-0">
+            <Building3DModel
+              floors={cfg3d.floors}
+              apartmentsPerFloor={cfg3d.aptsPerFloor}
+              buildingCode={buildingCode}
+              statusMap={statusMap}
+              selectedAptId={selected3dApt?.aptId}
+              onApartmentClick={(apt) => {
+                setSelected3dApt(apt);
+                if (!apt) return;
+                const sorted = data
+                  .filter((a) => a.floor === apt.floor)
+                  .sort((a, b) => a.code.localeCompare(b.code));
+                const matched = sorted[apt.aptIndex - 1] ?? sorted[0];
+                if (matched) openApartment(matched);
+              }}
+            />
+          </div>
+
+          {/* Slide-over panel — đè lên từ phải, không thay đổi kích thước canvas */}
+          <AnimatePresence>
+            {selected3dApt && !selectedApt && (
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 260 }}
+                className="absolute right-0 top-0 bottom-0 w-72 bg-[#0d0d1a]/95 backdrop-blur-md border-l border-white/8 flex flex-col z-10"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                  <div>
+                    <p className="text-sm font-bold text-white">Tầng {selected3dApt.floor}</p>
+                    <p className="text-[10px] text-zinc-500">{floorApts.length} căn hộ · {selectedBuilding}</p>
+                  </div>
+                  <button onClick={() => setSelected3dApt(null)} className="text-zinc-500 hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+                  {loading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-indigo-400" /></div>
+                  ) : floorApts.length === 0 ? (
+                    <p className="text-xs text-zinc-600 text-center py-8">Chưa có căn hộ nào trên tầng này</p>
+                  ) : floorApts.map((apt) => (
+                    <div
+                      key={apt.id}
+                      onClick={() => openApartment(apt)}
+                      className={`relative group p-3 rounded-xl border transition-all cursor-pointer overflow-hidden ${
+                        apt.status === "occupied"
+                          ? "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-500/10"
+                          : apt.status === "maintenance"
+                          ? "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/10"
+                          : "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="absolute top-2.5 right-2.5">
+                        {apt.status === "occupied"    && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                        {apt.status === "maintenance" && <AlertCircle  className="w-3.5 h-3.5 text-amber-500" />}
+                        {apt.status === "vacant"      && <div className="w-2 h-2 rounded-full bg-zinc-500 m-0.5" />}
+                      </div>
+                      <div className="mb-2 pr-5">
+                        <h3 className={`text-base font-black tracking-tighter ${
+                          apt.status === "occupied" ? "text-emerald-400"
+                          : apt.status === "maintenance" ? "text-amber-400" : "text-zinc-300"
+                        }`}>{apt.code}</h3>
+                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          <span className="text-[10px] text-zinc-500 font-medium px-1.5 py-0.5 rounded bg-black/50 border border-white/5">{apt.type}</span>
+                          <span className="text-[10px] text-zinc-600">{apt.areaM2}m²</span>
+                        </div>
+                      </div>
+                      <div className="border-t border-white/5 pt-2 flex items-center justify-between">
+                        <div>
+                          <p className="text-[9px] text-zinc-500 uppercase font-semibold tracking-wider">Trạng thái</p>
+                          <p className={`text-[10px] font-medium mt-0.5 ${
+                            apt.status === "occupied" ? "text-emerald-400"
+                            : apt.status === "maintenance" ? "text-amber-400" : "text-zinc-400"
+                          }`}>{STATUS_LABELS[apt.status] ?? apt.status}</p>
+                        </div>
+                        <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      {viewMode === "grid" && <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
           className="lg:col-span-1 space-y-4">
@@ -467,7 +622,7 @@ export default function ApartmentsPage() {
             </div>
           )}
         </motion.div>
-      </div>
+      </div>}
 
       {/* ── Apartment Detail Panel ── */}
       <AnimatePresence>

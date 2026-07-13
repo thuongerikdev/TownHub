@@ -38,6 +38,10 @@ namespace TH.Constant
             { "AuthLogout", "auth.logout" },
             { "AuthMfaVerify", "auth.mfa_verify" },
 
+            // --- User ---
+            { "UserCreate", "user.create" },             // BQL + Admin tạo tài khoản Resident/Provider
+            { "UserCreateBQL", "user.create_bql" },      // Admin tạo tài khoản BQL
+
             // --- Tài khoản cá nhân (mọi user đã đăng nhập) ---
             { "AccountMfaSetup", "account.mfa_setup" },
             { "AccountChangePassword", "account.change_password" },

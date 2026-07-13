@@ -5,7 +5,15 @@
       "Bash(Get-ChildItem -Path \"d:\\\\DATN\\\\datn\" -Directory)",
       "Bash(Select-Object Name)",
       "PowerShell(Get-ChildItem -Path \"d:\\\\DATN\\\\datn\" -Force | Format-Table Name, @{Name='Type';Expression={if\\($_.PSIsContainer\\){'Dir'}else{'File'}}} -AutoSize)",
-      "PowerShell(Get-ChildItem -Path \"d:\\\\DATN\\\\datn\\\\app\\\\\\(dashboard\\)\" -Recurse -Filter \"page.tsx\" | ForEach-Object { $_.FullName.Replace\\(\"d:\\\\DATN\\\\datn\\\\app\\\\\\(dashboard\\)\\\\\", \"\"\\).Replace\\(\"\\\\page.tsx\", \"\"\\) } | Sort-Object)"
+      "PowerShell(Get-ChildItem -Path \"d:\\\\DATN\\\\datn\\\\app\\\\\\(dashboard\\)\" -Recurse -Filter \"page.tsx\" | ForEach-Object { $_.FullName.Replace\\(\"d:\\\\DATN\\\\datn\\\\app\\\\\\(dashboard\\)\\\\\", \"\"\\).Replace\\(\"\\\\page.tsx\", \"\"\\) } | Sort-Object)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"d:/DATN/datn/app/\\(dashboard\\)/services/[id]\")",
+      "Bash(Out-Null)",
+      "Bash(mkdir -p \"d:/DATN/datn/app/\\(dashboard\\)/services/[id]\" && echo \"done\")",
+      "Bash(npx tsc *)"
+    ],
+    "additionalDirectories": [
+      "d:\\DATN\\datn\\app\\(dashboard)\\services"
     ]
   }
 }

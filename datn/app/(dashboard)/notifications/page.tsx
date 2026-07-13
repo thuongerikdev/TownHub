@@ -1,17 +1,17 @@
 "use client";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   BellRing, Send, Mail, MessageSquare, Smartphone,
-  History, CheckCircle2, Clock, Plus, Loader2,
-  RefreshCw, AlertCircle, Users,
+  History, CheckCircle2, Clock, Loader2,
+  RefreshCw, AlertCircle, Users, Edit2, X, Save,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { notifications, type NotificationResponse } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CHANNELS = [
-  { key: "push",  label: "Push App",   icon: Smartphone, color: "rose" },
-  { key: "email", label: "Email",       icon: Mail,       color: "blue" },
+  { key: "push",  label: "Push App",    icon: Smartphone,    color: "rose" },
+  { key: "email", label: "Email",        icon: Mail,          color: "blue" },
   { key: "sms",   label: "SMS (Có phí)", icon: MessageSquare, color: "emerald" },
 ];
 
@@ -34,7 +34,10 @@ function statusStyle(s: string) {
 }
 
 function statusLabel(s: string) {
-  const m: Record<string, string> = { sent: "Đã gửi", scheduled: "Đã lên lịch", failed: "Thất bại", draft: "Nháp", sending: "Đang gửi" };
+  const m: Record<string, string> = {
+    sent: "Đã gửi", scheduled: "Đã lên lịch",
+    failed: "Thất bại", draft: "Nháp", sending: "Đang gửi",
+  };
   return m[s] ?? s;
 }
 
@@ -47,6 +50,11 @@ function channelBadge(ch: string) {
   return m[ch] ?? "bg-zinc-500/20 text-zinc-400";
 }
 
+interface EditState {
+  id: number; title: string; content: string;
+  channel: string; audience: string;
+}
+
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [history, setHistory] = useState<NotificationResponse[]>([]);
@@ -56,12 +64,16 @@ export default function NotificationsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Form state
+  // Compose form
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [audience, setAudience] = useState("all");
+  const [channel, setChannel] = useState("push");
   const [targetFloor, setTargetFloor] = useState("");
-  const [selectedChannels, setSelectedChannels] = useState<string[]>(["push"]);
+
+  // Edit modal
+  const [editing, setEditing] = useState<EditState | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -69,7 +81,9 @@ export default function NotificationsPage() {
     try {
       const res = await notifications.getAll();
       if (res.errorCode === 200 && res.data) {
-        setHistory(res.data);
+        setHistory([...res.data].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ));
       } else {
         setError(res.errorMessage || "Không tải được lịch sử");
       }
@@ -79,27 +93,16 @@ export default function NotificationsPage() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-  function toggleChannel(key: string) {
-    setSelectedChannels((prev) =>
-      prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]
-    );
-  }
+  function clearAlert() { setError(""); setSuccess(""); }
 
-  async function handleSend() {
+  async function handleCreate(andSend: boolean) {
     if (!title.trim() || !content.trim()) {
       setError("Vui lòng điền tiêu đề và nội dung");
       return;
     }
-    if (selectedChannels.length === 0) {
-      setError("Vui lòng chọn ít nhất một kênh gửi");
-      return;
-    }
     setSending(true);
-    setError("");
-    setSuccess("");
+    clearAlert();
     try {
-      // Tạo 1 notification per channel (hoặc tạo 1 với channel đầu tiên - BE hiện chỉ nhận 1 channel)
-      const channel = selectedChannels[0];
       const resolvedAudience = audience === "floor" ? `floor:${targetFloor}` : audience;
       if (audience === "floor" && (!targetFloor || Number(targetFloor) < 1)) {
         setError("Vui lòng nhập tầng cần gửi thông báo");
@@ -112,32 +115,80 @@ export default function NotificationsPage() {
         audience: resolvedAudience,
         createdByAuthUserId: user?.userID ?? 0,
       });
-      if (res.errorCode === 200) {
-        setSuccess("Tạo thông báo thành công! Đang gửi...");
-        setTitle("");
-        setContent("");
-        setSelectedChannels(["push"]);
-        await fetchHistory();
-      } else {
+      if (res.errorCode !== 200) {
         setError(res.errorMessage || "Tạo thông báo thất bại");
+        return;
       }
+
+      if (andSend) {
+        // Reload list to get the new draft id, then send it
+        const listRes = await notifications.getAll();
+        if (listRes.errorCode === 200 && listRes.data) {
+          const sorted = [...listRes.data].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          const newest = sorted.find((n) => n.status === "draft");
+          if (newest) {
+            const sendRes = await notifications.send(newest.id);
+            if (sendRes.errorCode === 200) {
+              setSuccess("Tạo và gửi thông báo thành công!");
+            } else {
+              setSuccess("Đã tạo thông báo. " + (sendRes.errorMessage || "Gửi thất bại, kiểm tra lịch sử."));
+            }
+            setHistory([...sorted].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            ));
+          } else {
+            setSuccess("Đã tạo thông báo.");
+            setHistory(sorted);
+          }
+        }
+      } else {
+        setSuccess("Đã lưu nháp thành công.");
+        await fetchHistory();
+      }
+
+      setTitle("");
+      setContent("");
+      setChannel("push");
+      setAudience("all");
     } catch { setError("Lỗi kết nối server"); }
     finally { setSending(false); }
   }
 
-  async function handleResend(id: number) {
+  async function handleSend(id: number) {
     setSendingId(id);
+    clearAlert();
     try {
       const res = await notifications.send(id);
       if (res.errorCode === 200) {
-        setSuccess("Đã gửi thành công!");
-        setTimeout(() => setSuccess(""), 3000);
+        setSuccess("Gửi thành công!");
         await fetchHistory();
       } else {
-        alert(res.errorMessage || "Gửi thất bại");
+        setError(res.errorMessage || "Gửi thất bại");
       }
-    } catch { alert("Lỗi kết nối"); }
+    } catch { setError("Lỗi kết nối"); }
     finally { setSendingId(null); }
+  }
+
+  async function handleSaveEdit() {
+    if (!editing) return;
+    setSavingEdit(true);
+    clearAlert();
+    try {
+      const res = await notifications.update({
+        ...editing,
+        createdByAuthUserId: user?.userID ?? 1,
+      });
+      if (res.errorCode === 200) {
+        setSuccess("Cập nhật thành công.");
+        setEditing(null);
+        await fetchHistory();
+      } else {
+        setError(res.errorMessage || "Cập nhật thất bại");
+      }
+    } catch { setError("Lỗi kết nối server"); }
+    finally { setSavingEdit(false); }
   }
 
   return (
@@ -169,18 +220,26 @@ export default function NotificationsPage() {
       </motion.div>
 
       {/* Alerts */}
-      {error && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-          {success}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400"
+          >
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </motion.div>
+        )}
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400"
+          >
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            {success}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Compose */}
@@ -246,12 +305,12 @@ export default function NotificationsPage() {
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Kênh gửi</label>
               <div className="flex flex-wrap gap-3">
                 {CHANNELS.map((ch) => {
-                  const selected = selectedChannels.includes(ch.key);
+                  const selected = channel === ch.key;
                   return (
                     <button
                       key={ch.key}
                       type="button"
-                      onClick={() => toggleChannel(ch.key)}
+                      onClick={() => setChannel(ch.key)}
                       className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all text-sm font-medium ${
                         selected
                           ? "border-rose-500/40 bg-rose-500/10 text-white"
@@ -282,18 +341,27 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 className="px-5 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
-                onClick={() => { setTitle(""); setContent(""); }}
+                onClick={() => { setTitle(""); setContent(""); clearAlert(); }}
               >
                 Xoá Nháp
               </button>
               <button
                 type="button"
-                onClick={handleSend}
+                onClick={() => handleCreate(false)}
+                disabled={sending}
+                className="px-5 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 text-zinc-300 font-medium rounded-lg transition-all flex items-center gap-2 text-sm"
+              >
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Lưu Nháp
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCreate(true)}
                 disabled={sending}
                 className="px-5 py-2.5 bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-white font-bold rounded-lg shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all flex items-center gap-2 text-sm"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {sending ? "Đang gửi..." : "Gửi Ngay"}
+                {sending ? "Đang xử lý..." : "Tạo & Gửi Ngay"}
               </button>
             </div>
           </div>
@@ -324,7 +392,7 @@ export default function NotificationsPage() {
               <p className="text-sm">Chưa có thông báo nào</p>
             </div>
           ) : (
-            <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
               {history.map((item) => (
                 <div key={item.id} className="p-3.5 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors group">
                   <div className="flex items-start justify-between mb-2">
@@ -351,13 +419,28 @@ export default function NotificationsPage() {
                         {statusLabel(item.status)}
                       </span>
                       {item.status === "draft" && (
-                        <button
-                          onClick={() => handleResend(item.id)}
-                          disabled={sendingId === item.id}
-                          className="text-xs text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50"
-                        >
-                          {sendingId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setEditing({
+                              id: item.id, title: item.title, content: item.content,
+                              channel: item.channel, audience: item.audience,
+                            })}
+                            className="text-xs text-zinc-400 hover:text-white transition-colors"
+                            title="Chỉnh sửa"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleSend(item.id)}
+                            disabled={sendingId === item.id}
+                            className="text-xs text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50"
+                            title="Gửi ngay"
+                          >
+                            {sendingId === item.id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Send className="w-3 h-3" />}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -367,6 +450,99 @@ export default function NotificationsPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setEditing(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative z-10 w-full max-w-lg bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-rose-400" />
+                  Chỉnh sửa thông báo #{editing.id}
+                </h3>
+                <button onClick={() => setEditing(null)} className="p-1.5 text-zinc-500 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Tiêu đề</label>
+                  <input
+                    type="text"
+                    value={editing.title}
+                    onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500/50 transition-all"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nội dung</label>
+                  <textarea
+                    rows={3}
+                    value={editing.content}
+                    onChange={(e) => setEditing({ ...editing, content: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500/50 transition-all resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Kênh</label>
+                    <select
+                      value={editing.channel}
+                      onChange={(e) => setEditing({ ...editing, channel: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/50 transition-all appearance-none"
+                    >
+                      {CHANNELS.map((c) => (
+                        <option key={c.key} value={c.key} className="bg-[#111]">{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Đối tượng</label>
+                    <select
+                      value={editing.audience}
+                      onChange={(e) => setEditing({ ...editing, audience: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/50 transition-all appearance-none"
+                    >
+                      {AUDIENCES.map((a) => (
+                        <option key={a.value} value={a.value} className="bg-[#111]">{a.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/5">
+                <button
+                  onClick={() => setEditing(null)}
+                  className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                >
+                  Huỷ
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                  className="px-5 py-2 bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-white font-bold rounded-lg transition-all flex items-center gap-2 text-sm"
+                >
+                  {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Lưu
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

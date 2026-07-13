@@ -297,7 +297,6 @@ namespace TH.Auth.Infrastructure.Repository.Token
                 accessTtl ?? TimeSpan.FromMinutes(30),
                 refreshTtl ?? TimeSpan.FromDays(7));
 
-            // 👇 Trả về cả danh sách quyền mới
             return (access, newRefresh, freshPermissions);
         }
 
@@ -309,8 +308,12 @@ namespace TH.Auth.Infrastructure.Repository.Token
             token.Revoked = DateTime.UtcNow;
             token.RevokedByIp = ip;
             await _db.SaveChangesAsync();
-            await _redisDb.KeyDeleteAsync(CacheKeyAccess(token.userID, token.sessionID));
-            await _redisDb.KeyDeleteAsync(CacheKeyRefresh(token.userID, token.sessionID));
+            try
+            {
+                await _redisDb.KeyDeleteAsync(CacheKeyAccess(token.userID, token.sessionID));
+                await _redisDb.KeyDeleteAsync(CacheKeyRefresh(token.userID, token.sessionID));
+            }
+            catch (RedisException) { }
         }
 
         public async Task<int> RevokeBySessionAsync(int userId, int sessionId, string? ip)
@@ -321,8 +324,12 @@ namespace TH.Auth.Infrastructure.Repository.Token
                 .ToListAsync();
             foreach (var t in tokens) { t.Revoked = now; t.RevokedByIp = ip; }
             if (tokens.Count > 0) await _db.SaveChangesAsync();
-            await _redisDb.KeyDeleteAsync(CacheKeyAccess(userId, sessionId));
-            await _redisDb.KeyDeleteAsync(CacheKeyRefresh(userId, sessionId));
+            try
+            {
+                await _redisDb.KeyDeleteAsync(CacheKeyAccess(userId, sessionId));
+                await _redisDb.KeyDeleteAsync(CacheKeyRefresh(userId, sessionId));
+            }
+            catch (RedisException) { }
             return tokens.Count;
         }
 
@@ -335,11 +342,15 @@ namespace TH.Auth.Infrastructure.Repository.Token
             var sessions = tokens.Select(t => t.sessionID).Distinct().ToList();
             foreach (var t in tokens) { t.Revoked = now; t.RevokedByIp = ip; }
             if (tokens.Count > 0) await _db.SaveChangesAsync();
-            foreach (var sid in sessions)
+            try
             {
-                await _redisDb.KeyDeleteAsync(CacheKeyAccess(userId, sid));
-                await _redisDb.KeyDeleteAsync(CacheKeyRefresh(userId, sid));
+                foreach (var sid in sessions)
+                {
+                    await _redisDb.KeyDeleteAsync(CacheKeyAccess(userId, sid));
+                    await _redisDb.KeyDeleteAsync(CacheKeyRefresh(userId, sid));
+                }
             }
+            catch (RedisException) { }
             return tokens.Count;
         }
 
@@ -461,7 +472,7 @@ namespace TH.Auth.Infrastructure.Repository.Token
             var claims = new List<Claim>
             {
                 new Claim("name", profile?.lastName ?? string.Empty),
-                new Claim("email", user.email),
+                new Claim("email", user.email ?? string.Empty),
                 new Claim("userName", user.userName),
                 new Claim("userId", user.userID.ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.userID.ToString()),

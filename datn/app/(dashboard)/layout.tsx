@@ -9,7 +9,7 @@ import {
   Shield, ClipboardList, FileText, Wrench, Ticket,
   Package, ShoppingCart, Handshake, BarChart3,
   Monitor, ChevronDown, ChevronRight, Boxes,
-  ScanFace, Cctv, KeyRound,
+  ScanFace, Cctv, KeyRound, Briefcase,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +39,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
     items: [
       { icon: Building2, label: "Căn hộ", path: "/apartments", perm: "apartment.view" },
       { icon: Users, label: "Tài khoản cư dân", path: "/residents", perm: "resident.view" },
+      { icon: Briefcase, label: "Nhà cung cấp dịch vụ", path: "/providers" },
       { icon: Cctv, label: "Camera giám sát", path: "/cameras", perm: "notification.view" },
       { icon: ScanFace, label: "Người lạ ra / vào", path: "/access-alerts", perm: "notification.view" },
       { icon: BellRing, label: "Cộng đồng cư dân", path: "/community", residentOnly: true },

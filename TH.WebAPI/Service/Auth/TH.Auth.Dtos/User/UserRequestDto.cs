@@ -10,7 +10,7 @@ namespace TH.Auth.Dtos.User
     public class SimpleCreateUserRequest
     {
         public string userName { get; set; } = default!;
-        public string email { get; set; } = default!;
+        public string? email { get; set; }
         public string password { get; set; } = default!;
         public bool autoVerifyEmail { get; set; } = true;
         public string scope { get; set; } = "staff";

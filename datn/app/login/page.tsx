@@ -34,19 +34,24 @@ export default function LoginPage() {
     }
     setLoading(true);
     setError("");
-    const result = await login(userName.trim(), password);
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      const result = await login(userName.trim(), password);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      if (result.requiresMfa && result.mfaTicket) {
+        setMfaTicket(result.mfaTicket);
+        setStep("mfa");
+        setTimeout(() => mfaRef.current?.focus(), 200);
+        return;
+      }
+      router.push(result.isResident ? "/portal" : "/");
+    } catch {
+      setError("Lỗi kết nối. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
     }
-    if (result.requiresMfa && result.mfaTicket) {
-      setMfaTicket(result.mfaTicket);
-      setStep("mfa");
-      setTimeout(() => mfaRef.current?.focus(), 200);
-      return;
-    }
-    router.replace("/");
   }
 
   async function handleMfa(event: React.FormEvent) {

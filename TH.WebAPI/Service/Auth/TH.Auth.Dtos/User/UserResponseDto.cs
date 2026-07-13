@@ -10,7 +10,7 @@ namespace TH.Auth.Dtos.User
     {
         public int userID { get; set; }
         public string userName { get; set; }
-        public string email { get; set; }
+        public string? email { get; set; }
         public bool isEmailVerified { get; set; }
     }
     public class LoginResponse

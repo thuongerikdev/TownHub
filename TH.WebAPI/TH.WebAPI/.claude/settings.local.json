@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\DATN\\\\TownHub\\\\TH.WebAPI\\\\TH.WebAPI\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "PowerShell(head -50)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\DATN\\\\TownHub\\\\TH.WebAPI\\\\TH.WebAPI\" -Directory | Where-Object { $_.Name -notmatch \"^\\(bin|obj\\)$\" } | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\DATN\\\\TownHub\\\\TH.WebAPI\" -Recurse -Directory | Where-Object { $_.Name -notmatch \"^\\(bin|obj\\)$\" } | Select-Object FullName | Sort-Object FullName)",
+      "Read(//d/DATN/TownHub/**)"
+    ],
+    "additionalDirectories": [
+      "d:\\DATN\\TownHub\\TH.WebAPI\\Service\\Base\\TH.Base.Domain",
+      "d:\\DATN\\TownHub\\TH.WebAPI\\Service\\Base\\TH.Base.Dtos"
+    ]
+  }
+}

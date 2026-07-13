@@ -486,10 +486,6 @@ namespace TH.Auth.ApplicationService.StartUp
                 {
                     var context = services.GetRequiredService<AuthDbContext>();
 
-                    // 1. (Tuỳ chọn) Tự động chạy Migration nếu chưa update database
-                    // logger.LogInformation("Applying migrations...");
-                    await context.Database.MigrateAsync();
-
                     //await AuthDataSeeder.SyncRolesAsync(context);
 
                     // 2. Chạy Seeder
