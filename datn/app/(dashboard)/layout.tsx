@@ -58,6 +58,8 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
           { label: "Quét mã QR", path: "/assets/scan", perm: "asset.view" },
           { label: "Danh mục", path: "/assets/categories", perm: "asset.view" },
           { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
+          { label: "Chứng từ kế toán", path: "/assets/documents", perm: "asset.view" },
+          { label: "Thanh lý", path: "/assets/disposals", perm: "asset.view" },
         ],
       },
       {

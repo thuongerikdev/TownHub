@@ -124,6 +124,8 @@ namespace TH.Asset.ApplicationService.StartUp
             builder.Services.AddScoped<IAssetQrCodeService,        AssetQrCodeService>();
             builder.Services.AddScoped<IAssetTransferService,      AssetTransferService>();
             builder.Services.AddScoped<IAssetDepreciationService,  AssetDepreciationService>();
+            builder.Services.AddScoped<IAssetDocumentService,      AssetDocumentService>();
+            builder.Services.AddScoped<IAssetDisposalService,      AssetDisposalService>();
 
             // ── Maintenance ──
             builder.Services.AddScoped<IChecklistTemplateService,  ChecklistTemplateService>();

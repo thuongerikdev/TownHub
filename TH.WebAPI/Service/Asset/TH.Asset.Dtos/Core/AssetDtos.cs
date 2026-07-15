@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace TH.Asset.Dtos
 {
@@ -30,9 +31,14 @@ namespace TH.Asset.Dtos
         public int? usefulLifeMonths { get; set; }
         public decimal salvageValue { get; set; } = 0;
         public string depreciationMethod { get; set; } = "STRAIGHT_LINE";
+        // Kế toán
+        public string accountCode { get; set; } = "211"; // 211 hữu hình | 213 vô hình
+        public string? paymentMethod { get; set; }       // CASH | BANK
         public DateTime? installationDate { get; set; }
         public string criticalityLevel { get; set; } = "MEDIUM";
         public string? notes { get; set; }
+        // Người lập chứng từ ghi tăng (Auth) — tuỳ chọn
+        public Guid? createdBy { get; set; }
     }
 
     public class UpdateAssetDto : CreateAssetDto
@@ -68,6 +74,8 @@ namespace TH.Asset.Dtos
         public int? usefulLifeMonths { get; set; }
         public decimal salvageValue { get; set; }
         public string depreciationMethod { get; set; } = null!;
+        public string accountCode { get; set; } = "211";
+        public string? paymentMethod { get; set; }
         public decimal accumulatedDepreciation { get; set; }
         public decimal? bookValue { get; set; }
         public DateTime? installationDate { get; set; }
@@ -190,6 +198,95 @@ namespace TH.Asset.Dtos
         public DateTime calculatedAt { get; set; }
         // Cross-service (Auth)
         public Guid? calculatedBy { get; set; }
+        public Guid? documentId { get; set; }
+        public string? documentCode { get; set; }
+    }
+
+    // ============================================================
+    // CHẠY KHẤU HAO THEO KỲ
+    // ============================================================
+    public class RunDepreciationDto
+    {
+        public int year { get; set; }
+        public int month { get; set; }
+        public Guid? createdBy { get; set; }
+    }
+
+    public class RunDepreciationResultDto
+    {
+        public int year { get; set; }
+        public int month { get; set; }
+        public int assetCount { get; set; }        // số tài sản được trích trong lần chạy
+        public decimal totalAmount { get; set; }   // tổng khấu hao kỳ
+        public Guid? documentId { get; set; }
+        public string? documentCode { get; set; }
+        public int skippedExisting { get; set; }   // số tài sản đã có log kỳ này (bỏ qua)
+    }
+
+    // ============================================================
+    // CHỨNG TỪ KẾ TOÁN
+    // ============================================================
+    public class AssetDocumentResponse
+    {
+        public Guid id { get; set; }
+        public string documentCode { get; set; } = null!;
+        public string documentType { get; set; } = null!;
+        public DateTime documentDate { get; set; }
+        public string? description { get; set; }
+        public decimal totalAmount { get; set; }
+        public string status { get; set; } = null!;
+        public Guid? createdBy { get; set; }
+        public DateTime createdAt { get; set; }
+        public List<AssetDocumentLineResponse> lines { get; set; } = new();
+    }
+
+    public class AssetDocumentLineResponse
+    {
+        public Guid id { get; set; }
+        public Guid documentId { get; set; }
+        public string? debitAccount { get; set; }
+        public string? creditAccount { get; set; }
+        public decimal amount { get; set; }
+        public string? description { get; set; }
+        public Guid? assetId { get; set; }
+        public string? assetCode { get; set; }
+        public string? assetName { get; set; }
+    }
+
+    // ============================================================
+    // THANH LÝ TÀI SẢN
+    // ============================================================
+    public class CreateAssetDisposalDto
+    {
+        public Guid assetId { get; set; }
+        public DateTime? disposalDate { get; set; }
+        public decimal disposalValue { get; set; }
+        public string? disposalType { get; set; }
+        public string? reason { get; set; }
+        public string? note { get; set; }
+        public Guid? createdBy { get; set; }
+    }
+
+    public class AssetDisposalResponse
+    {
+        public Guid id { get; set; }
+        public Guid assetId { get; set; }
+        public string? assetCode { get; set; }
+        public string? assetName { get; set; }
+        public DateTime disposalDate { get; set; }
+        public decimal originalCost { get; set; }
+        public decimal accumulatedDepreciation { get; set; }
+        public decimal bookValue { get; set; }
+        public decimal disposalValue { get; set; }
+        public decimal gainLoss { get; set; }
+        public string? disposalType { get; set; }
+        public string? reason { get; set; }
+        public string? note { get; set; }
+        public string status { get; set; } = null!;
+        public Guid? documentId { get; set; }
+        public string? documentCode { get; set; }
+        public Guid? createdBy { get; set; }
+        public DateTime createdAt { get; set; }
     }
 
     // ============================================================

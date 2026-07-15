@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import { TrendingDown, Coins, Layers, Wallet } from "lucide-react";
+import { TrendingDown, Coins, Layers, Wallet, Play, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { assetDepreciation, type AssetDepreciationLogResponse } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockDepreciationLogs } from "@/lib/mock/asset";
@@ -36,11 +37,35 @@ export default function DepreciationReport() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
+  const [running, setRunning] = useState(false);
+
   const q = useApiList<AssetDepreciationLogResponse>(
     () => assetDepreciation.getByPeriod(year, month),
     { mock: mockDepreciationLogs, deps: [year, month] },
   );
   const logs = q.items;
+
+  async function handleRun() {
+    setRunning(true);
+    try {
+      const res = await assetDepreciation.runPeriod({ year, month });
+      if (res.errorCode !== 200 || !res.data) {
+        toast.error(res.errorMessage || "Chạy khấu hao thất bại.");
+        return;
+      }
+      const d = res.data;
+      toast.success(
+        d.assetCount > 0
+          ? `Đã trích khấu hao ${d.assetCount} tài sản kỳ ${String(month).padStart(2, "0")}/${year}${d.documentCode ? ` — chứng từ ${d.documentCode}` : ""}.`
+          : `Kỳ ${String(month).padStart(2, "0")}/${year} không có tài sản nào cần trích${d.skippedExisting ? ` (đã trích ${d.skippedExisting} trước đó)` : ""}.`,
+      );
+      q.refetch();
+    } catch {
+      toast.error("Lỗi kết nối khi chạy khấu hao.");
+    } finally {
+      setRunning(false);
+    }
+  }
 
   const summary = useMemo(() => {
     const sum = (f: (l: AssetDepreciationLogResponse) => number | undefined) =>
@@ -92,6 +117,14 @@ export default function DepreciationReport() {
                 {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
+            <button
+              onClick={handleRun}
+              disabled={running}
+              className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground transition hover:bg-brand/90 disabled:opacity-60"
+            >
+              {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+              {running ? "Đang chạy..." : "Chạy khấu hao kỳ này"}
+            </button>
           </div>
         }
       />

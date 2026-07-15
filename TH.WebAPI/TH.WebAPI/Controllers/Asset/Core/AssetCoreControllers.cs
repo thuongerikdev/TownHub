@@ -282,5 +282,97 @@ namespace TH.WebAPI.Controllers.Asset.Core
             var result = await _service.GetByPeriodAsync(year, month);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
+
+        [Authorize(Policy = "AssetUpdate")]
+        [HttpPost("run-period")]
+        public async Task<IActionResult> RunPeriod([FromBody] RunDepreciationDto request)
+        {
+            var result = await _service.RunDepreciationForPeriodAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ASSET DOCUMENT CONTROLLER (chứng từ kế toán)
+    // ════════════════════════════════════════════════════════════════════════
+    [ApiController]
+    [Route("api/asset/asset-document")]
+    public class AssetDocumentController : ControllerBase
+    {
+        private readonly IAssetDocumentService _service;
+        public AssetDocumentController(IAssetDocumentService service) => _service = service;
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll([FromQuery] string? documentType)
+        {
+            var result = await _service.GetAllAsync(documentType);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("get-by-asset/{assetId}")]
+        public async Task<IActionResult> GetByAsset(Guid assetId)
+        {
+            var result = await _service.GetByAssetIdAsync(assetId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ASSET DISPOSAL CONTROLLER (thanh lý)
+    // ════════════════════════════════════════════════════════════════════════
+    [ApiController]
+    [Route("api/asset/asset-disposal")]
+    public class AssetDisposalController : ControllerBase
+    {
+        private readonly IAssetDisposalService _service;
+        public AssetDisposalController(IAssetDisposalService service) => _service = service;
+
+        [Authorize(Policy = "AssetUpdate")]
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] CreateAssetDisposalDto request)
+        {
+            var result = await _service.CreateAsync(request);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _service.GetAllAsync();
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("get-by-asset/{assetId}")]
+        public async Task<IActionResult> GetByAsset(Guid assetId)
+        {
+            var result = await _service.GetByAssetIdAsync(assetId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
     }
 }

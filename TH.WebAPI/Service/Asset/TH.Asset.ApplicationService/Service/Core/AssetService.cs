@@ -86,15 +86,70 @@ namespace TH.Asset.ApplicationService.Service.Core
                     usefulLifeMonths    = request.usefulLifeMonths,
                     salvageValue        = request.salvageValue,
                     depreciationMethod  = request.depreciationMethod,
+                    accountCode         = string.IsNullOrWhiteSpace(request.accountCode) ? "211" : request.accountCode,
+                    paymentMethod       = request.paymentMethod,
+                    accumulatedDepreciation = 0,
+                    bookValue           = request.purchasePrice, // giá trị còn lại ban đầu = nguyên giá
                     installationDate    = request.installationDate,
                     criticalityLevel    = request.criticalityLevel,
                     notes               = request.notes
                 };
 
-                _dbContext.Assets.Add(entity);
-                await _dbContext.SaveChangesAsync();
+                // Transaction: tạo tài sản + sinh chứng từ ghi tăng trọn vẹn.
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+                return await strategy.ExecuteAsync(async () =>
+                {
+                    using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                    try
+                    {
+                        _dbContext.Assets.Add(entity);
+                        await _dbContext.SaveChangesAsync();
 
-                return ResponseConst.Success("Thêm tài sản thành công.", true);
+                        // Sinh chứng từ GHI TĂNG ngay khi tạo (Nợ 211|213 / Có 111|112)
+                        decimal nguyenGia = entity.purchasePrice ?? 0;
+                        if (nguyenGia > 0)
+                        {
+                            var now = DateTime.UtcNow;
+                            var tkNo = string.IsNullOrWhiteSpace(entity.accountCode) ? AssetAccount.TscdHuuHinh : entity.accountCode;
+                            var tkCo = string.Equals(entity.paymentMethod, "BANK", StringComparison.OrdinalIgnoreCase)
+                                        ? AssetAccount.TienGuiNH : AssetAccount.TienMat;
+
+                            var doc = new AssetDocument
+                            {
+                                documentCode = await AssetDocGen.NextCodeAsync(_dbContext, AssetDocumentType.GhiTang, now.Year, now.Month),
+                                documentType = AssetDocumentType.GhiTang,
+                                documentDate = now,
+                                description  = $"Ghi tăng tài sản {entity.assetCode} - {entity.name}",
+                                totalAmount  = nguyenGia,
+                                status       = AssetDocumentStatus.Posted,
+                                createdBy    = request.createdBy,
+                                createdAt    = now
+                            };
+                            _dbContext.AssetDocuments.Add(doc);
+                            await _dbContext.SaveChangesAsync();
+
+                            _dbContext.AssetDocumentLines.Add(new AssetDocumentLine
+                            {
+                                documentId    = doc.id,
+                                assetId       = entity.id,
+                                debitAccount  = tkNo,
+                                creditAccount = tkCo,
+                                amount        = nguyenGia,
+                                description   = $"Ghi tăng nguyên giá TSCĐ {entity.assetCode}"
+                            });
+                            await _dbContext.SaveChangesAsync();
+                        }
+
+                        await transaction.CommitAsync();
+                        return ResponseConst.Success("Thêm tài sản và sinh chứng từ ghi tăng thành công.", true);
+                    }
+                    catch (Exception exTx)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(exTx, "Lỗi khi tạo tài sản / sinh chứng từ ghi tăng.");
+                        return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + exTx.Message);
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -815,6 +870,7 @@ namespace TH.Asset.ApplicationService.Service.Core
     {
         Task<ResponseDto<List<AssetDepreciationLogResponse>>> GetByAssetIdAsync(Guid assetId);
         Task<ResponseDto<List<AssetDepreciationLogResponse>>> GetByPeriodAsync(int year, int month);
+        Task<ResponseDto<RunDepreciationResultDto>> RunDepreciationForPeriodAsync(RunDepreciationDto request);
     }
 
     public class AssetDepreciationService : AssetServiceBase, IAssetDepreciationService
@@ -828,6 +884,7 @@ namespace TH.Asset.ApplicationService.Service.Core
             {
                 var result = await _dbContext.AssetDepreciationLogs
                     .Include(x => x.asset)
+                    .Include(x => x.document)
                     .Where(x => x.assetId == assetId)
                     .OrderByDescending(x => x.periodYear)
                     .ThenByDescending(x => x.periodMonth)
@@ -843,7 +900,9 @@ namespace TH.Asset.ApplicationService.Service.Core
                         bookValueAfter     = x.bookValueAfter,
                         accumulatedTotal   = x.accumulatedTotal,
                         calculatedAt       = x.calculatedAt,
-                        calculatedBy       = x.calculatedBy
+                        calculatedBy       = x.calculatedBy,
+                        documentId         = x.documentId,
+                        documentCode       = x.document != null ? x.document.documentCode : null
                     })
                     .ToListAsync();
 
@@ -863,11 +922,9 @@ namespace TH.Asset.ApplicationService.Service.Core
                 if (month < 1 || month > 12)
                     return ResponseConst.Error<List<AssetDepreciationLogResponse>>(400, "Tháng không hợp lệ (1-12).");
 
-                // Tính & lưu (materialize) log khấu hao cho kỳ này với các tài sản chưa có log.
-                await EnsureStraightLineDepreciationAsync(year, month);
-
                 var result = await _dbContext.AssetDepreciationLogs
                     .Include(x => x.asset)
+                    .Include(x => x.document)
                     .Where(x => x.periodYear == year && x.periodMonth == month)
                     .OrderBy(x => x.asset != null ? x.asset.assetCode : "")
                     .Select(x => new AssetDepreciationLogResponse
@@ -882,7 +939,9 @@ namespace TH.Asset.ApplicationService.Service.Core
                         bookValueAfter     = x.bookValueAfter,
                         accumulatedTotal   = x.accumulatedTotal,
                         calculatedAt       = x.calculatedAt,
-                        calculatedBy       = x.calculatedBy
+                        calculatedBy       = x.calculatedBy,
+                        documentId         = x.documentId,
+                        documentCode       = x.document != null ? x.document.documentCode : null
                     })
                     .ToListAsync();
 
@@ -896,74 +955,153 @@ namespace TH.Asset.ApplicationService.Service.Core
         }
 
         /// <summary>
-        /// Tính khấu hao đường thẳng (STRAIGHT_LINE) cho kỳ (year, month) và lưu log cho những
-        /// tài sản đủ điều kiện nhưng chưa có log ở kỳ đó. Idempotent: chạy lại không tạo trùng.
-        /// Khấu hao/tháng = (purchasePrice - salvageValue) / usefulLifeMonths, bắt đầu từ tháng mua.
+        /// CHỨC NĂNG KHẤU HAO THEO THÁNG.
+        /// Trích khấu hao đường thẳng cho kỳ (year, month): sinh 1 chứng từ KHAU_HAO tổng,
+        /// mỗi tài sản đủ điều kiện (chưa trích kỳ này, chưa hết vòng đời) → 1 dòng định khoản
+        /// (Nợ 642 chi phí / Có 2141|2143 hao mòn) + 1 bản ghi lịch sử khấu hao, đồng thời
+        /// cộng dồn luỹ kế & cập nhật giá trị còn lại trên tài sản. Chạy trong transaction.
         /// </summary>
-        private async Task EnsureStraightLineDepreciationAsync(int year, int month)
+        public async Task<ResponseDto<RunDepreciationResultDto>> RunDepreciationForPeriodAsync(RunDepreciationDto request)
         {
-            int periodIndex = year * 12 + (month - 1);
-
-            // Tài sản đủ điều kiện tính khấu hao.
-            var assets = await _dbContext.Assets
-                .Where(a => a.purchasePrice != null && a.purchasePrice > 0m
-                         && a.purchaseDate != null
-                         && a.usefulLifeMonths != null && a.usefulLifeMonths > 0)
-                .ToListAsync();
-
-            if (assets.Count == 0) return;
-
-            var assetIds = assets.Select(a => a.id).ToList();
-            var alreadyLogged = (await _dbContext.AssetDepreciationLogs
-                    .Where(x => x.periodYear == year && x.periodMonth == month && assetIds.Contains(x.assetId))
-                    .Select(x => x.assetId)
-                    .ToListAsync())
-                .ToHashSet();
-
-            var toAdd = new List<AssetDepreciationLog>();
-            foreach (var a in assets)
+            try
             {
-                if (alreadyLogged.Contains(a.id)) continue;
+                int year = request.year, month = request.month;
+                if (month < 1 || month > 12)
+                    return ResponseConst.Error<RunDepreciationResultDto>(400, "Tháng không hợp lệ (1-12).");
 
-                var pd = a.purchaseDate!.Value;
-                int startIndex = pd.Year * 12 + (pd.Month - 1);
-                int monthsBefore = periodIndex - startIndex; // số kỳ đã khấu hao trước kỳ hiện tại
-                if (monthsBefore < 0) continue;               // chưa tới kỳ bắt đầu khấu hao
+                int periodIndex = year * 12 + (month - 1);
 
-                int life = a.usefulLifeMonths!.Value;
-                if (monthsBefore >= life) continue;           // đã khấu hao hết vòng đời
+                var assets = await _dbContext.Assets
+                    .Where(a => a.purchasePrice != null && a.purchasePrice > 0m
+                             && a.purchaseDate != null
+                             && a.usefulLifeMonths != null && a.usefulLifeMonths > 0
+                             && a.status != "DISPOSED")
+                    .ToListAsync();
 
-                decimal depreciable = a.purchasePrice!.Value - a.salvageValue;
-                if (depreciable <= 0m) continue;
+                var assetIds = assets.Select(a => a.id).ToList();
+                var alreadyLogged = (await _dbContext.AssetDepreciationLogs
+                        .Where(x => x.periodYear == year && x.periodMonth == month && assetIds.Contains(x.assetId))
+                        .Select(x => x.assetId)
+                        .ToListAsync())
+                    .ToHashSet();
 
-                decimal monthly = Math.Round(depreciable / life, 0, MidpointRounding.AwayFromZero);
-                decimal accumulatedBefore = monthly * monthsBefore;
-
-                // Kỳ cuối gánh phần dư làm tròn để giá trị còn lại đúng bằng salvageValue.
-                decimal amount = (monthsBefore == life - 1)
-                    ? depreciable - accumulatedBefore
-                    : monthly;
-
-                decimal bookBefore = a.purchasePrice!.Value - accumulatedBefore;
-
-                toAdd.Add(new AssetDepreciationLog
+                // Tính trước danh sách sẽ trích (không đụng DB) để biết có gì để làm không.
+                var plan = new List<(AssetEntity asset, decimal amount, decimal accBefore)>();
+                int skipped = 0;
+                foreach (var a in assets)
                 {
-                    assetId            = a.id,
-                    periodYear         = year,
-                    periodMonth        = month,
-                    depreciationAmount = amount,
-                    bookValueBefore    = bookBefore,
-                    bookValueAfter     = bookBefore - amount,
-                    accumulatedTotal   = accumulatedBefore + amount,
-                    calculatedAt       = DateTime.UtcNow,
-                    calculatedBy       = null // sinh tự động bởi hệ thống
+                    if (alreadyLogged.Contains(a.id)) { skipped++; continue; }
+
+                    var pd = a.purchaseDate!.Value;
+                    int startIndex = pd.Year * 12 + (pd.Month - 1);
+                    if (startIndex > periodIndex) continue; // chưa mua tính tới kỳ này
+
+                    decimal depreciable = a.purchasePrice!.Value - a.salvageValue;
+                    if (depreciable <= 0m) continue;
+
+                    decimal accBefore = a.accumulatedDepreciation;
+                    if (accBefore >= depreciable) continue; // đã khấu hao hết
+
+                    int life = a.usefulLifeMonths!.Value;
+                    decimal monthly = Math.Round(depreciable / life, 0, MidpointRounding.AwayFromZero);
+                    decimal amount = Math.Min(monthly, depreciable - accBefore); // kỳ cuối gánh phần dư
+                    if (amount <= 0m) continue;
+
+                    plan.Add((a, amount, accBefore));
+                }
+
+                if (plan.Count == 0)
+                {
+                    return ResponseConst.Success(
+                        $"Kỳ {month}/{year}: không có tài sản nào cần trích khấu hao (đã trích {skipped} tài sản trước đó).",
+                        new RunDepreciationResultDto { year = year, month = month, assetCount = 0, totalAmount = 0, skippedExisting = skipped });
+                }
+
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+                return await strategy.ExecuteAsync(async () =>
+                {
+                    using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var now = DateTime.UtcNow;
+                        decimal total = plan.Sum(p => p.amount);
+
+                        var doc = new AssetDocument
+                        {
+                            documentCode = await AssetDocGen.NextCodeAsync(_dbContext, AssetDocumentType.KhauHao, year, month),
+                            documentType = AssetDocumentType.KhauHao,
+                            documentDate = now,
+                            description  = $"Trích khấu hao TSCĐ kỳ {month:D2}/{year} cho {plan.Count} tài sản",
+                            totalAmount  = total,
+                            status       = AssetDocumentStatus.Posted,
+                            createdBy    = request.createdBy,
+                            createdAt    = now
+                        };
+                        _dbContext.AssetDocuments.Add(doc);
+                        await _dbContext.SaveChangesAsync();
+
+                        foreach (var (a, amount, accBefore) in plan)
+                        {
+                            decimal accAfter  = accBefore + amount;
+                            decimal bookBefore = (a.purchasePrice ?? 0) - accBefore;
+                            decimal bookAfter  = (a.purchasePrice ?? 0) - accAfter;
+
+                            string tkCo = a.accountCode != null && a.accountCode.StartsWith("213")
+                                        ? AssetAccount.HaoMonVoHinh : AssetAccount.HaoMonHuuHinh;
+
+                            _dbContext.AssetDocumentLines.Add(new AssetDocumentLine
+                            {
+                                documentId    = doc.id,
+                                assetId       = a.id,
+                                debitAccount  = AssetAccount.CpQuanLy, // Nợ 642
+                                creditAccount = tkCo,                  // Có 2141|2143
+                                amount        = amount,
+                                description   = $"Trích khấu hao TSCĐ {a.assetCode} kỳ {month:D2}/{year}"
+                            });
+
+                            _dbContext.AssetDepreciationLogs.Add(new AssetDepreciationLog
+                            {
+                                assetId            = a.id,
+                                periodYear         = year,
+                                periodMonth        = month,
+                                depreciationAmount = amount,
+                                bookValueBefore    = bookBefore,
+                                bookValueAfter     = bookAfter,
+                                accumulatedTotal   = accAfter,
+                                calculatedAt       = now,
+                                calculatedBy       = request.createdBy,
+                                documentId         = doc.id
+                            });
+
+                            a.accumulatedDepreciation = accAfter;
+                            a.bookValue = bookAfter;
+                        }
+
+                        await _dbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return ResponseConst.Success(
+                            $"Đã trích khấu hao kỳ {month:D2}/{year} cho {plan.Count} tài sản (chứng từ {doc.documentCode}).",
+                            new RunDepreciationResultDto
+                            {
+                                year = year, month = month,
+                                assetCount = plan.Count, totalAmount = total,
+                                documentId = doc.id, documentCode = doc.documentCode,
+                                skippedExisting = skipped
+                            });
+                    }
+                    catch (Exception exTx)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(exTx, "Lỗi khi chạy khấu hao kỳ {Year}/{Month}", year, month);
+                        return ResponseConst.Error<RunDepreciationResultDto>(500, "Lỗi hệ thống: " + exTx.Message);
+                    }
                 });
             }
-
-            if (toAdd.Count > 0)
+            catch (Exception ex)
             {
-                _dbContext.AssetDepreciationLogs.AddRange(toAdd);
-                await _dbContext.SaveChangesAsync();
+                _logger.LogError(ex, "Lỗi khi chạy khấu hao kỳ {Year}/{Month}", request.year, request.month);
+                return ResponseConst.Error<RunDepreciationResultDto>(500, "Lỗi hệ thống: " + ex.Message);
             }
         }
     }

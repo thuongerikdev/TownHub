@@ -859,6 +859,7 @@ export interface AssetResponse {
   status: string; serialNumber?: string;
   purchasePrice?: number; purchaseDate?: string; warrantyExpiryDate?: string;
   usefulLifeMonths?: number; salvageValue: number; depreciationMethod: string;
+  accountCode?: string; paymentMethod?: string;
   accumulatedDepreciation: number; bookValue?: number;
   installationDate?: string; lastMaintenanceDate?: string; nextMaintenanceDate?: string;
   criticalityLevel: string; notes?: string;
@@ -871,7 +872,8 @@ export interface CreateAssetInput {
   status?: string; serialNumber?: string;
   purchasePrice?: number; purchaseDate?: string; warrantyExpiryDate?: string;
   usefulLifeMonths?: number; salvageValue?: number; depreciationMethod?: string;
-  installationDate?: string; criticalityLevel?: string; notes?: string;
+  accountCode?: string; paymentMethod?: string;
+  installationDate?: string; criticalityLevel?: string; notes?: string; createdBy?: string;
 }
 export interface UpdateAssetInput extends CreateAssetInput {
   id: string;
@@ -906,6 +908,34 @@ export interface AssetDepreciationLogResponse {
   periodYear: number; periodMonth: number;
   depreciationAmount: number; bookValueBefore?: number; bookValueAfter?: number;
   accumulatedTotal?: number; calculatedAt: string; calculatedBy?: string;
+  documentId?: string; documentCode?: string;
+}
+export interface RunDepreciationResult {
+  year: number; month: number; assetCount: number; totalAmount: number;
+  documentId?: string; documentCode?: string; skippedExisting: number;
+}
+export interface AssetDocumentLineResponse {
+  id: string; documentId: string;
+  debitAccount?: string; creditAccount?: string;
+  amount: number; description?: string;
+  assetId?: string; assetCode?: string; assetName?: string;
+}
+export interface AssetDocumentResponse {
+  id: string; documentCode: string; documentType: string;
+  documentDate: string; description?: string; totalAmount: number;
+  status: string; createdBy?: string; createdAt: string;
+  lines: AssetDocumentLineResponse[];
+}
+export interface CreateAssetDisposalInput {
+  assetId: string; disposalDate?: string; disposalValue: number;
+  disposalType?: string; reason?: string; note?: string; createdBy?: string;
+}
+export interface AssetDisposalResponse {
+  id: string; assetId: string; assetCode?: string; assetName?: string;
+  disposalDate: string; originalCost: number; accumulatedDepreciation: number;
+  bookValue: number; disposalValue: number; gainLoss: number;
+  disposalType?: string; reason?: string; note?: string; status: string;
+  documentId?: string; documentCode?: string; createdBy?: string; createdAt: string;
 }
 
 // ─── Core: Asset endpoints ─────────────────────────────────────────────────────
@@ -954,6 +984,21 @@ export const assetDepreciation = {
   getByAsset: (assetId: string) => apiFetch<AssetDepreciationLogResponse[]>(`/api/asset/asset-depreciation/get-by-asset/${assetId}`, {}),
   getByPeriod: (year: number, month: number) =>
     apiFetch<AssetDepreciationLogResponse[]>(`/api/asset/asset-depreciation/get-by-period${qs({ year, month })}`, {}),
+  runPeriod: (body: { year: number; month: number; createdBy?: string }) =>
+    apiFetch<RunDepreciationResult>(`/api/asset/asset-depreciation/run-period`, { method: "POST", body: JSON.stringify(body) }),
+};
+export const assetDocuments = {
+  getAll: (documentType?: string) =>
+    apiFetch<AssetDocumentResponse[]>(`/api/asset/asset-document/get-all${qs({ documentType })}`, {}),
+  getById: (id: string) => apiFetch<AssetDocumentResponse>(`/api/asset/asset-document/get/${id}`, {}),
+  getByAsset: (assetId: string) => apiFetch<AssetDocumentResponse[]>(`/api/asset/asset-document/get-by-asset/${assetId}`, {}),
+};
+export const assetDisposals = {
+  getAll: () => apiFetch<AssetDisposalResponse[]>(`/api/asset/asset-disposal/get-all`, {}),
+  getById: (id: string) => apiFetch<AssetDisposalResponse>(`/api/asset/asset-disposal/get/${id}`, {}),
+  getByAsset: (assetId: string) => apiFetch<AssetDisposalResponse[]>(`/api/asset/asset-disposal/get-by-asset/${assetId}`, {}),
+  create: (body: CreateAssetDisposalInput) =>
+    apiFetch<AssetDisposalResponse>(`/api/asset/asset-disposal/create`, { method: "POST", body: JSON.stringify(body) }),
 };
 
 // ─── Maintenance (PM): types ───────────────────────────────────────────────────
