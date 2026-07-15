@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const mfaRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
@@ -129,11 +130,11 @@ export default function LoginPage() {
 
                   <form onSubmit={handleLogin} className="mt-8 space-y-5">
                     <Field label="Email hoặc tên đăng nhập">
-                      <input value={userName} onChange={(e) => setUserName(e.target.value)} autoComplete="username" placeholder="vidu@townhub.vn" className="h-12 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/20" />
+                      <input value={userName} onChange={(e) => setUserName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); passwordRef.current?.focus(); } }} autoComplete="username" placeholder="vidu@townhub.vn" className="h-12 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/20" />
                     </Field>
                     <Field label="Mật khẩu" action={<Link href="/forgot-password" className="text-brand hover:underline">Quên mật khẩu?</Link>}>
                       <div className="relative">
-                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Nhập mật khẩu" className="h-12 w-full rounded-xl border border-border bg-muted/50 px-4 pr-12 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/20" />
+                        <input ref={passwordRef} type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Nhập mật khẩu" className="h-12 w-full rounded-xl border border-border bg-muted/50 px-4 pr-12 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/20" />
                         <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Hiện hoặc ẩn mật khẩu" className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                           {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </button>
