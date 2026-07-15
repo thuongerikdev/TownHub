@@ -1,0 +1,40 @@
+{
+ "Name": [
+  "Lý Thảo Nguyên"
+ ],
+ "Designation": [
+  "Full-stack Developer",
+  "QA Engineer",
+  "Back-end Developer"
+ ],
+ "Email Address": [
+  "lythaonguyen46@gmail.com"
+ ],
+ "Location": [
+  "Quận 10, TP.HCM"
+ ],
+ "College Name": [
+  "Trường Đại học Kinh tế TP.HCM"
+ ],
+ "Degree": [
+  "Computer Science"
+ ],
+ "Graduation Year": [
+  "2014"
+ ],
+ "Companies worked at": [
+  "TopDev",
+  "Applancer Joint Stock Company"
+ ],
+ "Skills": [
+  "Docker",
+  ".NET Core",
+  "Selenium",
+  "SQL",
+  "JavaScript",
+  "PostgreSQL"
+ ],
+ "Years of Experience": [
+  "4 years"
+ ]
+}

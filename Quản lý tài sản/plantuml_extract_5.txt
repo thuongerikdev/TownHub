@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+' Khai báo Actor
+actor "Kỹ thuật viên" as KTV
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Kế toán" as KT
+
+' Kế thừa
+KST --|> KTV
+
+package "6. Mua sắm & AI OCR" {
+    ' Sắp xếp lại thứ tự từ trên xuống dưới để mượt line bên trái
+    ' Nhóm tác vụ của KTV & KST
+    usecase "UC38: Tạo đề xuất mua hàng (PR)" as UC38
+    usecase "UC40: Tạo đơn đặt hàng (PO)" as UC40
+    usecase "UC42: Upload chứng từ AI OCR" as UC42
+    usecase "UC43: Xem kết quả Smart Mapping" as UC43
+    
+    ' Nhóm tác vụ phê duyệt & xử lý sau của BQL
+    usecase "UC39: Duyệt đề xuất mua hàng" as UC39
+    usecase "UC41: Duyệt PO đa cấp" as UC41
+    usecase "UC44: Đối chiếu Split-view" as UC44
+    usecase "UC45: Xác nhận hóa đơn" as UC45
+    usecase "UC46: Theo dõi thanh toán" as UC46
+}
+
+' ==========================================
+' CÁC ACTOR BÊN TRÁI (Khởi tạo & Quản lý)
+' ==========================================
+KTV --> UC38
+
+KST --> UC40
+KST --> UC42
+KST --> UC43
+
+BQL --> UC39
+BQL --> UC41
+BQL --> UC42
+BQL --> UC43
+BQL --> UC44
+BQL --> UC45
+BQL --> UC46
+
+' ==========================================
+' ACTOR BÊN PHẢI (Back-office / Tài chính)
+' (Sử dụng mũi tên ngược để đẩy Actor sang phải)
+' ==========================================
+UC42 <-- KT
+UC43 <-- KT
+UC44 <-- KT
+UC45 <-- KT
+UC46 <-- KT
+
+@enduml

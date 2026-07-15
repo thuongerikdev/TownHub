@@ -1,0 +1,49 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Bảo vệ" as BV
+actor "Cư dân" as CD
+actor "Kỹ thuật viên" as KTV
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+
+CD --|> BV
+KST --|> KTV
+BQL --|> KST
+
+package "7. Xử lý sự cố (CM)" {
+    usecase "UC47: Báo sự cố" as UC47
+    usecase "UC48: Theo dõi Ticket" as UC48
+    usecase "UC49: Đánh giá chất lượng xử lý" as UC49
+    
+    usecase "UC50: Xem danh sách Ticket" as UC50
+    usecase "UC52: Khảo sát & xác nhận vật tư" as UC52
+    usecase "UC53: Đóng Ticket" as UC53
+    
+    usecase "UC51: Phân công KTV xử lý" as UC51
+    usecase "UC54: Xem SLA Dashboard" as UC54
+    usecase "UC55: Cấu hình SLA" as UC55
+}
+
+BV --> UC47
+BV --> UC48
+CD --> UC49
+
+KTV --> UC50
+KTV --> UC52
+KTV --> UC53
+
+KST --> UC51
+KST --> UC54
+
+BQL --> UC47
+BQL --> UC55
+@enduml

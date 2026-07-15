@@ -1,0 +1,41 @@
+{
+ "Name": [
+  "Ngô Đăng Khoa"
+ ],
+ "Designation": [
+  "Software Engineer",
+  "QA Engineer",
+  "Back-end Developer"
+ ],
+ "Email Address": [
+  "ngodangkhoa44@outlook.com"
+ ],
+ "Location": [
+  "Hà Đông, Hà Nội"
+ ],
+ "College Name": [
+  "Trường Đại học Kinh tế Quốc dân"
+ ],
+ "Degree": [
+  "Information Technology"
+ ],
+ "Graduation Year": [
+  "2014"
+ ],
+ "Companies worked at": [
+  "VNG Corporation",
+  "FPT Software"
+ ],
+ "Skills": [
+  "C#",
+  "MongoDb",
+  ".NET Core",
+  "Docker",
+  "Git",
+  "SQL",
+  "JavaScript"
+ ],
+ "Years of Experience": [
+  "8 years"
+ ]
+}

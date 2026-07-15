@@ -1,0 +1,46 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Kế toán" as KT
+actor "Nhà thầu" as NT
+actor "Hệ thống / IoT" as SYS
+
+' BQL kế thừa toàn bộ quyền xem/sửa hợp đồng của KST
+BQL --|> KST
+
+package "3. Quản lý nhà thầu" {
+    usecase "UC15: Thêm/sửa hồ sơ nhà thầu" as UC15
+    usecase "UC17: Quản lý hợp đồng" as UC17
+    usecase "UC18: Xem dịch vụ hợp đồng" as UC18
+    
+    usecase "UC16: Blacklist nhà thầu" as UC16
+    usecase "UC19: Đánh giá hiệu suất nhà thầu" as UC19
+    usecase "UC20: Cảnh báo hợp đồng hết hạn" as UC20
+    
+    usecase "UC21: Xem hợp đồng (nhà thầu)" as UC21
+}
+
+KST --> UC15
+KST --> UC17
+KST --> UC18
+
+BQL --> UC16
+BQL --> UC19
+BQL --> UC20
+
+KT --> UC17
+NT --> UC19
+NT --> UC20
+NT --> UC21
+SYS --> UC20
+@enduml

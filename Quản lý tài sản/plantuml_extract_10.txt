@@ -1,0 +1,54 @@
+@startuml
+skinparam defaultTextAlignment center
+skinparam swimlane {
+  BorderColor black
+  BorderThickness 2
+  TitleBackgroundColor #E2E2F0
+}
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+}
+
+|Cư dân / Bảo vệ|
+start
+:Phát hiện sự cố;
+:Tạo Ticket báo lỗi qua App;
+
+|Hệ thống Core|
+:Tiếp nhận & Gán SLA;
+:Bắn Notification cho BQL;
+
+|Ban quản lý / KST|
+:Đánh giá mức độ ưu tiên;
+:Phân công KTV xử lý;
+
+|Kỹ thuật viên|
+:Nhận thông báo Work Order;
+:Đến hiện trường khảo sát;
+if (Cần thay thế vật tư?) then (Có)
+  :Tạo yêu cầu xuất kho linh kiện;
+  
+  |Kho / Hệ thống Core|
+  :Kiểm tra tồn kho;
+  if (Đủ tồn kho?) then (Không đủ)
+    :Kích hoạt quy trình Mua sắm (PR);
+    stop
+  else (Đủ)
+    :Duyệt & Trừ tồn kho;
+  endif
+  
+  |Kỹ thuật viên|
+  :Nhận vật tư;
+else (Không)
+endif
+
+:Tiến hành sửa chữa khắc phục;
+:Chụp ảnh kết quả (Trước/Sau);
+:Đóng Ticket & Ghi nhận công việc;
+
+|Cư dân / Bảo vệ|
+:Nhận thông báo hoàn thành;
+:Chấm điểm đánh giá (Rating SLA);
+stop
+@enduml

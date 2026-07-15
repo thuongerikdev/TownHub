@@ -72,42 +72,42 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7f2] p-3 text-zinc-950 dark:bg-[#090b0a] dark:text-white sm:p-5">
-      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-2xl shadow-black/10 dark:border-white/10 dark:bg-[#111411] sm:min-h-[calc(100vh-2.5rem)] lg:grid-cols-[1.08fr_.92fr]">
-        <section className="relative hidden overflow-hidden bg-[#173f35] p-12 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-24 -top-24 size-80 rounded-full border border-white/10" />
-          <div className="absolute -right-8 -top-8 size-52 rounded-full border border-white/10" />
-          <div className="absolute bottom-20 left-12 size-40 rounded-full bg-amber-300/10 blur-3xl" />
+    <main className="min-h-screen bg-background p-3 text-foreground sm:p-5">
+      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl shadow-black/10 sm:min-h-[calc(100vh-2.5rem)] lg:grid-cols-[1.08fr_.92fr]">
+        <section className="relative hidden overflow-hidden bg-brand p-12 text-brand-foreground lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -right-24 -top-24 size-80 rounded-full border border-brand-foreground/10" />
+          <div className="absolute -right-8 -top-8 size-52 rounded-full border border-brand-foreground/10" />
+          <div className="absolute bottom-20 left-12 size-40 rounded-full bg-brand-foreground/10 blur-3xl" />
 
           <Link href="/" className="relative z-10 flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-[#f5c75b] text-[#173f35]">
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-brand-foreground text-brand">
               <Building2 className="size-6" />
             </span>
             <div>
               <p className="text-xl font-bold tracking-tight">TownHub</p>
-              <p className="text-[10px] uppercase tracking-[.25em] text-emerald-100/60">Resident Portal</p>
+              <p className="text-[10px] uppercase tracking-[.25em] text-brand-foreground/60">Resident Portal</p>
             </div>
           </Link>
 
           <div className="relative z-10 max-w-xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-emerald-50">
-              <Sparkles className="size-3.5 text-amber-300" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-foreground/15 bg-brand-foreground/10 px-3 py-1.5 text-xs text-brand-foreground">
+              <Sparkles className="size-3.5" />
               Một nơi cho mọi tiện ích cư dân
             </div>
             <h1 className="text-5xl font-semibold leading-[1.08] tracking-tight">
               Kết nối cuộc sống
-              <span className="block text-[#f5c75b]">trong khu đô thị.</span>
+              <span className="block text-brand-foreground/70">trong khu đô thị.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-emerald-50/70">
+            <p className="mt-5 max-w-lg text-base leading-7 text-brand-foreground/70">
               Theo dõi thông báo, gửi yêu cầu hỗ trợ và quản lý thông tin cá nhân nhanh chóng trên một nền tảng an toàn.
             </p>
           </div>
 
           <div className="relative z-10 grid grid-cols-3 gap-3">
             {[["24/7", "Hỗ trợ cư dân"], ["Bảo mật", "Xác thực 2 lớp"], ["Tức thời", "Nhận thông báo"]].map(([value, label]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/[.07] p-4 backdrop-blur">
-                <p className="font-semibold text-[#f5c75b]">{value}</p>
-                <p className="mt-1 text-xs text-emerald-50/60">{label}</p>
+              <div key={label} className="rounded-2xl border border-brand-foreground/10 bg-brand-foreground/[.07] p-4 backdrop-blur">
+                <p className="font-semibold text-brand-foreground">{value}</p>
+                <p className="mt-1 text-xs text-brand-foreground/60">{label}</p>
               </div>
             ))}
           </div>
@@ -116,58 +116,58 @@ export default function LoginPage() {
         <section className="flex items-center justify-center px-6 py-10 sm:px-12 lg:px-16">
           <div className="w-full max-w-md">
             <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-[#173f35] text-[#f5c75b]"><Building2 className="size-5" /></span>
+              <span className="flex size-10 items-center justify-center rounded-xl bg-brand text-brand-foreground"><Building2 className="size-5" /></span>
               <p className="text-lg font-bold">TownHub</p>
             </div>
 
             <AnimatePresence mode="wait">
               {step === "credentials" ? (
                 <motion.div key="login" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -16 }}>
-                  <p className="mb-3 text-sm font-semibold text-[#2e705f] dark:text-emerald-400">CHÀO MỪNG TRỞ LẠI</p>
+                  <p className="mb-3 text-sm font-semibold text-brand">CHÀO MỪNG TRỞ LẠI</p>
                   <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Đăng nhập tài khoản</h2>
-                  <p className="mt-3 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Truy cập không gian sống và các dịch vụ dành riêng cho bạn.</p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">Truy cập không gian sống và các dịch vụ dành riêng cho bạn.</p>
 
                   <form onSubmit={handleLogin} className="mt-8 space-y-5">
                     <Field label="Email hoặc tên đăng nhập">
-                      <input value={userName} onChange={(e) => setUserName(e.target.value)} autoComplete="username" placeholder="vidu@townhub.vn" className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm outline-none transition focus:border-[#2e705f] focus:ring-4 focus:ring-[#2e705f]/10 dark:border-white/10 dark:bg-white/5" />
+                      <input value={userName} onChange={(e) => setUserName(e.target.value)} autoComplete="username" placeholder="vidu@townhub.vn" className="h-12 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/20" />
                     </Field>
-                    <Field label="Mật khẩu" action={<Link href="/forgot-password" className="text-[#2e705f] hover:underline dark:text-emerald-400">Quên mật khẩu?</Link>}>
+                    <Field label="Mật khẩu" action={<Link href="/forgot-password" className="text-brand hover:underline">Quên mật khẩu?</Link>}>
                       <div className="relative">
-                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Nhập mật khẩu" className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 pr-12 text-sm outline-none transition focus:border-[#2e705f] focus:ring-4 focus:ring-[#2e705f]/10 dark:border-white/10 dark:bg-white/5" />
-                        <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Hiện hoặc ẩn mật khẩu" className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-white">
+                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Nhập mật khẩu" className="h-12 w-full rounded-xl border border-border bg-muted/50 px-4 pr-12 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/20" />
+                        <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Hiện hoặc ẩn mật khẩu" className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                           {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </button>
                       </div>
                     </Field>
-                    <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                      <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 accent-[#2e705f]" />
+                    <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                      <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 accent-brand" />
                       Duy trì đăng nhập
                     </label>
                     {error && <ErrorMessage message={error} />}
-                    <button disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f35] text-sm font-semibold text-white transition hover:bg-[#205546] disabled:opacity-60">
+                    <button disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand/90 disabled:opacity-60">
                       {loading ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
                       {loading ? "Đang đăng nhập..." : "Đăng nhập"}
                     </button>
                   </form>
 
-                  <div className="my-7 flex items-center gap-3 text-xs text-zinc-400">
-                    <span className="h-px flex-1 bg-zinc-200 dark:bg-white/10" /> CHƯA CÓ TÀI KHOẢN? <span className="h-px flex-1 bg-zinc-200 dark:bg-white/10" />
+                  <div className="my-7 flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="h-px flex-1 bg-border" /> CHƯA CÓ TÀI KHOẢN? <span className="h-px flex-1 bg-border" />
                   </div>
-                  <Link href="/register" className="flex h-12 w-full items-center justify-center rounded-xl border border-zinc-200 text-sm font-semibold transition hover:bg-zinc-50 dark:border-white/10 dark:hover:bg-white/5">Tạo tài khoản cư dân</Link>
-                  <p className="mt-8 flex items-center justify-center gap-2 text-xs text-zinc-400"><ShieldCheck className="size-4 text-[#2e705f]" /> Dữ liệu của bạn được mã hóa và bảo vệ.</p>
+                  <Link href="/register" className="flex h-12 w-full items-center justify-center rounded-xl border border-border text-sm font-semibold transition hover:bg-accent">Tạo tài khoản cư dân</Link>
+                  <p className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-4 text-brand" /> Dữ liệu của bạn được mã hóa và bảo vệ.</p>
                 </motion.div>
               ) : (
                 <motion.div key="mfa" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                  <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-[#173f35]/10 text-[#2e705f] dark:bg-emerald-400/10 dark:text-emerald-400"><KeyRound className="size-7" /></div>
+                  <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-brand/10 text-brand"><KeyRound className="size-7" /></div>
                   <h2 className="text-3xl font-semibold tracking-tight">Xác thực bảo mật</h2>
-                  <p className="mt-3 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Nhập mã gồm 6 chữ số từ ứng dụng xác thực của bạn.</p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">Nhập mã gồm 6 chữ số từ ứng dụng xác thực của bạn.</p>
                   <form onSubmit={handleMfa} className="mt-8 space-y-5">
-                    <input ref={mfaRef} value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={6} placeholder="000000" className="h-16 w-full rounded-2xl border border-zinc-200 bg-zinc-50 text-center font-mono text-2xl tracking-[.45em] outline-none focus:border-[#2e705f] focus:ring-4 focus:ring-[#2e705f]/10 dark:border-white/10 dark:bg-white/5" />
+                    <input ref={mfaRef} value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={6} placeholder="000000" className="h-16 w-full rounded-2xl border border-border bg-muted/50 text-center font-mono text-2xl tracking-[.45em] outline-none focus:border-brand focus:ring-4 focus:ring-brand/20" />
                     {error && <ErrorMessage message={error} />}
-                    <button disabled={loading || mfaCode.length !== 6} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f35] text-sm font-semibold text-white disabled:opacity-60">
+                    <button disabled={loading || mfaCode.length !== 6} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground disabled:opacity-60">
                       {loading ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />} Xác nhận
                     </button>
-                    <button type="button" onClick={() => { setStep("credentials"); setError(""); setMfaCode(""); }} className="w-full text-sm text-zinc-500 hover:text-[#2e705f]">Quay lại đăng nhập</button>
+                    <button type="button" onClick={() => { setStep("credentials"); setError(""); setMfaCode(""); }} className="w-full text-sm text-muted-foreground hover:text-brand">Quay lại đăng nhập</button>
                   </form>
                 </motion.div>
               )}

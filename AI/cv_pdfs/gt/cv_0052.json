@@ -1,0 +1,40 @@
+{
+ "Name": [
+  "Mai Xuân Thưởng"
+ ],
+ "Designation": [
+  "Back-end Developer",
+  "Senior Software Engineer",
+  "Software Engineer"
+ ],
+ "Email Address": [
+  "maixuanthuong@outlook.com"
+ ],
+ "Location": [
+  "Hải Châu, Đà Nẵng"
+ ],
+ "College Name": [
+  "Trường Đại học Công nghệ Thông tin - ĐHQG TP.HCM"
+ ],
+ "Degree": [
+  "Software Engineering"
+ ],
+ "Graduation Year": [
+  "2019"
+ ],
+ "Companies worked at": [
+  "Applancer Joint Stock Company",
+  "FPT Software"
+ ],
+ "Skills": [
+  "NodeJS",
+  "Spring Boot",
+  "PostgreSQL",
+  "Docker",
+  ".NET Core",
+  "Selenium"
+ ],
+ "Years of Experience": [
+  "7 years"
+ ]
+}

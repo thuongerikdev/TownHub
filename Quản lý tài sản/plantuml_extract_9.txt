@@ -1,0 +1,48 @@
+@startuml
+skinparam defaultTextAlignment center
+skinparam swimlane {
+  BorderColor black
+  BorderThickness 2
+  TitleBackgroundColor #E2E2F0
+}
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+}
+
+|Kỹ thuật viên|
+start
+:Lập Đề xuất mua hàng (PR);
+
+|Kỹ sư trưởng / BQL|
+:Kiểm tra & Phê duyệt PR;
+if (Duyệt?) then (Từ chối)
+  |Kỹ thuật viên|
+  :Cập nhật / Hủy PR;
+  stop
+else (Đồng ý)
+  |Kỹ sư trưởng / BQL|
+  :Tạo Đơn đặt hàng (PO);
+  :Gửi PO cho Nhà thầu;
+endif
+
+|Nhà thầu|
+:Giao vật tư & Gửi Hóa đơn (PDF/Ảnh);
+
+|Kế toán|
+:Upload chứng từ lên hệ thống;
+
+|AI OCR Engine|
+:Nhận diện & Trích xuất dữ liệu\n(Mã số thuế, Tổng tiền, NCC);
+:Smart Mapping dữ liệu với PO;
+
+|Kế toán|
+:Mở giao diện Đối chiếu Split-view;
+if (Dữ liệu khớp & Hợp lệ?) then (Sai lệch)
+  :Điều chỉnh dữ liệu thủ công;
+else (Đúng)
+endif
+:Xác nhận Hóa đơn;
+:Cập nhật công nợ & Lập lệnh thanh toán;
+stop
+@enduml

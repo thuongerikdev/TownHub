@@ -1,0 +1,40 @@
+{
+ "Name": [
+  "Ngô Hoàng Nam"
+ ],
+ "Designation": [
+  "Senior Software Engineer",
+  "Back-end Developer"
+ ],
+ "Email Address": [
+  "ngohoangnam@gmail.com"
+ ],
+ "Location": [
+  "Quận 3, TP.HCM"
+ ],
+ "College Name": [
+  "Trường Đại học Kinh tế Quốc dân"
+ ],
+ "Degree": [
+  "Information Technology"
+ ],
+ "Graduation Year": [
+  "2013"
+ ],
+ "Companies worked at": [
+  "FPT Software",
+  "VNG Corporation"
+ ],
+ "Skills": [
+  "Python",
+  "MongoDb",
+  "Git",
+  "ReactJS",
+  "NodeJS",
+  "Selenium",
+  "Docker"
+ ],
+ "Years of Experience": [
+  "5 years"
+ ]
+}

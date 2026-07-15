@@ -1,0 +1,41 @@
+{
+ "Name": [
+  "Ngô Tuấn Kiệt"
+ ],
+ "Designation": [
+  "Senior Software Engineer",
+  "Software Engineer"
+ ],
+ "Email Address": [
+  "ngotuankiet90@outlook.com"
+ ],
+ "Location": [
+  "Ninh Kiều, Cần Thơ"
+ ],
+ "College Name": [
+  "Trường Đại học Công nghệ Thông tin - ĐHQG TP.HCM"
+ ],
+ "Degree": [
+  "Software Engineering"
+ ],
+ "Graduation Year": [
+  "2015"
+ ],
+ "Companies worked at": [
+  "FPT Software",
+  "VNG Corporation"
+ ],
+ "Skills": [
+  "NodeJS",
+  ".NET Core",
+  "MongoDb",
+  "Spring Boot",
+  "Java",
+  "JavaScript",
+  "Docker",
+  "AngularJS"
+ ],
+ "Years of Experience": [
+  "6 years"
+ ]
+}

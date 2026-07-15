@@ -1,0 +1,73 @@
+@startuml
+' Hình 3.2 – Biểu đồ Use Case tổng quát module Base
+' (gộp khối "1. Xác thực & Tài khoản" + "8. Báo cáo & BI" trong UseCaseTownHubAsset.drawio,
+'  bổ sung Thông báo và Cấu hình cho đủ 5 phân hệ Base)
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+' Danh sách các Actor con
+actor "Cư dân" as CD
+actor "Kỹ thuật viên" as KTV
+actor "Kế toán" as KT
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Quản trị viên" as AD
+
+' Actor cha nằm ở giữa làm trung chuyển
+actor "Người dùng" as User
+
+CD --|> User
+KTV --|> User
+KT --|> User
+KST --|> User
+BQL --|> User
+AD --|> User
+
+package "1. Xác thực & Tài khoản" {
+    usecase "UC01: Đăng nhập hệ thống\n(email / Google OAuth / MFA)" as UC01
+    usecase "UC02: Đăng xuất (1 / mọi thiết bị)" as UC02
+    usecase "UC03: Đổi mật khẩu" as UC03
+    usecase "UC06: Xem hồ sơ cá nhân" as UC06
+    usecase "UC04: Quản lý người dùng & phiên" as UC04
+    usecase "UC05: Phân quyền vai trò RBAC" as UC05
+}
+
+package "2. Thông báo & Cấu hình" {
+    usecase "UCB1: Nhận / xem thông báo" as UCB1
+    usecase "UCB2: Gửi thông báo theo template" as UCB2
+    usecase "UCB3: Cấu hình hệ thống,\ndanh mục dùng chung" as UCB3
+    usecase "UCB4: Xem nhật ký hoạt động\n(Audit Log)" as UCB4
+}
+
+package "3. Báo cáo & BI" {
+    usecase "UC56: Xem Dashboard vận hành" as UC56
+    usecase "UC57: Xem KPI MTTR/MTBF" as UC57
+    usecase "UC58: Xem Cost Tracking" as UC58
+    usecase "UC59: Xuất báo cáo PDF/Excel" as UC59
+}
+
+User --> UC01
+User --> UC02
+User --> UC03
+User --> UC06
+User --> UCB1
+
+AD --> UC04
+AD --> UC05
+AD --> UCB3
+AD --> UCB4
+BQL --> UCB2
+
+KST --> UC56
+KST --> UC57
+BQL --> UC56
+KT --> UC58
+KT --> UC59
+@enduml

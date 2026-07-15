@@ -1,0 +1,202 @@
+======================================================================
+TEXT:
+Võ Minh Quân
+Trưởng nhóm bán hàng
+
+Liên lạc
+Điện thoại: 0718196001
+Email: vominhquan@outlook.com
+Ngày sinh: 20/01/2000
+Địa chỉ: Nguyễn Trãi, Phú Hội, Huế
+
+Mục tiêu nghề nghiệp
+Tôi là một Trưởng nhóm bán hàng chuyên nghiệp, đam mê xây dựng mối quan hệ với khách hàng và đạt được mục tiêu doanh số. Mục tiêu của tôi là phát triển sự nghiệp trong lĩnh vực bán hàng, tận dụng hơn 3 năm kinh nghiệm để tạo ra giá trị cho khách hàng.
+
+Kinh nghiệm làm việc
+Công ty CP Thương mại ABC   06/2021 - 05/2022
+Nhân viên kinh doanh
+- Nghiên cứu và đánh giá các xu hướng thị trường để xác định các cơ hội kinh doanh mới.
+- Tư vấn sản phẩm, chốt đơn và chăm sóc khách hàng sau bán.
+
+Công ty TNHH Thương mại Minh Phát   07/2016 - 02/2017
+Chuyên viên tư vấn bán hàng
+- Áp dụng các kỹ thuật tiếp thị và xây dựng mạng lưới khách hàng để tăng doanh số bán hàng.
+- Tư vấn sản phẩm, chốt đơn và chăm sóc khách hàng sau bán.
+
+Kỹ năng
+Quản lý dự án
+Microsoft Word
+Quản lý thời gian
+Kỹ năng
+- Microsoft Excel   4 ★
+- Kỹ năng thuyết phục   4 ★
+
+
+ENTITIES:
+  [Name] 'Võ Minh Quân'
+  [Designation] 'Trưởng nhóm bán hàng'
+  [Email Address] 'vominhquan@outlook.com'
+  [Location] 'Phú Hội, Huế'
+  [Designation] 'Trưởng nhóm bán hàng'
+  [Years of Experience] 'hơn 3 năm kinh nghiệm'
+  [Companies worked at] 'Công ty CP Thương mại ABC'
+  [Designation] 'Nhân viên kinh doanh'
+  [Companies worked at] 'Công ty TNHH Thương mại Minh Phát'
+  [Designation] 'Chuyên viên tư vấn bán hàng'
+  [Skills] 'Quản lý dự án'
+  [Skills] 'Microsoft Word'
+  [Skills] 'Quản lý thời gian'
+  [Skills] 'Microsoft Excel'
+  [Skills] 'Kỹ năng thuyết phục'
+
+======================================================================
+TEXT:
+Mai Hoàng Nam
+Software Engineer part-time
+
+Contact
+Số điện thoại: 0934131647
+Email: maihoangnam82@gmail.com
+Địa chỉ: Vĩnh Hải, Nha Trang
+
+Mục tiêu học tập – nghề nghiệp
+Sinh viên năm cuối mong muốn ứng tuyển vị trí Software Engineer part-time để rèn luyện kỹ năng giao tiếp với khách hàng, tác phong làm việc chuyên nghiệp và tích lũy kinh nghiệm thực tế.
+
+Học vấn
+Trường Đại học Kinh tế Quốc dân
+Ngành: Kỹ thuật phần mềm
+2023 – 2027
+
+Hoạt động - Kinh nghiệm liên quan
+Cộng tác viên truyền thông   Câu lạc bộ Sự kiện của trường
+- Tham gia tổ chức sự kiện và truyền thông trên fanpage của câu lạc bộ.
+- Phối hợp cùng các thành viên để hoàn thành công việc được giao.
+
+Kỹ năng
+- JavaScript
+- .NET Core
+- HTML/CSS
+- MongoDB
+- C#
+
+Ngôn ngữ
+Tiếng Anh
+
+ENTITIES:
+  [Name] 'Mai Hoàng Nam'
+  [Designation] 'Software Engineer part-time'
+  [Email Address] 'maihoangnam82@gmail.com'
+  [Location] 'Vĩnh Hải, Nha Trang'
+  [Designation] 'Software Engineer part-time'
+  [College Name] 'Trường Đại học Kinh tế Quốc dân'
+  [Degree] 'Kỹ thuật phần mềm'
+  [Graduation Year] '2027'
+  [Designation] 'Cộng tác viên truyền thông'
+  [Skills] 'JavaScript'
+  [Skills] '.NET Core'
+  [Skills] 'HTML/CSS'
+  [Skills] 'MongoDB'
+  [Skills] 'C#'
+
+======================================================================
+TEXT:
+Hồ Hữu Phước
+Nhân viên tư vấn
+0783503056   hohuuphuoc@gmail.com   be.net/cv   Lộc Thọ, Nha Trang
+
+MỤC TIÊU NGHỀ NGHIỆP
+Tôi mong muốn ứng tuyển vào vị trí Nhân viên tư vấn để tận dụng 5 năm kinh nghiệm xử lý yêu cầu và phản hồi khách hàng chuyên nghiệp, góp phần nâng cao trải nghiệm khách hàng.
+
+HỌC VẤN
+Trường Đại học Kinh tế TP.HCM   2017 - 2021
+Kinh tế   Tốt nghiệp loại Giỏi
+
+KINH NGHIỆM LÀM VIỆC
+SVT Investment & Development Co., Ltd   09/2021 - Nay
+Chuyên viên Tư vấn Giải pháp Phần mềm
+- Tư vấn giải pháp và trình bày demo sản phẩm cho khách hàng doanh nghiệp.
+- Phân tích nhu cầu và quy trình nghiệp vụ của khách hàng, từ đó đề xuất giải pháp phần mềm phù hợp.
+- Theo dõi mức độ hài lòng của khách hàng, ghi nhận các phản hồi và đề xuất cải thiện trải nghiệm dịch vụ.
+
+SVT Finance Innovation Co.   09/2017 - 08/2018
+Nhân viên chăm sóc khách hàng
+- Tiếp nhận và giải đáp thắc mắc của khách hàng liên quan đến sản phẩm, dịch vụ qua điện thoại, Zalo và email.
+- Theo dõi mức độ hài lòng của khách hàng, ghi nhận các phản hồi và đề xuất cải thiện trải nghiệm dịch vụ.
+
+KỸ NĂNG
+- Thuyết phục và đàm phán   Thành thạo trong việc thuyết phục khách hàng và đàm phán để đạt thỏa thuận đôi bên cùng có lợi.
+- Quản lý thời gian
+- Tiếng Anh giao tiếp
+- Sử dụng CRM   Sử dụng thành thạo hệ thống CRM để quản lý và tra cứu thông tin khách hàng.
+- Kỹ năng giao tiếp   Thành thạo trong việc lắng nghe, truyền đạt thông tin rõ ràng và thuyết phục.
+
+
+ENTITIES:
+  [Name] 'Hồ Hữu Phước'
+  [Designation] 'Nhân viên tư vấn'
+  [Email Address] 'hohuuphuoc@gmail.com'
+  [Location] 'Lộc Thọ, Nha Trang'
+  [Designation] 'Nhân viên tư vấn'
+  [Years of Experience] '5 năm kinh nghiệm'
+  [College Name] 'Trường Đại học Kinh tế TP.HCM'
+  [Graduation Year] '2021'
+  [Degree] 'Kinh tế'
+  [Companies worked at] 'SVT Investment & Development Co., Ltd'
+  [Designation] 'Chuyên viên Tư vấn Giải pháp Phần mềm'
+  [Companies worked at] 'SVT Finance Innovation Co.'
+  [Designation] 'Nhân viên chăm sóc khách hàng'
+  [Skills] 'Thuyết phục và đàm phán'
+  [Skills] 'Quản lý thời gian'
+  [Skills] 'Tiếng Anh giao tiếp'
+  [Skills] 'Sử dụng CRM'
+  [Skills] 'Kỹ năng giao tiếp'
+
+======================================================================
+TEXT:
+Đào Trúc Quỳnh My
+Chuyên viên Digital Marketing part-time
+
+Contact
+Số điện thoại: 0718451462
+Email: daotrucquynhmy@outlook.com
+Địa chỉ: Ninh Kiều, Cần Thơ
+
+Mục tiêu học tập – nghề nghiệp
+Sinh viên năm cuối mong muốn ứng tuyển vị trí Chuyên viên Digital Marketing part-time để rèn luyện kỹ năng giao tiếp với khách hàng, tác phong làm việc chuyên nghiệp và tích lũy kinh nghiệm thực tế.
+
+Học vấn
+Trường Đại học FPT
+Ngành: Marketing
+2023 – 2027
+
+Hoạt động - Kinh nghiệm liên quan
+Phụ bán hàng   Cửa hàng tiện lợi
+- Hỗ trợ tiếp đón khách, giới thiệu sản phẩm và giải đáp các câu hỏi cơ bản.
+- Sắp xếp hàng hóa, kiểm tra tồn kho và giữ gìn khu vực bán hàng gọn gàng.
+
+Kỹ năng
+- Sáng tạo nội dung
+- Google Ads
+- Facebook Ads
+- Microsoft Excel
+- Content Marketing
+
+Ngôn ngữ
+Tiếng Anh
+
+ENTITIES:
+  [Name] 'Đào Trúc Quỳnh My'
+  [Designation] 'Chuyên viên Digital Marketing part-time'
+  [Email Address] 'daotrucquynhmy@outlook.com'
+  [Location] 'Ninh Kiều, Cần Thơ'
+  [Designation] 'Chuyên viên Digital Marketing part-time'
+  [College Name] 'Trường Đại học FPT'
+  [Degree] 'Marketing'
+  [Graduation Year] '2027'
+  [Designation] 'Phụ bán hàng'
+  [Skills] 'Sáng tạo nội dung'
+  [Skills] 'Google Ads'
+  [Skills] 'Facebook Ads'
+  [Skills] 'Microsoft Excel'
+  [Skills] 'Content Marketing'
+

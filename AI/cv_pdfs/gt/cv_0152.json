@@ -1,0 +1,41 @@
+{
+ "Name": [
+  "Bùi Phương Anh"
+ ],
+ "Designation": [
+  "Full-stack Developer",
+  "Back-end Developer"
+ ],
+ "Email Address": [
+  "buiphuonganh@gmail.com"
+ ],
+ "Location": [
+  "Thanh Xuân, Hà Nội"
+ ],
+ "College Name": [
+  "Trường Đại học FPT"
+ ],
+ "Degree": [
+  "Software Engineering"
+ ],
+ "Graduation Year": [
+  "2018"
+ ],
+ "Companies worked at": [
+  "Applancer Joint Stock Company",
+  "FPT Software"
+ ],
+ "Skills": [
+  "Docker",
+  "C#",
+  "Java",
+  "Spring Boot",
+  "MongoDb",
+  "SQL",
+  "JavaScript",
+  "Python"
+ ],
+ "Years of Experience": [
+  "4 years"
+ ]
+}

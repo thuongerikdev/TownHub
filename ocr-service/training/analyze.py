@@ -167,6 +167,10 @@ def _paddle_text(r):
         return ""
 
 def run_paddle(samples, rec_dir=None, dict_path=None, use_gpu=True):
+    # Tắt fused conv+bias+act của cuDNN — kernel này segfault trên GPU Colab
+    # (FusedConv2dAddActKernel) khi paddlepaddle-gpu lệch phiên bản CUDA/cuDNN.
+    os.environ.setdefault("FLAGS_conv2d_disable_cudnn", "1")
+    os.environ.setdefault("FLAGS_use_cudnn", "0")
     from paddleocr import PaddleOCR
     kw = dict(use_angle_cls=False, lang="vi", show_log=False, use_gpu=use_gpu)
     if rec_dir:   kw["rec_model_dir"] = rec_dir
@@ -517,6 +521,8 @@ def main():
     ap.add_argument("--limit", type=int, default=500, help="số mẫu đánh giá (val)")
     ap.add_argument("--no-easyocr", action="store_true", help="bỏ EasyOCR (nếu chưa cài)")
     ap.add_argument("--cpu",   action="store_true")
+    ap.add_argument("--paddle-gpu", action="store_true",
+                    help="ép PaddleOCR chạy GPU (mặc định CPU để tránh SIGSEGV ở kernel cuDNN)")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     gpu = not args.cpu
@@ -541,10 +547,15 @@ def main():
         print("⚠️ VietOCR lỗi:", e); return
 
     # PaddleOCR trước (pretrain 'vi') / sau (fine-tune)
+    # Mặc định CPU: kernel cuDNN fused-conv của paddle-gpu hay SIGSEGV trên Colab
+    # (không bắt được bằng try/except vì nó giết cả tiến trình).
+    pgpu = gpu and args.paddle_gpu
+    if not pgpu:
+        print("ℹ️ PaddleOCR chạy CPU (dùng --paddle-gpu để ép GPU).")
     try:
-        pp0, _  = run_paddle(samples, rec_dir=None, use_gpu=gpu); res["paddle_before"] = evaluate(pp0, gts)
+        pp0, _  = run_paddle(samples, rec_dir=None, use_gpu=pgpu); res["paddle_before"] = evaluate(pp0, gts)
         if args.rec:
-            pp, dp = run_paddle(samples, rec_dir=args.rec, dict_path=args.dict, use_gpu=gpu)
+            pp, dp = run_paddle(samples, rec_dir=args.rec, dict_path=args.dict, use_gpu=pgpu)
             res["paddle_after"] = evaluate(pp, gts); lat["PaddleOCR"] = dp
         else:
             pp = pp0; res["paddle_after"] = res["paddle_before"]; lat["PaddleOCR"] = 0

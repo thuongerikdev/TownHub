@@ -1,0 +1,40 @@
+{
+ "Name": [
+  "Huỳnh Thảo Nguyên"
+ ],
+ "Designation": [
+  "Back-end Developer",
+  "Software Engineer"
+ ],
+ "Email Address": [
+  "huynhthaonguyen@gmail.com"
+ ],
+ "Location": [
+  "Quận 3, TP.HCM"
+ ],
+ "College Name": [
+  "Trường Đại học Bách khoa Hà Nội"
+ ],
+ "Degree": [
+  "Information Systems"
+ ],
+ "Graduation Year": [
+  "2014"
+ ],
+ "Companies worked at": [
+  "TopDev",
+  "FPT Software"
+ ],
+ "Skills": [
+  "C#",
+  "Python",
+  "Git",
+  "AngularJS",
+  "NodeJS",
+  "ReactJS",
+  "MongoDb"
+ ],
+ "Years of Experience": [
+  "5 years"
+ ]
+}

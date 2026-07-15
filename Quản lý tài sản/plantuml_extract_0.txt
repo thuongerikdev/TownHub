@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+' Danh sách các Actor con
+actor "Cư dân" as CD
+actor "Bảo vệ" as BV
+actor "Kỹ thuật viên" as KTV
+actor "Ban quản lý" as BQL
+actor "Kỹ sư trưởng" as KST
+actor "Kế toán" as KT
+actor "Nhà thầu" as NT
+
+' Actor cha nằm ở giữa làm trung chuyển
+actor "Người dùng" as User
+
+' Đảo chiều mũi tên để layout xếp từ Trái sang Phải
+CD --|> User
+BV --|> User
+KTV --|> User
+BQL --|> User
+KST --|> User
+KT --|> User
+NT --|> User
+
+package "1. Xác thực & Tài khoản" {
+    usecase "UC01: Đăng nhập hệ thống" as UC01
+    usecase "UC02: Đăng xuất" as UC02
+    usecase "UC03: Đổi mật khẩu" as UC03
+    usecase "UC06: Xem hồ sơ cá nhân" as UC06
+    
+    usecase "UC04: Quản lý người dùng" as UC04
+    usecase "UC05: Phân quyền vai trò RBAC" as UC05
+}
+
+' Nối Actor cha vào các Use Case chung
+User --> UC01
+User --> UC02
+User --> UC03
+User --> UC06
+
+' Nối riêng Ban quản lý vào Use Case đặc quyền
+BQL --> UC04
+BQL --> UC05
+
+@enduml

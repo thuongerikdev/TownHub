@@ -1,0 +1,41 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Kỹ thuật viên" as KTV
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Kế toán" as KT
+actor "Hệ thống / IoT" as SYS
+
+KST --|> KTV
+BQL --|> KST
+
+package "5. Quản lý kho vật tư" {
+    usecase "UC32: Xem tồn kho thực tế" as UC32
+    usecase "UC33: Xuất/nhập vật tư" as UC33
+    usecase "UC34: Chuyển kho ảo KTV" as UC34
+    
+    usecase "UC35: Kiểm kê kho định kỳ" as UC35
+    usecase "UC36: Cảnh báo tồn kho thấp" as UC36
+    usecase "UC37: Quản lý danh mục vật tư" as UC37
+}
+
+KTV --> UC32
+KTV --> UC33
+KTV --> UC34
+
+KST --> UC35
+KST --> UC36
+KST --> UC37
+
+KT --> UC33
+SYS --> UC36
+@enduml

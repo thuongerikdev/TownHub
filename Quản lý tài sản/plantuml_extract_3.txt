@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Kỹ thuật viên" as KTV
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Hệ thống / IoT" as SYS
+
+' BQL kế thừa quyền quản lý WO của KST
+BQL --|> KST
+
+package "4. Bảo trì định kỳ (PM)" {
+    usecase "UC26: Quét QR Check-in hiện trường" as UC26
+    usecase "UC27: Điền Checklist động" as UC27
+    usecase "UC28: Chụp ảnh trước/sau" as UC28
+    usecase "UC29: Ghi nhận vật tư sử dụng" as UC29
+    
+    usecase "UC22: Cấu hình lịch bảo trì" as UC22
+    usecase "UC24: Xem danh sách Work Order" as UC24
+    usecase "UC25: Phân công KTV cho WO" as UC25
+    usecase "UC30: Nghiệm thu/từ chối WO" as UC30
+    usecase "UC31: Xem kết quả Checklist" as UC31
+    
+    usecase "UC23: Tự động sinh Work Order" as UC23
+}
+
+KTV --> UC24
+KTV --> UC26
+KTV --> UC27
+KTV --> UC28
+KTV --> UC29
+
+KST --> UC22
+KST --> UC24
+KST --> UC25
+KST --> UC30
+KST --> UC31
+
+SYS --> UC23
+@enduml

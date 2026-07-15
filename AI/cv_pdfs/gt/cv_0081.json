@@ -1,0 +1,41 @@
+{
+ "Name": [
+  "Võ Đức Anh"
+ ],
+ "Designation": [
+  "Full-stack Developer",
+  "Senior Software Engineer",
+  "QA Engineer"
+ ],
+ "Email Address": [
+  "voducanh@gmail.com"
+ ],
+ "Location": [
+  "Vĩnh Hải, Nha Trang"
+ ],
+ "College Name": [
+  "Trường Đại học Bách khoa Hà Nội"
+ ],
+ "Degree": [
+  "Computer Science"
+ ],
+ "Graduation Year": [
+  "2014"
+ ],
+ "Companies worked at": [
+  "VNG Corporation",
+  "TopDev"
+ ],
+ "Skills": [
+  "Spring Boot",
+  "AngularJS",
+  "SQL",
+  "Git",
+  "MongoDb",
+  "Selenium",
+  ".NET Core"
+ ],
+ "Years of Experience": [
+  "6 years"
+ ]
+}
