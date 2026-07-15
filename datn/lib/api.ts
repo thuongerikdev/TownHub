@@ -279,6 +279,21 @@ async function apiFetch<T>(
   }
 }
 
+// ─── MFA (TOTP) ──────────────────────────────────────────────────────────────
+export interface MfaStatus {
+  enabled: boolean;
+  status: "Pending" | "Enabled" | "Disabled" | string;
+  type: string;
+  label?: string;
+  enabledAt?: string;
+  lastVerifiedAt?: string;
+}
+export interface StartTotpResponse {
+  secretBase32: string;
+  otpauthUri: string;
+  label?: string;
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const auth = {
   staffLogin: (userName: string, password: string) =>
@@ -316,6 +331,15 @@ export const auth = {
       method: "POST",
       body: JSON.stringify({ ticket, oldPassword, newPassword }),
     }),
+
+  // ── MFA (TOTP) self-service: bật/tắt xác thực 2 lớp cho tài khoản đang đăng nhập ──
+  mfaStatus: () => apiFetch<MfaStatus>("/account/mfa/status"),
+  mfaStart: () =>
+    apiFetch<StartTotpResponse>("/account/mfa/totp/start", { method: "POST" }),
+  mfaConfirm: (code: string) =>
+    apiFetch<boolean>("/account/mfa/totp/confirm", { method: "POST", body: JSON.stringify({ code }) }),
+  mfaDisable: (confirmCode?: string) =>
+    apiFetch<boolean>("/account/mfa/totp/disable", { method: "POST", body: JSON.stringify({ confirmCode: confirmCode ?? null }) }),
 
   registerStart: (email: string) =>
     apiFetch<boolean>("/register/email/start", { method: "POST", body: JSON.stringify({ email }) }),
