@@ -150,10 +150,6 @@ export default function LoginPage() {
                     </button>
                   </form>
 
-                  <div className="my-7 flex items-center gap-3 text-xs text-zinc-400">
-                    <span className="h-px flex-1 bg-zinc-200 dark:bg-white/10" /> CHƯA CÓ TÀI KHOẢN? <span className="h-px flex-1 bg-zinc-200 dark:bg-white/10" />
-                  </div>
-                  <Link href="/register" className="flex h-12 w-full items-center justify-center rounded-xl border border-zinc-200 text-sm font-semibold transition hover:bg-zinc-50 dark:border-white/10 dark:hover:bg-white/5">Tạo tài khoản cư dân</Link>
                   <p className="mt-8 flex items-center justify-center gap-2 text-xs text-zinc-400"><ShieldCheck className="size-4 text-[#2e705f]" /> Dữ liệu của bạn được mã hóa và bảo vệ.</p>
                 </motion.div>
               ) : (

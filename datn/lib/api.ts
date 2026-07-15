@@ -282,7 +282,13 @@ async function apiFetch<T>(
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const auth = {
   staffLogin: (userName: string, password: string) =>
-    apiFetch<LoginResponse>("/login/StaffLogin", { method: "POST", body: JSON.stringify({ userName, password }) }),
+    apiFetch<LoginResponse>("/login/StaffLogin", {
+      method: "POST",
+      body: JSON.stringify({ userName, password }),
+      // 403 ở đây chỉ là tín hiệu "không phải tài khoản nhân viên" để login()
+      // fallback sang userLogin, không phải lỗi thật cần log ra console.
+      silentStatuses: [403],
+    }),
 
   userLogin: (userName: string, password: string) =>
     apiFetch<LoginResponse>("/login/userLogin", { method: "POST", body: JSON.stringify({ userName, password }) }),
@@ -728,7 +734,7 @@ export interface PriceListItem {
 }
 
 export function formatPriceRange(p: PriceListItem): string {
-  const from = p.priceFrom.toLocaleString("vi-VN");
+  const from = (p.priceFrom ?? 0).toLocaleString("vi-VN");
   if (!p.priceTo || p.priceTo <= p.priceFrom) return `${from}đ`;
   return `${from} - ${p.priceTo.toLocaleString("vi-VN")}đ`;
 }
@@ -1068,6 +1074,13 @@ export interface TicketStatusHistoryResponse {
 export interface TicketAttachmentResponse {
   id: string; ticketId: string; fileUrl: string;
 }
+export interface DamageDetectionItem {
+  label: string; labelVi: string; confidence: number;
+}
+export interface DamageDetectionResponse {
+  available: boolean; detections: DamageDetectionItem[];
+  suggestedCategory?: string; topConfidence?: number;
+}
 export interface SlaEscalationLogResponse {
   id: string; ticketId: string; ticketCode?: string; escalationLevel: number; escalatedAt: string;
   escalatedTo?: string; channel?: string; message?: string; acknowledgedAt?: string; acknowledgedBy?: string;
@@ -1083,6 +1096,7 @@ export interface CreateTicketInput {
   ticketCode: string; buildingId: string; floorId?: string; unitId?: string;
   assetId?: string; reportedBy?: string; reportedByName?: string; slaConfigId?: string; purchaseRequestId?: string;
   title?: string; description?: string; category?: string; priority?: string; source?: string;
+  photoUrls?: string[];
 }
 export interface UpdateTicketInput extends CreateTicketInput {
   id: string; status?: string; resolvedAt?: string; closedAt?: string;
@@ -1123,6 +1137,8 @@ export const tickets = {
     apiFetch<TicketStatusHistoryResponse[]>(`/api/asset/ticket/get-status-history/${ticketId}`, {}),
   getEscalationLogs: (ticketId: string) =>
     apiFetch<SlaEscalationLogResponse[]>(`/api/asset/ticket/get-escalation-logs/${ticketId}`, {}),
+  detectDamage: (imageDataUrl: string) =>
+    apiFetch<DamageDetectionResponse>(`/api/asset/ticket/detect-damage`, { method: "POST", body: JSON.stringify({ imageDataUrl }) }),
 };
 
 // ─── Inventory (Kho): types ────────────────────────────────────────────────────
