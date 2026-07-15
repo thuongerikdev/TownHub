@@ -860,6 +860,12 @@ namespace TH.Asset.ApplicationService.Service.Core
         {
             try
             {
+                if (month < 1 || month > 12)
+                    return ResponseConst.Error<List<AssetDepreciationLogResponse>>(400, "Tháng không hợp lệ (1-12).");
+
+                // Tính & lưu (materialize) log khấu hao cho kỳ này với các tài sản chưa có log.
+                await EnsureStraightLineDepreciationAsync(year, month);
+
                 var result = await _dbContext.AssetDepreciationLogs
                     .Include(x => x.asset)
                     .Where(x => x.periodYear == year && x.periodMonth == month)
@@ -886,6 +892,78 @@ namespace TH.Asset.ApplicationService.Service.Core
             {
                 _logger.LogError(ex, "Lỗi khi lấy khấu hao theo kỳ {Year}/{Month}", year, month);
                 return ResponseConst.Error<List<AssetDepreciationLogResponse>>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Tính khấu hao đường thẳng (STRAIGHT_LINE) cho kỳ (year, month) và lưu log cho những
+        /// tài sản đủ điều kiện nhưng chưa có log ở kỳ đó. Idempotent: chạy lại không tạo trùng.
+        /// Khấu hao/tháng = (purchasePrice - salvageValue) / usefulLifeMonths, bắt đầu từ tháng mua.
+        /// </summary>
+        private async Task EnsureStraightLineDepreciationAsync(int year, int month)
+        {
+            int periodIndex = year * 12 + (month - 1);
+
+            // Tài sản đủ điều kiện tính khấu hao.
+            var assets = await _dbContext.Assets
+                .Where(a => a.purchasePrice != null && a.purchasePrice > 0m
+                         && a.purchaseDate != null
+                         && a.usefulLifeMonths != null && a.usefulLifeMonths > 0)
+                .ToListAsync();
+
+            if (assets.Count == 0) return;
+
+            var assetIds = assets.Select(a => a.id).ToList();
+            var alreadyLogged = (await _dbContext.AssetDepreciationLogs
+                    .Where(x => x.periodYear == year && x.periodMonth == month && assetIds.Contains(x.assetId))
+                    .Select(x => x.assetId)
+                    .ToListAsync())
+                .ToHashSet();
+
+            var toAdd = new List<AssetDepreciationLog>();
+            foreach (var a in assets)
+            {
+                if (alreadyLogged.Contains(a.id)) continue;
+
+                var pd = a.purchaseDate!.Value;
+                int startIndex = pd.Year * 12 + (pd.Month - 1);
+                int monthsBefore = periodIndex - startIndex; // số kỳ đã khấu hao trước kỳ hiện tại
+                if (monthsBefore < 0) continue;               // chưa tới kỳ bắt đầu khấu hao
+
+                int life = a.usefulLifeMonths!.Value;
+                if (monthsBefore >= life) continue;           // đã khấu hao hết vòng đời
+
+                decimal depreciable = a.purchasePrice!.Value - a.salvageValue;
+                if (depreciable <= 0m) continue;
+
+                decimal monthly = Math.Round(depreciable / life, 0, MidpointRounding.AwayFromZero);
+                decimal accumulatedBefore = monthly * monthsBefore;
+
+                // Kỳ cuối gánh phần dư làm tròn để giá trị còn lại đúng bằng salvageValue.
+                decimal amount = (monthsBefore == life - 1)
+                    ? depreciable - accumulatedBefore
+                    : monthly;
+
+                decimal bookBefore = a.purchasePrice!.Value - accumulatedBefore;
+
+                toAdd.Add(new AssetDepreciationLog
+                {
+                    assetId            = a.id,
+                    periodYear         = year,
+                    periodMonth        = month,
+                    depreciationAmount = amount,
+                    bookValueBefore    = bookBefore,
+                    bookValueAfter     = bookBefore - amount,
+                    accumulatedTotal   = accumulatedBefore + amount,
+                    calculatedAt       = DateTime.UtcNow,
+                    calculatedBy       = null // sinh tự động bởi hệ thống
+                });
+            }
+
+            if (toAdd.Count > 0)
+            {
+                _dbContext.AssetDepreciationLogs.AddRange(toAdd);
+                await _dbContext.SaveChangesAsync();
             }
         }
     }

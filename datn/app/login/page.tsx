@@ -150,10 +150,12 @@ export default function LoginPage() {
                     </button>
                   </form>
 
+                  {/* Tạm ẩn nút tạo tài khoản cư dân
                   <div className="my-7 flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="h-px flex-1 bg-border" /> CHƯA CÓ TÀI KHOẢN? <span className="h-px flex-1 bg-border" />
                   </div>
                   <Link href="/register" className="flex h-12 w-full items-center justify-center rounded-xl border border-border text-sm font-semibold transition hover:bg-accent">Tạo tài khoản cư dân</Link>
+                  */}
                   <p className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-4 text-brand" /> Dữ liệu của bạn được mã hóa và bảo vệ.</p>
                 </motion.div>
               ) : (
