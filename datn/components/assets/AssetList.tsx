@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Boxes, QrCode, Pencil, Trash2, Download, AlertTriangle,
-  CheckCircle2, Wrench, Copy, ScanLine,
+  CheckCircle2, Wrench, Copy, ScanLine, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -89,7 +89,6 @@ export default function AssetList() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
-  const [detail, setDetail] = useState<AssetResponse | null>(null);
   const [confirmDel, setConfirmDel] = useState<AssetResponse | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -230,7 +229,7 @@ export default function AssetList() {
     {
       key: "asset", header: "Tài sản", sortable: true, sortAccessor: (a) => a.assetCode,
       cell: (a) => (
-        <button onClick={() => setDetail(a)} className="flex flex-col text-left">
+        <button onClick={() => router.push(`/assets/${a.id}`)} className="flex flex-col text-left">
           <span className="font-medium text-foreground hover:text-brand">{a.name}</span>
           <span className="font-mono text-[11px] text-muted-foreground">{a.assetCode}</span>
         </button>
@@ -246,6 +245,7 @@ export default function AssetList() {
       key: "actions", header: "", align: "right",
       cell: (a) => (
         <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" title="Xem chi tiết" onClick={() => router.push(`/assets/${a.id}`)}><Eye className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Mã QR" onClick={() => setQrAsset(a)}><QrCode className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(a)}><Pencil className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(a)}><Trash2 className="size-4" /></Button>
@@ -409,41 +409,6 @@ export default function AssetList() {
         </div>
       </EntityModal>
 
-      {/* Detail */}
-      <EntityModal
-        open={!!detail}
-        onOpenChange={(o) => !o && setDetail(null)}
-        title={detail?.name ?? ""}
-        description={detail ? `Mã: ${detail.assetCode}` : ""}
-        size="lg"
-        footer={
-          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
-            <Button variant="outline" onClick={() => setDetail(null)}>Đóng</Button>
-            {detail && <Button onClick={() => { const a = detail; setDetail(null); openEdit(a); }}><Pencil className="size-4" /> Sửa</Button>}
-          </div>
-        }
-      >
-        {detail && (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-            <DetailRow label="Trạng thái"><StatusBadge value={detail.status} map={ASSET_STATUS} /></DetailRow>
-            <DetailRow label="Mức độ"><StatusBadge value={detail.criticalityLevel} map={CRITICALITY} dot={false} /></DetailRow>
-            <DetailRow label="Danh mục">{detail.categoryName ?? "—"}</DetailRow>
-            <DetailRow label="Vị trí">{detail.locationAreaCode ?? "—"}</DetailRow>
-            <DetailRow label="Số serial">{detail.serialNumber ?? "—"}</DetailRow>
-            <DetailRow label="Nhà cung cấp">{detail.vendorName ?? "—"}</DetailRow>
-            <DetailRow label="Giá mua">{formatCurrency(detail.purchasePrice)}</DetailRow>
-            <DetailRow label="Giá trị còn lại">{formatCurrency(detail.bookValue)}</DetailRow>
-            <DetailRow label="Khấu hao luỹ kế">{formatCurrency(detail.accumulatedDepreciation)}</DetailRow>
-            <DetailRow label="Giá trị thanh lý">{formatCurrency(detail.salvageValue)}</DetailRow>
-            <DetailRow label="Ngày mua">{formatDate(detail.purchaseDate)}</DetailRow>
-            <DetailRow label="Hết hạn bảo hành">{formatDate(detail.warrantyExpiryDate)}</DetailRow>
-            <DetailRow label="Bảo trì gần nhất">{formatDate(detail.lastMaintenanceDate)}</DetailRow>
-            <DetailRow label="Bảo trì kế tiếp">{formatDate(detail.nextMaintenanceDate)}</DetailRow>
-            {detail.notes && <DetailRow label="Ghi chú" className="col-span-2">{detail.notes}</DetailRow>}
-          </div>
-        )}
-      </EntityModal>
-
       {/* QR */}
       <QrDialog asset={qrAsset} onClose={() => setQrAsset(null)} />
 
@@ -467,15 +432,6 @@ export default function AssetList() {
           Hành động này không thể hoàn tác.
         </p>
       </EntityModal>
-    </div>
-  );
-}
-
-function DetailRow({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={className}>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-0.5 text-foreground">{children}</div>
     </div>
   );
 }
