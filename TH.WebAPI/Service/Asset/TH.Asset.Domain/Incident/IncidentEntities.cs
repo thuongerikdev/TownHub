@@ -65,6 +65,11 @@ namespace TH.Asset.Domain.Incident
         [MaxLength(150)]
         public string? reportedByName { get; set; }
 
+        // Kỹ thuật viên được phân công (Auth userID là int → lưu id + tên hiển thị)
+        public int? assignedToUserId { get; set; }
+        [MaxLength(150)]
+        public string? assignedToName { get; set; }
+
         public Guid? slaConfigId { get; set; }
         public Guid? purchaseRequestId { get; set; }
 
@@ -114,6 +119,11 @@ namespace TH.Asset.Domain.Incident
 
         // Cross-service (Auth) — không dùng navigation property
         public Guid assignedTo { get; set; }
+        // Auth userID (int) + tên hiển thị của KTV được phân công
+        public int? assignedToUserId { get; set; }
+        [MaxLength(150)]
+        public string? assignedToName { get; set; }
+        public DateTime assignedAt { get; set; } = DateTime.UtcNow;
 
         // ── Navigation Properties ──
         [ForeignKey(nameof(ticketId))]

@@ -43,6 +43,9 @@ export interface UserSlim {
 export interface Role {
   roleID: number; roleName: string; roleDescription: string; isDefault: boolean; scope?: string;
 }
+export interface RoleMember {
+  userID: number; userName: string; fullName?: string;
+}
 export interface Permission {
   permissionID: number; permissionName: string; permissionDescription: string; code: string; scope?: string;
 }
@@ -372,6 +375,7 @@ export const users = {
   getAllAdmin: () => apiFetch<GetUserResponse[]>("/user/admin/getAllUsers", {}),
   getAllResidents: () => apiFetch<GetUserResponse[]>("/user/getAllUsers", {}),
   getAllSlim: () => apiFetch<UserSlim[]>("/user/getAllUsersSlim", {}),
+  getByRole: (roleName: string) => apiFetch<RoleMember[]>(`/user/by-role${qs({ roleName })}`, {}),
   getById: (id: number) => apiFetch<GetUserResponse>(`/user/admin/getUserById?userId=${id}`, {}),
   deleteUser: (id: number) => apiFetch<unknown>(`/user/deleteUser?userId=${id}`, { method: "DELETE" }),
   updateProfile: (form: FormData) =>
@@ -1020,6 +1024,7 @@ export interface WorkOrderResponse {
   id: string; woCode: string; assetId: string; assetCode?: string; assetName?: string;
   scheduleId?: string; checklistTemplateId: string; checklistTemplateName?: string;
   buildingId: string; status: string; reviewerId?: string; woType: string;
+  assignedToUserId?: number; assignedToName?: string;
   title?: string; description?: string; priority: string;
   scheduledDate?: string; dueDate?: string; actualStartAt?: string; actualEndAt?: string;
   approvedAt?: string; rejectedReason?: string;
@@ -1102,7 +1107,7 @@ export const workOrders = {
   update: (body: UpdateWorkOrderInput) =>
     apiFetch<boolean>(`/api/asset/work-order/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/work-order/delete/${id}`, { method: "DELETE" }),
-  assignTechnician: (body: { woId: string; assignedTo?: string; checkinQrAssetId?: string }) =>
+  assignTechnician: (body: { woId: string; assignedTo?: string; assignedToUserId?: number; assignedToName?: string; checkinQrAssetId?: string }) =>
     apiFetch<boolean>(`/api/asset/work-order/assign-technician`, { method: "POST", body: JSON.stringify(body) }),
   addChecklistResponse: (body: { woId: string; templateItemId: string; isPassed: boolean; valueText?: string; notes?: string; photoUrl?: string }) =>
     apiFetch<boolean>(`/api/asset/work-order/add-checklist-response`, { method: "POST", body: JSON.stringify(body) }),
@@ -1125,6 +1130,7 @@ export interface TicketResponse {
   id: string; ticketCode: string; status: string;
   buildingId: string; floorId?: string; unitId?: string;
   assetId?: string; assetCode?: string; reportedBy: string; reportedByName?: string;
+  assignedToUserId?: number; assignedToName?: string;
   slaConfigId?: string; slaConfigName?: string; purchaseRequestId?: string; prCode?: string;
   title?: string; description?: string; category?: string; priority: string; source: string;
   resolvedAt?: string; closedAt?: string; autoClosed: boolean; resolutionNote?: string;
@@ -1180,7 +1186,7 @@ export const tickets = {
   delete: (id: string) => apiFetch<boolean>(`/api/asset/ticket/delete/${id}`, { method: "DELETE" }),
   changeStatus: (body: { ticketId: string; toStatus: string; fromStatus?: string; changedBy?: string; note?: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/change-status`, { method: "POST", body: JSON.stringify(body) }),
-  assign: (body: { ticketId: string; assignedTo?: string }) =>
+  assign: (body: { ticketId: string; assignedTo?: string; assignedToUserId?: number; assignedToName?: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/assign`, { method: "POST", body: JSON.stringify(body) }),
   addAttachment: (body: { ticketId: string; fileUrl: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/add-attachment`, { method: "POST", body: JSON.stringify(body) }),

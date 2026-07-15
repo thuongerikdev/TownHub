@@ -402,20 +402,33 @@ namespace TH.Asset.ApplicationService.Service.Incident
         {
             try
             {
-                var ticketExists = await _dbContext.Tickets.AnyAsync(x => x.id == request.ticketId);
-                if (!ticketExists)
+                var ticket = await _dbContext.Tickets.FirstOrDefaultAsync(x => x.id == request.ticketId);
+                if (ticket == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy ticket.");
 
-                var alreadyAssigned = await _dbContext.TicketAssignments
-                    .AnyAsync(x => x.ticketId == request.ticketId && x.assignedTo == request.assignedTo);
-                if (alreadyAssigned)
-                    return ResponseConst.Error<bool>(400, "Người dùng đã được phân công vào ticket này.");
+                // Ưu tiên định danh theo user (int) nếu FE gửi; fallback về Guid cũ.
+                if (request.assignedToUserId.HasValue)
+                {
+                    var already = await _dbContext.TicketAssignments
+                        .AnyAsync(x => x.ticketId == request.ticketId && x.assignedToUserId == request.assignedToUserId);
+                    if (already)
+                        return ResponseConst.Error<bool>(400, "Kỹ thuật viên này đã được phân công vào ticket.");
+                }
 
                 _dbContext.TicketAssignments.Add(new TicketAssignment
                 {
-                    ticketId   = request.ticketId,
-                    assignedTo = request.assignedTo
+                    ticketId         = request.ticketId,
+                    assignedTo       = request.assignedTo,
+                    assignedToUserId = request.assignedToUserId,
+                    assignedToName   = request.assignedToName,
+                    assignedAt       = DateTime.UtcNow
                 });
+
+                // Cập nhật người phụ trách hiện tại trên ticket (để hiển thị ở danh sách/chi tiết)
+                ticket.assignedToUserId = request.assignedToUserId;
+                ticket.assignedToName   = request.assignedToName;
+                ticket.updatedAt        = DateTime.UtcNow;
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Phân công ticket thành công.", true);
             }
@@ -579,6 +592,8 @@ namespace TH.Asset.ApplicationService.Service.Incident
             assetCode         = x.asset?.assetCode,
             reportedBy        = x.reportedBy,
             reportedByName    = x.reportedByName,
+            assignedToUserId  = x.assignedToUserId,
+            assignedToName    = x.assignedToName,
             slaConfigId       = x.slaConfigId,
             slaConfigName     = x.slaConfig?.name,
             purchaseRequestId = x.purchaseRequestId,

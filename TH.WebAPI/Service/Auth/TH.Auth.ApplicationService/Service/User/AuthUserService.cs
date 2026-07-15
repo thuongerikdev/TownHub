@@ -16,6 +16,7 @@ namespace TH.Auth.ApplicationService.Service.User
     public interface IAuthUserService
     {
         Task<ResponseDto<List<UserSlimDto>>> GetAllSlimAsync(CancellationToken ct);
+        Task<ResponseDto<List<RoleMemberDto>>> GetMembersByRoleNameAsync(string roleName, CancellationToken ct);
         Task<ResponseDto<bool>> DeleteUserAsync(int userID, CancellationToken ct);
         Task<ResponseDto<GetUserResponseDto>> GetUserByIDAsync(int userID, CancellationToken ct);
 
@@ -59,6 +60,22 @@ namespace TH.Auth.ApplicationService.Service.User
                 return ResponseConst.Error<List<UserSlimDto>>(500, "Internal error");
             }
         }
+        public async Task<ResponseDto<List<RoleMemberDto>>> GetMembersByRoleNameAsync(string roleName, CancellationToken ct)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(roleName))
+                    return ResponseConst.Error<List<RoleMemberDto>>(400, "Thiếu tên vai trò.");
+                var list = await _users.GetMembersByRoleNameAsync(roleName.Trim(), ct);
+                return ResponseConst.Success("Lấy danh sách người dùng theo vai trò thành công.", list);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching members of role {Role}", roleName);
+                return ResponseConst.Error<List<RoleMemberDto>>(500, "Internal error");
+            }
+        }
+
         public async Task<ResponseDto<bool>> DeleteUserAsync(int userID, CancellationToken ct)
         {
             _logger.LogInformation("Deleting user with ID: {UserID}", userID);

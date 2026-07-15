@@ -94,6 +94,8 @@ namespace TH.Asset.Dtos
         // Cross-service (Auth)
         public Guid reportedBy { get; set; }
         public string? reportedByName { get; set; }
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
         public Guid? slaConfigId { get; set; }
         public string? slaConfigName { get; set; }
         public Guid? purchaseRequestId { get; set; }
@@ -119,6 +121,9 @@ namespace TH.Asset.Dtos
         public Guid ticketId { get; set; }
         // Cross-service (Auth)
         public Guid assignedTo { get; set; }
+        // KTV được chọn từ danh sách (Auth userID int + tên hiển thị)
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
     }
 
     public class TicketAssignmentResponse

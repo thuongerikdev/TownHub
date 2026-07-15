@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace TH.Auth.Dtos.User
 {
+    // Thành viên của 1 vai trò — dùng cho dropdown phân công (vd Kỹ thuật viên)
+    public record RoleMemberDto(int userID, string userName, string? fullName);
+
     public class RegisterResponse
     {
         public int userID { get; set; }

@@ -647,21 +647,33 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         {
             try
             {
-                var woExists = await _dbContext.WorkOrders.AnyAsync(x => x.id == request.woId);
-                if (!woExists)
+                var wo = await _dbContext.WorkOrders.FirstOrDefaultAsync(x => x.id == request.woId);
+                if (wo == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy Work Order.");
 
-                var alreadyAssigned = await _dbContext.WorkOrderAssignments
-                    .AnyAsync(x => x.woId == request.woId && x.assignedTo == request.assignedTo);
-                if (alreadyAssigned)
-                    return ResponseConst.Error<bool>(400, "Kỹ thuật viên đã được phân công vào Work Order này.");
+                if (request.assignedToUserId.HasValue)
+                {
+                    var already = await _dbContext.WorkOrderAssignments
+                        .AnyAsync(x => x.woId == request.woId && x.assignedToUserId == request.assignedToUserId);
+                    if (already)
+                        return ResponseConst.Error<bool>(400, "Kỹ thuật viên này đã được phân công vào Work Order.");
+                }
 
                 _dbContext.WorkOrderAssignments.Add(new WorkOrderAssignment
                 {
                     woId              = request.woId,
                     assignedTo        = request.assignedTo,
+                    assignedToUserId  = request.assignedToUserId,
+                    assignedToName    = request.assignedToName,
+                    assignedAt        = DateTime.UtcNow,
                     checkinQrAssetId  = request.checkinQrAssetId
                 });
+
+                // Cập nhật KTV phụ trách hiện tại trên WO
+                wo.assignedToUserId = request.assignedToUserId;
+                wo.assignedToName   = request.assignedToName;
+                wo.updatedAt        = DateTime.UtcNow;
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Phân công kỹ thuật viên thành công.", true);
             }
@@ -792,6 +804,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             buildingId            = x.buildingId,
             status                = x.status,
             reviewerId            = x.reviewerId,
+            assignedToUserId      = x.assignedToUserId,
+            assignedToName        = x.assignedToName,
             woType                = x.woType,
             title                 = x.title,
             description           = x.description,

@@ -159,6 +159,8 @@ namespace TH.Asset.Dtos
         public Guid buildingId { get; set; }
         public string status { get; set; } = null!;
         public Guid? reviewerId { get; set; }
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
         public string woType { get; set; } = null!;
         public string? title { get; set; }
         public string? description { get; set; }
@@ -185,6 +187,9 @@ namespace TH.Asset.Dtos
         public Guid woId { get; set; }
         // Cross-service (Auth)
         public Guid assignedTo { get; set; }
+        // KTV được chọn từ danh sách (Auth userID int + tên hiển thị)
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
         public Guid? checkinQrAssetId { get; set; }
     }
 

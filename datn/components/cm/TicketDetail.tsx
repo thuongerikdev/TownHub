@@ -10,7 +10,8 @@ import {
 import { toast } from "sonner";
 import {
   tickets, slaConfigs, warehouses, materials, inventoryTransactions, purchaseRequests,
-  displayUser, EMPTY_GUID,
+  users, displayUser, EMPTY_GUID,
+  type RoleMember,
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
   type SlaConfigResponse, type UpdateTicketInput, type TicketAttachmentResponse,
   type WarehouseResponse, type MaterialResponse,
@@ -127,7 +128,8 @@ export default function TicketDetail() {
 
   // ── Assign modal state ────────────────────────────────────────────────────────
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee,   setAssignee]   = useState("");
+  const [techId,     setTechId]     = useState("");
+  const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
 
   // ── Status change modal state ─────────────────────────────────────────────────
   const [statusOpen, setStatusOpen] = useState(false);
@@ -174,19 +176,21 @@ export default function TicketDetail() {
 
   async function doAssign() {
     if (!t) return;
-    if (!assignee.trim()) { toast.error("Nhập tên KTV được phân công."); return; }
+    const tech = techQ.items.find((u) => String(u.userID) === techId);
+    if (!tech) { toast.error("Chọn kỹ thuật viên được phân công."); return; }
+    const techName = tech.fullName?.trim() || tech.userName;
     setWorking(true);
-    const res = await tickets.assign({ ticketId: t.id });
+    const res = await tickets.assign({ ticketId: t.id, assignedToUserId: tech.userID, assignedToName: techName });
     if (res.errorCode === 200) {
       await tickets.changeStatus({
         ticketId: t.id, toStatus: "ASSIGNED", fromStatus: t.status,
-        note: `Phân công cho ${assignee.trim()}`,
+        note: `Phân công cho ${techName}`,
       });
     }
     setWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã phân công KTV.");
-      setAssignOpen(false); setAssignee("");
+      setAssignOpen(false); setTechId("");
       q.refetch(); historyQ.refetch();
     } else toast.error(res.errorMessage || "Phân công thất bại.");
   }
@@ -301,6 +305,7 @@ export default function TicketDetail() {
             <span className="flex items-center gap-1"><User className="size-4" /> {t.reportedByName ?? displayUser(t.reportedBy) ?? "—"}</span>
             <span className="flex items-center gap-1"><Clock className="size-4" /> {formatDateTime(t.createdAt)}</span>
             {t.unitId && <span className="flex items-center gap-1"><MapPin className="size-4" /> {t.unitId}</span>}
+            {t.assignedToName && <span className="flex items-center gap-1"><UserPlus className="size-4" /> KTV: {t.assignedToName}</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -665,8 +670,19 @@ export default function TicketDetail() {
         submitting={working}
         submitLabel="Phân công"
       >
-        <Field label="Kỹ thuật viên" required hint="Nhập tên hoặc mã KTV phụ trách">
-          <Input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Nguyễn Văn An" />
+        <Field label="Kỹ thuật viên" required hint="Chọn KTV (người có vai trò Kỹ thuật viên)">
+          <Select value={techId} onValueChange={setTechId}>
+            <SelectTrigger>
+              <SelectValue placeholder={techQ.loading ? "Đang tải..." : techQ.items.length ? "Chọn kỹ thuật viên" : "Chưa có kỹ thuật viên"} />
+            </SelectTrigger>
+            <SelectContent>
+              {techQ.items.map((u) => (
+                <SelectItem key={u.userID} value={String(u.userID)}>
+                  {u.fullName?.trim() || u.userName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </EntityModal>
 

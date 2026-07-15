@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TH.Asset.Infrastructure.Database;
@@ -11,9 +12,11 @@ using TH.Asset.Infrastructure.Database;
 namespace TH.WebAPI.Migrations.AssetDb
 {
     [DbContext(typeof(AssetDbContext))]
-    partial class AssetDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260715160938_AssetDbContextV1")]
+    partial class AssetDbContextV1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -563,13 +566,6 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<Guid?>("assetId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("assignedToName")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int?>("assignedToUserId")
-                        .HasColumnType("integer");
-
                     b.Property<bool>("autoClosed")
                         .HasColumnType("boolean");
 
@@ -661,18 +657,8 @@ namespace TH.WebAPI.Migrations.AssetDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("assignedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("assignedTo")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("assignedToName")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int?>("assignedToUserId")
-                        .HasColumnType("integer");
 
                     b.Property<Guid>("ticketId")
                         .HasColumnType("uuid");
@@ -1542,13 +1528,6 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<Guid>("assetId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("assignedToName")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int?>("assignedToUserId")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("buildingId")
                         .HasColumnType("uuid");
 
@@ -1632,18 +1611,8 @@ namespace TH.WebAPI.Migrations.AssetDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("assignedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("assignedTo")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("assignedToName")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int?>("assignedToUserId")
-                        .HasColumnType("integer");
 
                     b.Property<Guid?>("checkinQrAssetId")
                         .HasColumnType("uuid");

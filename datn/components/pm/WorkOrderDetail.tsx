@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, EMPTY_GUID,
+  workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, users, EMPTY_GUID,
+  type RoleMember,
   type WorkOrderResponse, type UpdateWorkOrderInput,
   type WarehouseResponse, type MaterialResponse,
   type InventoryTransactionResponse, type PurchaseRequestResponse,
@@ -87,7 +88,8 @@ export default function WorkOrderDetail() {
   );
 
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee,   setAssignee]   = useState("");
+  const [techId,     setTechId]     = useState("");
+  const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
   const [assigning,  setAssigning]  = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -112,22 +114,24 @@ export default function WorkOrderDetail() {
 
   async function doAssign() {
     if (!wo) return;
-    if (!assignee.trim()) { toast.error("Nhập tên KTV được phân công."); return; }
+    const tech = techQ.items.find((u) => String(u.userID) === techId);
+    if (!tech) { toast.error("Chọn kỹ thuật viên được phân công."); return; }
+    const techName = tech.fullName?.trim() || tech.userName;
     setAssigning(true);
-    const a = await workOrders.assignTechnician({ woId: wo.id });
+    const a = await workOrders.assignTechnician({ woId: wo.id, assignedToUserId: tech.userID, assignedToName: techName });
     if (a.errorCode !== 200) {
       setAssigning(false);
       toast.error(a.errorMessage || "Phân công thất bại.");
       return;
     }
-    const note = `KTV phụ trách: ${assignee.trim()}`;
+    const note = `KTV phụ trách: ${techName}`;
     const res = await workOrders.update({
       ...woBase(wo),
       description: wo.description ? `${wo.description}\n${note}` : note,
       status: "ASSIGNED",
     });
     setAssigning(false);
-    if (res.errorCode === 200) { toast.success("Đã phân công KTV."); setAssignOpen(false); q.refetch(); }
+    if (res.errorCode === 200) { toast.success("Đã phân công KTV."); setAssignOpen(false); setTechId(""); q.refetch(); }
     else toast.error(res.errorMessage || "Phân công thất bại.");
   }
 
@@ -248,6 +252,7 @@ export default function WorkOrderDetail() {
               <Row label="Mã tài sản"><span className="font-mono text-xs">{wo.assetCode ?? "—"}</span></Row>
               <Row label="Loại công việc">{isPM ? "Bảo trì định kỳ (PM)" : "Sửa chữa (CM)"}</Row>
               <Row label="Checklist áp dụng">{wo.checklistTemplateName ?? "—"}</Row>
+              <Row label="KTV phụ trách">{wo.assignedToName ?? "—"}</Row>
             </div>
           </Section>
 
@@ -499,8 +504,19 @@ export default function WorkOrderDetail() {
         submitting={assigning}
         submitLabel="Phân công"
       >
-        <Field label="Kỹ thuật viên" required hint="Nhập tên hoặc mã KTV phụ trách">
-          <Input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Nguyễn Văn An" />
+        <Field label="Kỹ thuật viên" required hint="Chọn KTV (người có vai trò Kỹ thuật viên)">
+          <Select value={techId} onValueChange={setTechId}>
+            <SelectTrigger>
+              <SelectValue placeholder={techQ.loading ? "Đang tải..." : techQ.items.length ? "Chọn kỹ thuật viên" : "Chưa có kỹ thuật viên"} />
+            </SelectTrigger>
+            <SelectContent>
+              {techQ.items.map((u) => (
+                <SelectItem key={u.userID} value={String(u.userID)}>
+                  {u.fullName?.trim() || u.userName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </EntityModal>
 
