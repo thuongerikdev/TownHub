@@ -1,10 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TH.TownHub.Domain.Entities;
+using TH.Base.Domain.Entities; // Building (danh mục toà nhà)
 
 namespace TH.TownHub.Infrastructure.Database
 {
     public class TownHubDbContext : DbContext
     {
+        public DbSet<Building> Buildings { get; set; }
         public DbSet<Apartment> Apartments { get; set; }
         public DbSet<Resident> Residents { get; set; }
         public DbSet<FaceProfile> FaceProfiles { get; set; }

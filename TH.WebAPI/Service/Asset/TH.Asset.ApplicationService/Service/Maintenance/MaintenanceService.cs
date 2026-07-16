@@ -609,6 +609,20 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 entity.totalCost      = request.totalCost;
                 entity.updatedAt      = DateTime.UtcNow;
 
+                // Đồng bộ trạng thái tài sản theo tiến độ WO: bắt đầu thực hiện → "Đang bảo trì";
+                // đóng phiếu (nghiệm thu) → về "Đang hoạt động". Không đụng tài sản đã thanh lý/loại bỏ.
+                if (entity.status == "IN_PROGRESS" || entity.status == "COMPLETED")
+                {
+                    var asset = await _dbContext.Assets.FirstOrDefaultAsync(x => x.id == entity.assetId);
+                    if (asset != null && asset.status != "DISPOSED" && asset.status != "RETIRED")
+                    {
+                        if (entity.status == "IN_PROGRESS" && asset.status == "ACTIVE")
+                            asset.status = "MAINTENANCE";
+                        else if (entity.status == "COMPLETED" && asset.status == "MAINTENANCE")
+                            asset.status = "ACTIVE";
+                    }
+                }
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Cập nhật Work Order thành công.", true);
             }

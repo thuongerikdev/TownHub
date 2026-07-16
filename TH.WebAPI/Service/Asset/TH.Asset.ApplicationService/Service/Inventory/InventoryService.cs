@@ -1047,7 +1047,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo Purchase Order.");
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -1073,7 +1073,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật Purchase Order. ID: {Id}", request.id);
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 

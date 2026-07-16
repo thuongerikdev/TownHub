@@ -8,7 +8,9 @@ namespace TH.TownHub.Dtos
     public class CreateApartmentRequestDto
     {
         public required string code { get; set; }
-        public required string building { get; set; }
+        // Chọn toà nhà theo master (Guid). building (tên) tuỳ chọn — server tự điền theo master.
+        public Guid? buildingId { get; set; }
+        public string? building { get; set; }
         public int floor { get; set; }
         public required string unitNumber { get; set; }
         public required string type { get; set; }
@@ -27,6 +29,7 @@ namespace TH.TownHub.Dtos
         public int id { get; set; }
         public string code { get; set; } = null!;
         public string building { get; set; } = null!;
+        public Guid? buildingId { get; set; }
         public int floor { get; set; }
         public string unitNumber { get; set; } = null!;
         public string type { get; set; } = null!;

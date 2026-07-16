@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { apartments, residents, users } from "@/lib/api";
-import type { ApartmentResponse, ResidentResponse, GetUserResponse } from "@/lib/api";
+import { apartments, residents, users, buildings } from "@/lib/api";
+import type { ApartmentResponse, ResidentResponse, GetUserResponse, BuildingResponse } from "@/lib/api";
 import type { ApartmentInfo } from "@/components/Building3DModel";
 
 const Building3DModel = dynamic(() => import("@/components/Building3DModel"), { ssr: false });
@@ -105,6 +105,13 @@ export default function ApartmentsPage() {
   const [selectedBuilding, setSelectedBuilding] = useState("Tòa A");
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  // Danh mục toà nhà lấy từ Base (master data). Fallback về danh sách cũ nếu Base chưa có.
+  const [buildingOptions, setBuildingOptions] = useState<string[]>(BUILDINGS);
+  const [buildingObjs, setBuildingObjs] = useState<BuildingResponse[]>([]);
+  const buildingIdOf = useCallback(
+    (name: string) => buildingObjs.find((b) => b.name === name)?.id,
+    [buildingObjs],
+  );
 
   // Create apartment modal
   const [showCreate, setShowCreate] = useState(false);
@@ -139,7 +146,8 @@ export default function ApartmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apartments.getAll({ building: selectedBuilding });
+      const bid = buildingIdOf(selectedBuilding);
+      const res = await apartments.getAll(bid ? { buildingId: bid } : { building: selectedBuilding });
       if (res.errorCode === 200) {
         const list = res.data ?? [];
         setData(list);
@@ -153,12 +161,28 @@ export default function ApartmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBuilding]);
+  }, [selectedBuilding, buildingIdOf]);
 
   useEffect(() => {
     setSelectedFloor(null);
     fetchApartments();
-  }, [selectedBuilding]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedBuilding, buildingObjs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Nạp danh mục toà nhà từ Base ───────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await buildings.getAll();
+        const list = res.errorCode === 200 ? res.data ?? [] : [];
+        const names = list.map((b: BuildingResponse) => b.name).filter(Boolean);
+        if (names.length > 0) {
+          setBuildingObjs(list);
+          setBuildingOptions(names);
+          setSelectedBuilding((prev) => (names.includes(prev) ? prev : names[0]));
+        }
+      } catch { /* giữ fallback danh sách cũ */ }
+    })();
+  }, []);
 
   // ── Fetch residents for selected apartment ────────────────────────────────
   const fetchResidents = useCallback(async (aptId: number) => {
@@ -192,7 +216,7 @@ export default function ApartmentsPage() {
     setAptSubmitting(true);
     try {
       const res = await apartments.create({
-        code: aptForm.code, building: aptForm.building,
+        code: aptForm.code, building: aptForm.building, buildingId: buildingIdOf(aptForm.building),
         floor: Number(aptForm.floor), unitNumber: aptForm.unitNumber,
         type: aptForm.type, areaM2: Number(aptForm.areaM2),
         status: aptForm.status, note: aptForm.note || undefined,
@@ -364,7 +388,7 @@ export default function ApartmentsPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="bg-[#111] border border-white/10 rounded-xl p-1 flex">
-            {BUILDINGS.map((b) => (
+            {buildingOptions.map((b) => (
               <button key={b} onClick={() => setSelectedBuilding(b)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${b === selectedBuilding ? "bg-indigo-500/20 text-indigo-400" : "text-zinc-400 hover:text-white"}`}>
                 {b}
@@ -889,7 +913,7 @@ export default function ApartmentsPage() {
                     <label className="text-xs text-zinc-400 font-medium mb-1.5 block">Tòa nhà</label>
                     <select value={aptForm.building} onChange={(e) => setAptForm((p) => ({ ...p, building: e.target.value }))}
                       className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50">
-                      {BUILDINGS.map((b) => <option key={b} value={b}>{b}</option>)}
+                      {buildingOptions.map((b) => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                   <InputField label="Tầng" required type="number" min={1} value={aptForm.floor}

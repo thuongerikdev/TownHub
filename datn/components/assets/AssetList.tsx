@@ -390,7 +390,7 @@ export default function AssetList() {
               <Field label="Vòng đời (tháng)">
                 <Input type="number" value={form.usefulLifeMonths} onChange={(e) => patch({ usefulLifeMonths: e.target.value })} placeholder="120" />
               </Field>
-              <Field label="Giá trị thanh lý (₫)">
+              <Field label="Giá trị thu hồi ước tính (₫)">
                 <Input type="number" value={form.salvageValue} onChange={(e) => patch({ salvageValue: e.target.value })} placeholder="0" />
               </Field>
               <Field label="Phương pháp khấu hao">

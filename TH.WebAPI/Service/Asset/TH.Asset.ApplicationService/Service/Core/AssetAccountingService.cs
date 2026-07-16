@@ -251,14 +251,14 @@ namespace TH.Asset.ApplicationService.Service.Core
                     {
                         await transaction.RollbackAsync();
                         _logger.LogError(exTx, "Lỗi khi tạo phiếu thanh lý.");
-                        return ResponseConst.Error<AssetDisposalResponse>(500, "Lỗi hệ thống: " + exTx.Message);
+                        return ResponseConst.Error<AssetDisposalResponse>(500, "Lỗi hệ thống: " + (exTx.InnerException?.Message ?? exTx.Message));
                     }
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo phiếu thanh lý.");
-                return ResponseConst.Error<AssetDisposalResponse>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<AssetDisposalResponse>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 

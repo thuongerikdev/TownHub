@@ -14,6 +14,38 @@ using AssetEntity = TH.Asset.Domain.Core.Asset;
 
 namespace TH.Asset.ApplicationService.Service.Core
 {
+    // Trạng thái tài sản + ràng buộc chuyển trạng thái.
+    //   ACTIVE (đang hoạt động) · MAINTENANCE (đang bảo trì) · INACTIVE (ngừng hoạt động)
+    //   BROKEN (hỏng hóc) · DISPOSED (đã thanh lý) · RETIRED (đã loại bỏ)
+    // DISPOSED chỉ được đặt qua nghiệp vụ thanh lý (sinh chứng từ kế toán), KHÔNG cho đổi tay.
+    // DISPOSED/RETIRED là trạng thái cuối.
+    public static class AssetStatus
+    {
+        public const string Active = "ACTIVE";
+        public const string Maintenance = "MAINTENANCE";
+        public const string Inactive = "INACTIVE";
+        public const string Broken = "BROKEN";
+        public const string Disposed = "DISPOSED";
+        public const string Retired = "RETIRED";
+
+        private static readonly Dictionary<string, HashSet<string>> _allowed = new()
+        {
+            [Active]      = new() { Maintenance, Inactive, Broken, Retired },
+            [Maintenance] = new() { Active, Broken, Retired },
+            [Inactive]    = new() { Active, Broken, Retired },
+            [Broken]      = new() { Maintenance, Active, Retired },
+            [Disposed]    = new(),
+            [Retired]     = new(),
+        };
+
+        // Chuyển trạng thái thủ công (qua form Sửa). DISPOSED không nằm trong tập đích → chặn đổi tay.
+        public static bool CanTransition(string from, string to)
+        {
+            if (from == to) return true;
+            return _allowed.TryGetValue(from, out var next) && next.Contains(to);
+        }
+    }
+
     // ============================================================
     // ASSET SERVICE
     // ============================================================
@@ -65,6 +97,20 @@ namespace TH.Asset.ApplicationService.Service.Core
                     var parentExists = await _dbContext.Assets.AnyAsync(x => x.id == request.parentAssetId.Value);
                     if (!parentExists)
                         return ResponseConst.Error<bool>(400, "Tài sản cha không tồn tại.");
+                }
+
+                // Validate các FK có ràng buộc trong schema asset → trả 400 rõ ràng thay vì 500 (DbUpdateException).
+                if (request.vendorId.HasValue)
+                {
+                    var vendorExists = await _dbContext.Vendors.AnyAsync(x => x.id == request.vendorId.Value);
+                    if (!vendorExists)
+                        return ResponseConst.Error<bool>(400, "Nhà cung cấp không tồn tại.");
+                }
+                if (request.vendorContractId.HasValue)
+                {
+                    var contractExists = await _dbContext.VendorContracts.AnyAsync(x => x.id == request.vendorContractId.Value);
+                    if (!contractExists)
+                        return ResponseConst.Error<bool>(400, "Hợp đồng nhà cung cấp không tồn tại.");
                 }
 
                 var entity = new AssetEntity
@@ -147,14 +193,14 @@ namespace TH.Asset.ApplicationService.Service.Core
                     {
                         await transaction.RollbackAsync();
                         _logger.LogError(exTx, "Lỗi khi tạo tài sản / sinh chứng từ ghi tăng.");
-                        return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + exTx.Message);
+                        return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (exTx.InnerException?.Message ?? exTx.Message));
                     }
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo tài sản.");
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -175,6 +221,15 @@ namespace TH.Asset.ApplicationService.Service.Core
                     return ResponseConst.Error<bool>(400, "Vui lòng chọn danh mục tài sản.");
                 if (request.buildingId == Guid.Empty)
                     return ResponseConst.Error<bool>(400, "Thiếu thông tin toà nhà của tài sản.");
+
+                // Ràng buộc chuyển trạng thái. Thanh lý (DISPOSED) phải qua nghiệp vụ thanh lý riêng.
+                if (!string.IsNullOrWhiteSpace(request.status) && entity.status != request.status)
+                {
+                    if (request.status == AssetStatus.Disposed)
+                        return ResponseConst.Error<bool>(400, "Không thể chuyển 'Đã thanh lý' bằng cách sửa tài sản — hãy dùng chức năng Thanh lý để sinh chứng từ.");
+                    if (!AssetStatus.CanTransition(entity.status, request.status))
+                        return ResponseConst.Error<bool>(400, $"Không thể chuyển trạng thái tài sản từ '{entity.status}' sang '{request.status}'.");
+                }
 
                 if (entity.assetCode != request.assetCode)
                 {
@@ -1003,8 +1058,31 @@ namespace TH.Asset.ApplicationService.Service.Core
                     if (accBefore >= depreciable) continue; // đã khấu hao hết
 
                     int life = a.usefulLifeMonths!.Value;
-                    decimal monthly = Math.Round(depreciable / life, 0, MidpointRounding.AwayFromZero);
-                    decimal amount = Math.Min(monthly, depreciable - accBefore); // kỳ cuối gánh phần dư
+                    decimal remainingBase = depreciable - accBefore;        // phần còn phải khấu hao
+                    int elapsed = periodIndex - startIndex;                  // số tháng đã trôi (kỳ này là kỳ thứ elapsed, 0-based)
+                    int remainingMonths = Math.Max(1, life - elapsed);       // >=1 để kỳ cuối gánh hết phần dư
+
+                    decimal amount;
+                    if (string.Equals(a.depreciationMethod, "DECLINING_BALANCE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Số dư giảm dần có điều chỉnh (TT45/2013): hệ số theo số năm sử dụng, áp lên
+                        // giá trị còn lại; tự chuyển sang đường thẳng khi mức đó lớn hơn để khấu hao hết
+                        // đúng vòng đời.
+                        decimal years   = life / 12m;
+                        decimal factor  = years <= 4m ? 1.5m : (years <= 6m ? 2.0m : 2.5m);
+                        decimal monthlyRate = factor / life;
+                        decimal bookBefore  = a.purchasePrice!.Value - accBefore; // giá trị còn lại theo nguyên giá
+                        decimal declining   = bookBefore * monthlyRate;
+                        decimal straightLine = remainingBase / remainingMonths;
+                        amount = Math.Round(Math.Max(declining, straightLine), 0, MidpointRounding.AwayFromZero);
+                    }
+                    else
+                    {
+                        // Đường thẳng: khấu hao đều theo vòng đời.
+                        amount = Math.Round(depreciable / life, 0, MidpointRounding.AwayFromZero);
+                    }
+
+                    amount = Math.Min(amount, remainingBase); // kỳ cuối gánh phần dư, không vượt quá giá trị phải khấu hao
                     if (amount <= 0m) continue;
 
                     plan.Add((a, amount, accBefore));

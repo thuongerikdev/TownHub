@@ -50,7 +50,7 @@ export interface Permission {
   permissionID: number; permissionName: string; permissionDescription: string; code: string; scope?: string;
 }
 export interface ApartmentResponse {
-  id: number; code: string; building: string; floor: number; unitNumber: string;
+  id: number; code: string; building: string; buildingId?: string; floor: number; unitNumber: string;
   type: string; areaM2: number; status: string; note?: string; createdAt: string;
 }
 export interface ResidentResponse {
@@ -447,14 +447,15 @@ export const permissions = {
 
 // ─── Apartments ───────────────────────────────────────────────────────────────
 export const apartments = {
-  getAll: (params?: { building?: string; status?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
+  getAll: (params?: { building?: string; status?: string; buildingId?: string }) => {
+    const clean = Object.fromEntries(Object.entries(params ?? {}).filter(([, v]) => v != null && v !== ""));
+    const q = new URLSearchParams(clean as Record<string, string>).toString();
     return apiFetch<ApartmentResponse[]>(`/api/Apartment/get-all${q ? "?" + q : ""}`);
   },
   getById: (id: number) => apiFetch<ApartmentResponse>(`/api/Apartment/get/${id}`),
-  create: (body: { code: string; building: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
+  create: (body: { code: string; building?: string; buildingId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/create", { method: "POST", body: JSON.stringify(body) }),
-  update: (body: { id: number; code: string; building: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
+  update: (body: { id: number; code: string; building?: string; buildingId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/update", { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: number) => apiFetch<boolean>(`/api/Apartment/delete/${id}`, { method: "DELETE" }),
 };
@@ -962,6 +963,24 @@ export const assetCategories = {
     apiFetch<boolean>(`/api/asset/asset-category/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/asset-category/delete/${id}`, { method: "DELETE" }),
 };
+// ─── Base: Toà nhà (master data, dùng cho vị trí tài sản) ──────────────────────
+export interface BuildingResponse {
+  id: string; code: string; name: string; totalFloors: number; totalUnits: number; managementCompany?: string;
+}
+export interface CreateBuildingInput {
+  code: string; name: string; totalFloors?: number; totalUnits?: number; managementCompany?: string;
+}
+export interface UpdateBuildingInput extends CreateBuildingInput { id: string; }
+export const buildings = {
+  getAll: () => apiFetch<BuildingResponse[]>(`/api/building/get-all`, {}),
+  getById: (id: string) => apiFetch<BuildingResponse>(`/api/building/get/${id}`, {}),
+  create: (body: CreateBuildingInput) =>
+    apiFetch<boolean>(`/api/building/create`, { method: "POST", body: JSON.stringify(body) }),
+  update: (body: UpdateBuildingInput) =>
+    apiFetch<boolean>(`/api/building/update`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => apiFetch<boolean>(`/api/building/delete/${id}`, { method: "DELETE" }),
+};
+
 export const assetLocations = {
   getAll: (buildingId?: string) =>
     apiFetch<AssetLocationResponse[]>(`/api/asset/asset-location/get-all${qs({ buildingId })}`, {}),

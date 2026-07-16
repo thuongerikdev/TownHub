@@ -17,7 +17,7 @@ namespace TH.TownHub.ApplicationService.Service
         Task<ResponseDto<bool>> CreateAsync(CreateApartmentRequestDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdateApartmentRequestDto request);
         Task<ResponseDto<bool>> DeleteAsync(int id);
-        Task<ResponseDto<List<ApartmentResponse>>> GetAllAsync(string? building = null, string? status = null);
+        Task<ResponseDto<List<ApartmentResponse>>> GetAllAsync(string? building = null, string? status = null, Guid? buildingId = null);
         Task<ResponseDto<ApartmentResponse>> GetByIdAsync(int id);
     }
 
@@ -25,6 +25,19 @@ namespace TH.TownHub.ApplicationService.Service
     {
         public ApartmentService(ILogger<ApartmentService> logger, TownHubDbContext dbContext)
             : base(logger, dbContext) { }
+
+        // Suy tên toà nhà theo master khi có buildingId (đồng bộ tên hiển thị). Trả (tên, lỗi).
+        private async Task<(string name, string? error)> ResolveBuildingAsync(Guid? buildingId, string? fallbackName)
+        {
+            if (buildingId.HasValue)
+            {
+                var b = await _dbContext.Buildings.FirstOrDefaultAsync(x => x.id == buildingId.Value);
+                if (b == null) return ("", "Toà nhà không tồn tại.");
+                return (b.name, null);
+            }
+            if (!string.IsNullOrWhiteSpace(fallbackName)) return (fallbackName!, null);
+            return ("", "Vui lòng chọn toà nhà.");
+        }
 
         public async Task<ResponseDto<bool>> CreateAsync(CreateApartmentRequestDto request)
         {
@@ -34,10 +47,14 @@ namespace TH.TownHub.ApplicationService.Service
                 if (isExist)
                     return ResponseConst.Error<bool>(400, "Mã căn hộ đã tồn tại.");
 
+                var (bName, bErr) = await ResolveBuildingAsync(request.buildingId, request.building);
+                if (bErr != null) return ResponseConst.Error<bool>(400, bErr);
+
                 var entity = new Apartment
                 {
                     Code = request.code,
-                    Building = request.building,
+                    Building = bName,
+                    BuildingId = request.buildingId,
                     Floor = request.floor,
                     UnitNumber = request.unitNumber,
                     Type = request.type,
@@ -73,8 +90,12 @@ namespace TH.TownHub.ApplicationService.Service
                         return ResponseConst.Error<bool>(400, "Mã căn hộ mới đã tồn tại.");
                 }
 
+                var (bName, bErr) = await ResolveBuildingAsync(request.buildingId, request.building);
+                if (bErr != null) return ResponseConst.Error<bool>(400, bErr);
+
                 entity.Code = request.code;
-                entity.Building = request.building;
+                entity.Building = bName;
+                entity.BuildingId = request.buildingId;
                 entity.Floor = request.floor;
                 entity.UnitNumber = request.unitNumber;
                 entity.Type = request.type;
@@ -123,13 +144,16 @@ namespace TH.TownHub.ApplicationService.Service
             }
         }
 
-        public async Task<ResponseDto<List<ApartmentResponse>>> GetAllAsync(string? building = null, string? status = null)
+        public async Task<ResponseDto<List<ApartmentResponse>>> GetAllAsync(string? building = null, string? status = null, Guid? buildingId = null)
         {
             try
             {
                 var query = _dbContext.Apartments.AsQueryable();
 
-                if (!string.IsNullOrEmpty(building))
+                // Ưu tiên lọc theo buildingId (master); fallback lọc theo tên để tương thích cũ.
+                if (buildingId.HasValue)
+                    query = query.Where(x => x.BuildingId == buildingId.Value);
+                else if (!string.IsNullOrEmpty(building))
                     query = query.Where(x => x.Building == building);
 
                 if (!string.IsNullOrEmpty(status))
@@ -142,6 +166,7 @@ namespace TH.TownHub.ApplicationService.Service
                         id = x.Id,
                         code = x.Code,
                         building = x.Building,
+                        buildingId = x.BuildingId,
                         floor = x.Floor,
                         unitNumber = x.UnitNumber,
                         type = x.Type,
@@ -172,6 +197,7 @@ namespace TH.TownHub.ApplicationService.Service
                         id = x.Id,
                         code = x.Code,
                         building = x.Building,
+                        buildingId = x.BuildingId,
                         floor = x.Floor,
                         unitNumber = x.UnitNumber,
                         type = x.Type,
