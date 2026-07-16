@@ -114,7 +114,8 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreateWorkOrderDto
     {
-        public required string woCode { get; set; }
+        // Mã WO do server sinh — client không cần gửi.
+        public string? woCode { get; set; }
         public Guid assetId { get; set; }
         public Guid? scheduleId { get; set; }
         public Guid checklistTemplateId { get; set; }

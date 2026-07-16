@@ -234,7 +234,8 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreatePurchaseOrderDto
     {
-        public required string poCode { get; set; }
+        // Mã PO do server sinh — client không cần gửi.
+        public string? poCode { get; set; }
         public Guid? prId { get; set; }
         public Guid vendorId { get; set; }
         public DateTime? issueDate { get; set; }
