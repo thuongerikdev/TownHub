@@ -1,10 +1,11 @@
 ﻿'use client';
 
 import { useRouter, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { ArrowLeft, QrCode, Wrench, Ticket, Package, TrendingDown } from 'lucide-react';
+import { ArrowLeft, QrCode, Wrench, Ticket, Package, TrendingDown, Download, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   assetApi, workOrders as woApi, checklistTemplates,
   type AssetResponse, type ChecklistTemplateResponse, type CreateWorkOrderInput,
@@ -67,6 +68,25 @@ export default function AssetDetail() {
   const [woSubmitting, setWoSubmitting] = useState(false);
   const [woForm, setWoForm] = useState(emptyWoForm);
 
+  const [qrOpen, setQrOpen] = useState(false);
+  const qrValue = asset ? `QR-${asset.assetCode}` : '';
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!qrOpen || !asset) return;
+    (async () => {
+      try {
+        const QRCode = (await import('qrcode')).default;
+        const url = await QRCode.toDataURL(qrValue, {
+          width: 256, margin: 2, errorCorrectionLevel: 'M',
+          color: { dark: '#000000', light: '#ffffff' },
+        });
+        if (!cancelled) setQrDataUrl(url);
+      } catch { if (!cancelled) setQrDataUrl(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [qrOpen, asset, qrValue]);
+
   function openWo() {
     if (!asset) { toast.error('Chưa tải được thông tin tài sản.'); return; }
     setWoForm({
@@ -112,7 +132,7 @@ export default function AssetDetail() {
           <p className="text-sm text-zinc-500 mt-1">{asset ? `${asset.assetCode}${asset.categoryName ? ' · ' + asset.categoryName : ''}${asset.locationAreaCode ? ' · ' + asset.locationAreaCode : ''}` : ''}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.info('QR code')} className="flex items-center gap-1.5 px-3 py-2 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-950 text-sm font-medium transition-colors">
+          <button onClick={() => { if (!asset) { toast.error('Chưa tải được thông tin tài sản.'); return; } setQrOpen(true); }} className="flex items-center gap-1.5 px-3 py-2 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-950 text-sm font-medium transition-colors">
             <QrCode className="w-4 h-4" /> QR Code
           </button>
           <button onClick={openWo} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
@@ -404,6 +424,40 @@ export default function AssetDetail() {
           <Field label="Mô tả công việc" className="col-span-2">
             <Textarea rows={3} value={woForm.description} onChange={(e) => setWoForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
+        </div>
+      </EntityModal>
+
+      <EntityModal
+        open={qrOpen}
+        onOpenChange={setQrOpen}
+        title="Mã QR tài sản"
+        description={asset?.name ?? ''}
+        size="sm"
+        footer={
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border px-6 py-4">
+            <Button variant="outline" onClick={() => setQrOpen(false)}>Đóng</Button>
+            <Button variant="outline" disabled={!qrDataUrl} onClick={() => { if (!qrDataUrl || !asset) return; const a = document.createElement('a'); a.href = qrDataUrl; a.download = `qr-${asset.assetCode}.png`; a.click(); }}>
+              <Download className="size-4" /> Tải PNG
+            </Button>
+            <Button onClick={() => { navigator.clipboard?.writeText(qrValue); toast.success('Đã sao chép mã QR.'); }}>
+              <Copy className="size-4" /> Sao chép mã
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center gap-4 py-2">
+          <div className="flex size-52 items-center justify-center rounded-xl border border-border bg-white p-3">
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrDataUrl} alt={`Mã QR ${qrValue}`} width={208} height={208} className="size-full" />
+            ) : (
+              <QrCode className="size-24 animate-pulse text-muted-foreground" />
+            )}
+          </div>
+          <code className="rounded-md bg-muted px-3 py-1.5 font-mono text-sm text-foreground">{qrValue}</code>
+          <p className="text-center text-xs text-muted-foreground">
+            Dán mã này lên tài sản. Kỹ thuật viên quét ở mục <strong className="text-foreground">Quét mã QR</strong> / Check-in để mở nhanh hồ sơ.
+          </p>
         </div>
       </EntityModal>
     </div>
