@@ -75,18 +75,28 @@ namespace TH.Auth.Infrastructure.Repository.User
         }
 
         // Lấy user thuộc 1 vai trò (theo tên role) — nhẹ, chỉ id/username/họ tên.
-        public Task<List<RoleMemberDto>> GetMembersByRoleNameAsync(string roleName, CancellationToken ct)
-            => _db.authUsers
+        public async Task<List<RoleMemberDto>> GetMembersByRoleNameAsync(string roleName, CancellationToken ct)
+        {
+            // OrderBy trên entity + chiếu anonymous để EF dịch được; ghép tên ở bộ nhớ.
+            var rows = await _db.authUsers
                 .AsNoTracking()
                 .Where(u => u.userRoles.Any(ur => ur.role.roleName == roleName))
-                .Select(u => new RoleMemberDto(
+                .OrderBy(u => u.userName)
+                .Select(u => new
+                {
                     u.userID,
                     u.userName,
-                    u.profile == null
-                        ? null
-                        : (u.profile.firstName + " " + u.profile.lastName).Trim()))
-                .OrderBy(x => x.userName)
+                    firstName = u.profile != null ? u.profile.firstName : null,
+                    lastName = u.profile != null ? u.profile.lastName : null,
+                })
                 .ToListAsync(ct);
+
+            return rows.Select(r =>
+            {
+                var full = $"{r.firstName} {r.lastName}".Trim();
+                return new RoleMemberDto(r.userID, r.userName, string.IsNullOrWhiteSpace(full) ? null : full);
+            }).ToList();
+        }
 
         // >>> NEW: trả DTO để không loop
         public Task<List<UserSlimDto>> GetAllSlimAsync(CancellationToken ct)
