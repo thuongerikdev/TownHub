@@ -336,6 +336,20 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         public MaintenanceScheduleService(ILogger<MaintenanceScheduleService> logger, AssetDbContext dbContext)
             : base(logger, dbContext) { }
 
+        // Ép DateTime về Kind=Utc để Npgsql ghi được vào cột timestamptz (ngày client gửi
+        // thường có Kind=Unspecified). Local → chuyển múi giờ; còn lại giữ nguyên mốc, gắn Utc.
+        private static DateTime? AsUtc(DateTime? value)
+        {
+            if (value is null) return null;
+            var d = value.Value;
+            return d.Kind switch
+            {
+                DateTimeKind.Utc => d,
+                DateTimeKind.Local => d.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(d, DateTimeKind.Utc),
+            };
+        }
+
         public async Task<ResponseDto<bool>> CreateAsync(CreateMaintenanceScheduleDto request)
         {
             try
@@ -348,16 +362,27 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 if (!templateExists)
                     return ResponseConst.Error<bool>(400, "Mẫu checklist không tồn tại.");
 
+                // autoAssignDepartmentId là tham chiếu cross-service (Base) — KHÔNG có FK trong
+                // schema asset; nếu Guid.Empty lọt vào thì coi như null để tránh dữ liệu rác.
+                var autoDept = request.autoAssignDepartmentId == Guid.Empty ? null : request.autoAssignDepartmentId;
+
+                // Ngày từ client (vd "2026-07-16") có Kind=Unspecified → Npgsql từ chối ghi vào cột
+                // timestamptz. Ép về UTC trước khi lưu (coi ngày lịch là mốc UTC).
+                var startDate = AsUtc(request.startDate);
+                var endDate = AsUtc(request.endDate);
+
                 _dbContext.MaintenanceSchedules.Add(new MaintenanceSchedule
                 {
                     assetId                = request.assetId,
                     scheduleType           = request.scheduleType,
                     checklistTemplateId    = request.checklistTemplateId,
-                    autoAssignDepartmentId = request.autoAssignDepartmentId,
+                    autoAssignDepartmentId = autoDept,
                     frequencyType          = request.frequencyType,
                     frequencyDays          = request.frequencyDays,
-                    startDate              = request.startDate,
-                    endDate                = request.endDate,
+                    startDate              = startDate,
+                    endDate                = endDate,
+                    // Lần đến hạn đầu tiên = ngày bắt đầu → lịch mới hiện ngay trong danh sách "đến hạn".
+                    nextDueDate            = startDate,
                     leadTimeDays           = request.leadTimeDays,
                     isActive               = request.isActive,
                     description            = request.description
@@ -368,7 +393,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo lịch bảo trì.");
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                // Với DbUpdateException, nguyên nhân thật nằm ở InnerException (constraint/kiểu dữ liệu).
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -385,10 +411,10 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 entity.autoAssignDepartmentId = request.autoAssignDepartmentId;
                 entity.frequencyType          = request.frequencyType;
                 entity.frequencyDays          = request.frequencyDays;
-                entity.startDate              = request.startDate;
-                entity.endDate                = request.endDate;
-                entity.nextDueDate            = request.nextDueDate;
-                entity.lastExecutedAt         = request.lastExecutedAt;
+                entity.startDate              = AsUtc(request.startDate);
+                entity.endDate                = AsUtc(request.endDate);
+                entity.nextDueDate            = AsUtc(request.nextDueDate);
+                entity.lastExecutedAt         = AsUtc(request.lastExecutedAt);
                 entity.lastWoId               = request.lastWoId;
                 entity.leadTimeDays           = request.leadTimeDays;
                 entity.isActive               = request.isActive;
@@ -400,7 +426,7 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật lịch bảo trì. ID: {Id}", request.id);
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
