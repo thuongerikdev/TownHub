@@ -37,6 +37,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   {
     section: "CƯ DÂN & CĂN HỘ",
     items: [
+      { icon: Building2, label: "Toà nhà", path: "/assets/buildings", perm: "asset.view" },
       { icon: Building2, label: "Căn hộ", path: "/apartments", perm: "apartment.view" },
       { icon: Users, label: "Tài khoản cư dân", path: "/residents", perm: "resident.view" },
       { icon: Briefcase, label: "Nhà cung cấp dịch vụ", path: "/providers" },
@@ -57,7 +58,6 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
           { label: "Danh sách tài sản", path: "/assets", perm: "asset.view" },
           { label: "Quét mã QR", path: "/assets/scan", perm: "asset.view" },
           { label: "Danh mục", path: "/assets/categories", perm: "asset.view" },
-          { label: "Toà nhà", path: "/assets/buildings", perm: "asset.view" },
           { label: "Vị trí tài sản", path: "/assets/locations", perm: "asset.view" },
           { label: "Cấu hình Checklist", path: "/assets/checklists", perm: "asset.view" },
           { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
