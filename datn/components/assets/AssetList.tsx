@@ -8,8 +8,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  assetApi, assetCategories, assetLocations, assetQrCodes, BUILDING_ID,
+  assetApi, assetCategories, assetLocations, assetQrCodes, buildings, BUILDING_ID,
   type AssetResponse, type CreateAssetInput, type UpdateAssetInput,
+  type BuildingResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockAssets, mockAssetCategories, mockAssetLocations } from "@/lib/mock/asset";
@@ -79,6 +80,7 @@ export default function AssetList() {
   const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll(), { mock: mockAssets });
   const catsQ = useApiList(() => assetCategories.getAll(), { mock: mockAssetCategories });
   const locsQ = useApiList(() => assetLocations.getAll(), { mock: mockAssetLocations });
+  const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -98,9 +100,11 @@ export default function AssetList() {
   const cats = catsQ.items;
   const locs = locsQ.items;
 
-  // Toà nhà là tham chiếu cross-service (không có endpoint riêng) → suy ra từ dữ liệu
-  // đã có (vị trí + tài sản) và luôn kèm toà nhà mặc định để tránh phải gõ GUID tay.
+  // Ưu tiên danh mục toà nhà từ Base (/api/building). Nếu chưa có dữ liệu thì fallback:
+  // suy ra từ vị trí + tài sản sẵn có, luôn kèm toà nhà mặc định để tránh gõ GUID tay.
   const buildingOptions = useMemo(() => {
+    if (buildingsQ.items.length > 0)
+      return buildingsQ.items.map((b) => ({ id: b.id, label: b.name }));
     const ids = new Set<string>([BUILDING_ID]);
     for (const l of locs) if (l.buildingId) ids.add(l.buildingId);
     for (const a of assets) if (a.buildingId) ids.add(a.buildingId);
@@ -108,7 +112,13 @@ export default function AssetList() {
       id,
       label: id === BUILDING_ID ? "Toà nhà chính" : `Toà nhà ${id.slice(0, 8)}…`,
     }));
-  }, [locs, assets]);
+  }, [buildingsQ.items, locs, assets]);
+
+  // Vị trí lọc theo toà nhà đang chọn — chỉ hiện vị trí thuộc toà nhà đó.
+  const locationOptions = useMemo(
+    () => locs.filter((l) => l.buildingId === form.buildingId),
+    [locs, form.buildingId],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -157,6 +167,11 @@ export default function AssetList() {
 
   function patch(p: Partial<FormState>) {
     setForm((f) => ({ ...f, ...p }));
+  }
+  function onBuildingChange(buildingId: string) {
+    // Đổi toà nhà → bỏ vị trí cũ nếu không thuộc toà nhà mới.
+    const keep = locs.find((l) => l.id === form.locationId)?.buildingId === buildingId;
+    patch({ buildingId, locationId: keep ? form.locationId : "" });
   }
   function onLocationChange(locationId: string) {
     const loc = locs.find((l) => l.id === locationId);
@@ -337,11 +352,19 @@ export default function AssetList() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Vị trí">
-                <Select value={form.locationId} onValueChange={onLocationChange}>
+              <Field label="Toà nhà" required>
+                <Select value={form.buildingId} onValueChange={onBuildingChange}>
+                  <SelectTrigger><SelectValue placeholder="Chọn toà nhà" /></SelectTrigger>
+                  <SelectContent>
+                    {buildingOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Vị trí" hint={locationOptions.length === 0 ? "Toà nhà này chưa có vị trí." : "Chọn toà nhà trước để lọc vị trí."}>
+                <Select value={form.locationId} onValueChange={onLocationChange} disabled={!form.buildingId}>
                   <SelectTrigger><SelectValue placeholder="Chọn vị trí" /></SelectTrigger>
                   <SelectContent>
-                    {locs.map((l) => <SelectItem key={l.id} value={l.id}>{l.areaCode ?? l.id}</SelectItem>)}
+                    {locationOptions.map((l) => <SelectItem key={l.id} value={l.id}>{l.areaCode ?? l.id}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -363,14 +386,6 @@ export default function AssetList() {
               </Field>
               <Field label="Số serial">
                 <Input value={form.serialNumber} onChange={(e) => patch({ serialNumber: e.target.value })} placeholder="SN-..." />
-              </Field>
-              <Field label="Toà nhà" required hint="Tự điền theo vị trí đã chọn.">
-                <Select value={form.buildingId} onValueChange={(v) => patch({ buildingId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Chọn toà nhà" /></SelectTrigger>
-                  <SelectContent>
-                    {buildingOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
               </Field>
             </div>
           </div>
