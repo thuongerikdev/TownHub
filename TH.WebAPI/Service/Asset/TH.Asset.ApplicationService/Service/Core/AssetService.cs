@@ -63,13 +63,28 @@ namespace TH.Asset.ApplicationService.Service.Core
         public AssetService(ILogger<AssetService> logger, AssetDbContext dbContext)
             : base(logger, dbContext) { }
 
+        // Sinh mã tài sản dạng AST-{năm}-{số thứ tự 4 chữ số}, tự tăng theo dữ liệu hiện có.
+        private async Task<string> NextAssetCodeAsync(int year)
+        {
+            var prefix = $"AST-{year}-";
+            var codes = await _dbContext.Assets
+                .Where(x => x.assetCode.StartsWith(prefix))
+                .Select(x => x.assetCode)
+                .ToListAsync();
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D4}";
+        }
+
         public async Task<ResponseDto<bool>> CreateAsync(CreateAssetDto request)
         {
             try
             {
                 // Chặn sớm dữ liệu rỗng/không hợp lệ → trả lỗi rõ ràng thay vì 400 model-binding khó hiểu.
-                if (string.IsNullOrWhiteSpace(request.assetCode))
-                    return ResponseConst.Error<bool>(400, "Mã tài sản không được để trống.");
                 if (string.IsNullOrWhiteSpace(request.name))
                     return ResponseConst.Error<bool>(400, "Tên tài sản không được để trống.");
                 if (request.categoryId == Guid.Empty)
@@ -77,9 +92,8 @@ namespace TH.Asset.ApplicationService.Service.Core
                 if (request.buildingId == Guid.Empty)
                     return ResponseConst.Error<bool>(400, "Thiếu thông tin toà nhà của tài sản.");
 
-                var codeExists = await _dbContext.Assets.AnyAsync(x => x.assetCode == request.assetCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã tài sản '{request.assetCode}' đã tồn tại.");
+                // Mã tài sản do SERVER sinh tự động (client không nhập tay).
+                request.assetCode = await NextAssetCodeAsync(DateTime.UtcNow.Year);
 
                 var categoryExists = await _dbContext.AssetCategories.AnyAsync(x => x.id == request.categoryId);
                 if (!categoryExists)

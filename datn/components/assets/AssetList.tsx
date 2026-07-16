@@ -194,7 +194,7 @@ export default function AssetList() {
   }
 
   async function submitForm() {
-    if (!form.assetCode.trim() || !form.name.trim()) { toast.error("Nhập mã và tên tài sản."); return; }
+    if (!form.name.trim()) { toast.error("Nhập tên tài sản."); return; }
     if (!form.categoryId) { toast.error("Chọn danh mục tài sản."); return; }
     if (!form.buildingId.trim()) { toast.error("Thiếu mã toà nhà (chọn vị trí hoặc nhập thủ công)."); return; }
 
@@ -354,8 +354,8 @@ export default function AssetList() {
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thông tin chung</p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Mã tài sản" required>
-                <Input value={form.assetCode} onChange={(e) => patch({ assetCode: e.target.value })} placeholder="AST-2025-0001" />
+              <Field label="Mã tài sản" hint={editing ? undefined : "Hệ thống tự sinh khi lưu (AST-năm-số thứ tự)."}>
+                <Input value={editing ? form.assetCode : ""} disabled readOnly placeholder="Tự động sinh khi lưu" />
               </Field>
               <Field label="Tên tài sản" required>
                 <Input value={form.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Thang máy khách T1" />
