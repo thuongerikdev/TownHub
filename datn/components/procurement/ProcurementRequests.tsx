@@ -32,9 +32,9 @@ const STATUS_OPTIONS = ["DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "CONVERTED
 const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 interface FormState {
-  prCode: string; title: string; justification: string; priority: string; neededByDate: string; requestedBy: string;
+  title: string; justification: string; priority: string; neededByDate: string; requestedBy: string;
 }
-const emptyForm: FormState = { prCode: "", title: "", justification: "", priority: "MEDIUM", neededByDate: "", requestedBy: "" };
+const emptyForm: FormState = { title: "", justification: "", priority: "MEDIUM", neededByDate: "", requestedBy: "" };
 
 export default function ProcurementRequests() {
   const q = useApiList<PurchaseRequestResponse>(() => purchaseRequests.getAll(), { mock: mockPurchaseRequests });
@@ -67,7 +67,7 @@ export default function ProcurementRequests() {
   }, [list, search, statusF]);
 
   function openCreate() {
-    setForm({ ...emptyForm, prCode: `PR-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}` });
+    setForm(emptyForm); // Mã PR do server sinh khi lưu.
     setOpen(true);
   }
 
@@ -75,7 +75,7 @@ export default function ProcurementRequests() {
     if (!form.title.trim()) { toast.error("Nhập tiêu đề đề xuất."); return; }
     if (!form.requestedBy.trim()) { toast.error("Nhập người đề xuất."); return; }
     const body: CreatePurchaseRequestInput = {
-      prCode: form.prCode.trim(), requestedByName: form.requestedBy.trim(), title: form.title.trim(),
+      requestedByName: form.requestedBy.trim(), title: form.title.trim(),
       justification: form.justification.trim() || undefined, priority: form.priority,
       neededByDate: form.neededByDate || undefined,
     };
@@ -177,8 +177,9 @@ export default function ProcurementRequests() {
         submitLabel="Tạo"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã PR" required>
-            <Input value={form.prCode} onChange={(e) => setForm((f) => ({ ...f, prCode: e.target.value }))} />
+          <Field label="Mã PR">
+            {/* Mã do server sinh, không cho sửa. */}
+            <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Người đề xuất" required>
             <Input value={form.requestedBy} onChange={(e) => setForm((f) => ({ ...f, requestedBy: e.target.value }))} placeholder="Nguyễn Văn An" />

@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import {
   tickets, slaConfigs, warehouses, materials, inventoryTransactions, purchaseRequests,
-  users, displayUser, EMPTY_GUID,
+  users, displayUser,
   type RoleMember,
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
   type SlaConfigResponse, type UpdateTicketInput, type TicketAttachmentResponse,
@@ -89,8 +89,8 @@ const SHOW_MATERIAL = new Set(["ASSIGNED", "IN_PROGRESS", "PENDING_MATERIAL", "R
 interface MatForm { warehouseId: string; materialId: string; qty: string; notes: string; }
 const emptyMat: MatForm = { warehouseId: "", materialId: "", qty: "1", notes: "" };
 
-interface PrForm { prCode: string; title: string; priority: string; requestedByName: string; justification: string; }
-const emptyPr: PrForm = { prCode: "", title: "", priority: "MEDIUM", requestedByName: "", justification: "" };
+interface PrForm { title: string; priority: string; justification: string; }
+const emptyPr: PrForm = { title: "", priority: "MEDIUM", justification: "" };
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -243,13 +243,11 @@ export default function TicketDetail() {
 
   async function doCreatePr() {
     if (!t) return;
-    if (!prForm.prCode.trim()) { toast.error("Nhập mã phiếu đề xuất."); return; }
+    if (!t.assignedToUserId) { toast.error("Ticket chưa phân công KTV — không thể tạo phiếu đề xuất."); return; }
     setPrWorking(true);
+    // Mã PR do server sinh; người đề xuất server tự suy từ KTV phụ trách ticket (theo ticketId).
     const res = await purchaseRequests.create({
-      prCode:          prForm.prCode.trim(),
       ticketId:        t.id,
-      requestedBy:     EMPTY_GUID,
-      requestedByName: prForm.requestedByName.trim() || t.reportedByName || "KTV",
       title:           prForm.title.trim() || `Vật tư cho ${t.ticketCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
@@ -439,12 +437,12 @@ export default function TicketDetail() {
                   {!closed ? (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất <span className="text-danger">*</span></label>
-                        <Input value={prForm.prCode} onChange={(e) => setPrForm((f) => ({ ...f, prCode: e.target.value }))} placeholder={`PR-${t.ticketCode}`} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất</label>
+                        <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất</label>
-                        <Input value={prForm.requestedByName} onChange={(e) => setPrForm((f) => ({ ...f, requestedByName: e.target.value }))} placeholder={t.reportedByName ?? "Tên KTV"} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất (KTV phụ trách)</label>
+                        <Input value={t.assignedToName ?? "Chưa phân công KTV"} readOnly disabled />
                       </div>
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Tiêu đề</label>

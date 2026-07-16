@@ -1315,7 +1315,7 @@ export const inventoryTransactions = {
 // ─── Procurement (Mua sắm): types ──────────────────────────────────────────────
 export interface PurchaseRequestResponse {
   id: string; prCode: string; ticketId?: string; ticketCode?: string; woId?: string; woCode?: string;
-  departmentId?: string; requestedBy: string; requestedByName?: string; status: string; title?: string; justification?: string;
+  departmentId?: string; requestedBy: string; requestedByUserId?: number; requestedByName?: string; status: string; title?: string; justification?: string;
   priority: string; neededByDate?: string; approvedBy?: string; approvedAt?: string;
   rejectedReason?: string; createdAt: string;
 }
@@ -1371,7 +1371,9 @@ export function parseOcrPayload(raw?: string | null): OcrExtractedPayload | null
   } catch { return null; }
 }
 export interface CreatePurchaseRequestInput {
-  prCode: string; ticketId?: string; woId?: string; departmentId?: string; requestedBy?: string; requestedByName?: string;
+  // prCode do server sinh — không gửi. requestedBy* server tự suy từ KTV phụ trách WO.
+  prCode?: string; ticketId?: string; woId?: string; departmentId?: string;
+  requestedBy?: string; requestedByUserId?: number; requestedByName?: string;
   title?: string; justification?: string; priority?: string; neededByDate?: string;
 }
 export interface UpdatePurchaseRequestInput extends CreatePurchaseRequestInput {

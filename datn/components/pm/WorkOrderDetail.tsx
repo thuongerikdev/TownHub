@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, users, EMPTY_GUID,
+  workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, users,
   toWorkOrderUpdate,
   type RoleMember,
   type WorkOrderResponse,
@@ -44,8 +44,8 @@ const SHOW_MATERIAL = new Set(["IN_PROGRESS", "PENDING_REVIEW", "COMPLETED"]);
 interface MatForm { warehouseId: string; materialId: string; qty: string; notes: string; }
 const emptyMat: MatForm = { warehouseId: "", materialId: "", qty: "1", notes: "" };
 
-interface PrForm { prCode: string; title: string; priority: string; requestedByName: string; justification: string; }
-const emptyPr: PrForm = { prCode: "", title: "", priority: "MEDIUM", requestedByName: "", justification: "" };
+interface PrForm { title: string; priority: string; justification: string; }
+const emptyPr: PrForm = { title: "", priority: "MEDIUM", justification: "" };
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -172,13 +172,11 @@ export default function WorkOrderDetail() {
 
   async function doCreatePr() {
     if (!wo) return;
-    if (!prForm.prCode.trim()) { toast.error("Nhập mã phiếu đề xuất."); return; }
+    if (!wo.assignedToUserId) { toast.error("WO chưa phân công KTV — không thể tạo phiếu đề xuất."); return; }
     setPrWorking(true);
+    // Mã PR do server sinh; người đề xuất server tự suy từ KTV phụ trách WO (theo woId).
     const res = await purchaseRequests.create({
-      prCode:          prForm.prCode.trim(),
       woId:            wo.id,
-      requestedBy:     EMPTY_GUID,
-      requestedByName: prForm.requestedByName.trim() || wo.createdBy || "KTV",
       title:           prForm.title.trim() || `Vật tư cho ${wo.woCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
@@ -338,12 +336,12 @@ export default function WorkOrderDetail() {
                   {!closed ? (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất <span className="text-danger">*</span></label>
-                        <Input value={prForm.prCode} onChange={(e) => setPrForm((f) => ({ ...f, prCode: e.target.value }))} placeholder={`PR-${wo.woCode}`} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất</label>
+                        <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất</label>
-                        <Input value={prForm.requestedByName} onChange={(e) => setPrForm((f) => ({ ...f, requestedByName: e.target.value }))} placeholder={wo.createdBy ?? "KTV"} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất (KTV phụ trách)</label>
+                        <Input value={wo.assignedToName ?? "Chưa phân công KTV"} readOnly disabled />
                       </div>
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Tiêu đề</label>

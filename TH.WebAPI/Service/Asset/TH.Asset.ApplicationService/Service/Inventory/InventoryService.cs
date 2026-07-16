@@ -15,6 +15,29 @@ using VendorEntity = TH.Asset.Domain.Vendor.Vendor;
 
 namespace TH.Asset.ApplicationService.Service.Inventory
 {
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Phiếu đề xuất mua vật tư:  PR-{yyyyMM}-{NNN}  (server sinh)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class PurchaseRequestCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"PR-{year}{month:D2}-";
+            var codes = await db.PurchaseRequests
+                .Where(x => x.prCode.StartsWith(prefix))
+                .Select(x => x.prCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
     // ============================================================
     // WAREHOUSE SERVICE
     // ============================================================
@@ -625,18 +648,41 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                var codeExists = await _dbContext.PurchaseRequests.AnyAsync(x => x.prCode == request.prCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã PR '{request.prCode}' đã tồn tại.");
+                // Mã PR luôn sinh phía server, duy nhất, không cho client tự đặt.
+                var now = DateTime.UtcNow;
+                var prCode = await PurchaseRequestCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
+                // Người đề xuất mặc định = KTV chịu trách nhiệm xử lý WO/Ticket (lưu id, không phải chuỗi tự do).
+                var requestedByUserId = request.requestedByUserId;
+                var requestedByName   = request.requestedByName;
+                if (request.woId.HasValue)
+                {
+                    var wo = await _dbContext.WorkOrders
+                        .FirstOrDefaultAsync(x => x.id == request.woId.Value);
+                    if (wo == null)
+                        return ResponseConst.Error<bool>(400, "Work Order không tồn tại.");
+                    requestedByUserId = wo.assignedToUserId;
+                    requestedByName   = wo.assignedToName;
+                }
+                else if (request.ticketId.HasValue)
+                {
+                    var ticket = await _dbContext.Tickets
+                        .FirstOrDefaultAsync(x => x.id == request.ticketId.Value);
+                    if (ticket == null)
+                        return ResponseConst.Error<bool>(400, "Ticket không tồn tại.");
+                    requestedByUserId = ticket.assignedToUserId;
+                    requestedByName   = ticket.assignedToName;
+                }
 
                 _dbContext.PurchaseRequests.Add(new PurchaseRequest
                 {
-                    prCode       = request.prCode,
+                    prCode       = prCode,
                     ticketId     = request.ticketId,
                     woId         = request.woId,
                     departmentId = request.departmentId,
-                    requestedBy  = request.requestedBy,
-                    requestedByName = request.requestedByName,
+                    requestedBy       = request.requestedBy,
+                    requestedByUserId = requestedByUserId,
+                    requestedByName   = requestedByName,
                     title        = request.title,
                     justification = request.justification,
                     priority     = request.priority,
@@ -725,6 +771,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                         woCode         = x.workOrder  != null ? x.workOrder.woCode  : null,
                         departmentId   = x.departmentId,
                         requestedBy    = x.requestedBy,
+                        requestedByUserId = x.requestedByUserId,
                         requestedByName = x.requestedByName,
                         status         = x.status,
                         title          = x.title,
@@ -765,6 +812,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                         woCode         = x.workOrder != null ? x.workOrder.woCode  : null,
                         departmentId   = x.departmentId,
                         requestedBy    = x.requestedBy,
+                        requestedByUserId = x.requestedByUserId,
                         requestedByName = x.requestedByName,
                         status         = x.status,
                         title          = x.title,

@@ -157,13 +157,15 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreatePurchaseRequestDto
     {
-        public required string prCode { get; set; }
+        // Mã PR do server sinh — client không cần gửi.
+        public string? prCode { get; set; }
         public Guid? ticketId { get; set; }
         public Guid? woId { get; set; }
         // Cross-service (Base)
         public Guid? departmentId { get; set; }
-        // Cross-service (Auth)
+        // Cross-service (Auth) — người đề xuất tự suy ra từ KTV phụ trách WO ở server.
         public Guid requestedBy { get; set; }
+        public int? requestedByUserId { get; set; }
         public string? requestedByName { get; set; }
 
         public string? title { get; set; }
@@ -192,6 +194,7 @@ namespace TH.Asset.Dtos
         public string? woCode { get; set; }
         public Guid? departmentId { get; set; }
         public Guid requestedBy { get; set; }
+        public int? requestedByUserId { get; set; }
         public string? requestedByName { get; set; }
         public string status { get; set; } = null!;
         public string? title { get; set; }
