@@ -87,7 +87,8 @@ export default function AssetDetail() {
       woCode: woForm.woCode.trim(), assetId: asset.id, checklistTemplateId: woForm.checklistTemplateId,
       buildingId: asset.buildingId, woType: woForm.woType, title: woForm.title.trim(),
       description: woForm.description.trim() || undefined, priority: woForm.priority,
-      scheduledDate: woForm.scheduledDate || undefined, dueDate: woForm.dueDate || undefined,
+      scheduledDate: woForm.scheduledDate ? new Date(woForm.scheduledDate + "T00:00:00Z").toISOString() : undefined,
+      dueDate: woForm.dueDate ? new Date(woForm.dueDate + "T00:00:00Z").toISOString() : undefined,
       estimatedHours: woForm.estimatedHours ? Number(woForm.estimatedHours) : undefined,
     };
     const res = await woApi.create(body);

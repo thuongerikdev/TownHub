@@ -118,7 +118,8 @@ export default function WorkOrderList(_props: { userRole?: string }) {
       woCode: form.woCode.trim(), assetId: form.assetId, checklistTemplateId: form.checklistTemplateId,
       buildingId, woType: form.woType, title: form.title.trim(),
       description: form.description.trim() || undefined, priority: form.priority,
-      scheduledDate: form.scheduledDate || undefined, dueDate: form.dueDate || undefined,
+      scheduledDate: form.scheduledDate ? new Date(form.scheduledDate + "T00:00:00Z").toISOString() : undefined,
+      dueDate: form.dueDate ? new Date(form.dueDate + "T00:00:00Z").toISOString() : undefined,
       estimatedHours: form.estimatedHours ? Number(form.estimatedHours) : undefined,
     };
     setSubmitting(true);
