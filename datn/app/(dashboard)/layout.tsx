@@ -57,6 +57,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
           { label: "Danh sách tài sản", path: "/assets", perm: "asset.view" },
           { label: "Quét mã QR", path: "/assets/scan", perm: "asset.view" },
           { label: "Danh mục", path: "/assets/categories", perm: "asset.view" },
+          { label: "Cấu hình Checklist", path: "/assets/checklists", perm: "asset.view" },
           { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
           { label: "Chứng từ kế toán", path: "/assets/documents", perm: "asset.view" },
           { label: "Thanh lý", path: "/assets/disposals", perm: "asset.view" },
