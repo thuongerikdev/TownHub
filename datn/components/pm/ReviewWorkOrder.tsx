@@ -6,8 +6,8 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, XCircle, AlertCircle, FileText, Clock, Gauge } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, checklistTemplates, maintenanceSchedules, costTracking,
-  type WorkOrderResponse, type ChecklistTemplateItemResponse, type UpdateWorkOrderInput,
+  workOrders, checklistTemplates, maintenanceSchedules, costTracking, toWorkOrderUpdate,
+  type WorkOrderResponse, type ChecklistTemplateItemResponse,
   type MaintenanceScheduleResponse, type UpdateMaintenanceScheduleInput,
   type WorkOrderAttachmentResponse,
 } from "@/lib/api";
@@ -99,11 +99,8 @@ export default function ReviewWorkOrder() {
   const [reason, setReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
 
-  function baseBody(): UpdateWorkOrderInput {
-    return {
-      id: wo!.id, woCode: wo!.woCode, assetId: wo!.assetId,
-      checklistTemplateId: wo!.checklistTemplateId, buildingId: wo!.buildingId,
-    };
+  function baseBody() {
+    return toWorkOrderUpdate(wo!);
   }
 
   // Diagram 3 tail: "Đóng WO & Tính toán chu kỳ tiếp theo" — đẩy lịch bảo trì sang kỳ kế.
@@ -227,7 +224,7 @@ export default function ReviewWorkOrder() {
                 <Link href={`/assets/${wo.assetId}`} className="font-medium text-brand hover:underline">{wo.assetName ?? "—"}</Link>
               </Row>
               <Row label="Loại">{wo.woType === "PM" ? "Bảo trì định kỳ (PM)" : "Sửa chữa (CM)"}</Row>
-              <Row label="Người thực hiện">{wo.createdBy ?? "—"}</Row>
+              <Row label="Người thực hiện">{wo.assignedToName ?? wo.createdByName ?? "—"}</Row>
               <Row label="Checklist">{wo.checklistTemplateName ?? "—"}</Row>
               <Row label="Bắt đầu">{formatDateTime(wo.actualStartAt)}</Row>
               <Row label="Kết thúc">{formatDateTime(wo.actualEndAt)}</Row>

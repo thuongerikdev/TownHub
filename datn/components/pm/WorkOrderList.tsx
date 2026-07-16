@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, ClipboardList, Pencil, Trash2, Eye, Wrench, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, assetApi, checklistTemplates,
-  type WorkOrderResponse, type CreateWorkOrderInput, type UpdateWorkOrderInput,
+  workOrders, assetApi, checklistTemplates, toWorkOrderUpdate,
+  type WorkOrderResponse, type CreateWorkOrderInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockWorkOrders } from "@/lib/mock/pm";
@@ -97,7 +97,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...emptyForm, woCode: `WO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}` });
+    setForm(emptyForm); // Mã WO do server sinh khi lưu.
     setOpen(true);
   }
   function openEdit(w: WorkOrderResponse) {
@@ -131,7 +131,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
     };
     setSubmitting(true);
     const res = editing
-      ? await workOrders.update({ ...base, id: editing.id } as UpdateWorkOrderInput)
+      ? await workOrders.update(toWorkOrderUpdate(editing, base))
       : await workOrders.create(base);
     setSubmitting(false);
     if (res.errorCode === 200) {
@@ -227,8 +227,9 @@ export default function WorkOrderList(_props: { userRole?: string }) {
         submitLabel={editing ? "Lưu" : "Tạo"}
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã WO" required>
-            <Input value={form.woCode} onChange={(e) => setForm((f) => ({ ...f, woCode: e.target.value }))} />
+          <Field label="Mã WO">
+            {/* Mã tự sinh phía server, không cho sửa. */}
+            <Input value={editing ? form.woCode : ""} placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Loại">
             <Select value={form.woType} onValueChange={(v) => setForm((f) => ({ ...f, woType: v }))}>

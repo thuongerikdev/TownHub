@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, assetQrCodes,
-  type WorkOrderResponse, type UpdateWorkOrderInput,
+  workOrders, assetQrCodes, toWorkOrderUpdate,
+  type WorkOrderResponse,
 } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { mockWorkOrders } from "@/lib/mock/pm";
@@ -82,10 +82,9 @@ export default function CheckinScreen() {
   const doCheckin = useCallback(async () => {
     if (!wo) return;
     setSubmitting(true);
-    const body: UpdateWorkOrderInput = {
-      id: wo.id, woCode: wo.woCode, assetId: wo.assetId, checklistTemplateId: wo.checklistTemplateId,
-      buildingId: wo.buildingId, status: "IN_PROGRESS", actualStartAt: new Date().toISOString(),
-    };
+    const body = toWorkOrderUpdate(wo, {
+      status: "IN_PROGRESS", actualStartAt: new Date().toISOString(),
+    });
     const res = await workOrders.update(body);
     setSubmitting(false);
     if (res.errorCode === 200) {

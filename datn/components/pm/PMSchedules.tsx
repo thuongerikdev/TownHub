@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  maintenanceSchedules, assetApi, checklistTemplates,
-  type MaintenanceScheduleResponse, type CreateMaintenanceScheduleInput, type UpdateMaintenanceScheduleInput,
+  maintenanceSchedules, assetApi, checklistTemplates, toScheduleUpdate,
+  type MaintenanceScheduleResponse, type CreateMaintenanceScheduleInput,
   type AssetResponse, type ChecklistTemplateResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -112,7 +112,7 @@ export default function PMSchedules() {
     };
     setSubmitting(true);
     const res = editing
-      ? await maintenanceSchedules.update({ ...base, id: editing.id } as UpdateMaintenanceScheduleInput)
+      ? await maintenanceSchedules.update(toScheduleUpdate(editing, base))
       : await maintenanceSchedules.create(base);
     setSubmitting(false);
     if (res.errorCode === 200) {
@@ -123,12 +123,7 @@ export default function PMSchedules() {
   }
 
   async function toggleActive(s: MaintenanceScheduleResponse) {
-    const body: UpdateMaintenanceScheduleInput = {
-      id: s.id, assetId: s.assetId, scheduleType: s.scheduleType, checklistTemplateId: s.checklistTemplateId,
-      frequencyType: s.frequencyType, frequencyDays: s.frequencyDays, startDate: s.startDate, endDate: s.endDate,
-      leadTimeDays: s.leadTimeDays, isActive: !s.isActive, description: s.description,
-    };
-    const res = await maintenanceSchedules.update(body);
+    const res = await maintenanceSchedules.update(toScheduleUpdate(s, { isActive: !s.isActive }));
     if (res.errorCode === 200) { toast.success(s.isActive ? "Đã tạm dừng lịch." : "Đã kích hoạt lịch."); q.refetch(); }
     else toast.error(res.errorMessage || "Thao tác thất bại.");
   }

@@ -12,6 +12,52 @@ using TH.Constant;
 
 namespace TH.Asset.ApplicationService.Service.Maintenance
 {
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Work Order:  WO-{yyyyMM}-{NNN}  (sinh phía server, không cho sửa)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class WorkOrderCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"WO-{year}{month:D2}-";
+            var codes = await db.WorkOrders
+                .Where(x => x.woCode.StartsWith(prefix))
+                .Select(x => x.woCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
+    // Ràng buộc chuyển trạng thái Work Order theo quy trình DRAFT→ASSIGNED→IN_PROGRESS
+    // →PENDING_REVIEW→COMPLETED (rẽ nhánh REJECTED / CANCELLED). Cùng trạng thái = sửa
+    // thông tin, luôn cho phép.
+    internal static class WorkOrderState
+    {
+        private static readonly Dictionary<string, HashSet<string>> _allowed = new()
+        {
+            ["DRAFT"]          = new() { "ASSIGNED", "CANCELLED" },
+            ["ASSIGNED"]       = new() { "IN_PROGRESS", "CANCELLED" },
+            ["IN_PROGRESS"]    = new() { "PENDING_REVIEW", "CANCELLED" },
+            ["PENDING_REVIEW"] = new() { "COMPLETED", "REJECTED", "CANCELLED" },
+            ["REJECTED"]       = new() { "ASSIGNED", "IN_PROGRESS", "CANCELLED" },
+            ["COMPLETED"]      = new(),
+            ["CANCELLED"]      = new(),
+        };
+
+        public static bool CanTransition(string from, string to)
+        {
+            if (from == to) return true;
+            return _allowed.TryGetValue(from, out var next) && next.Contains(to);
+        }
+    }
+
     // ============================================================
     // CHECKLIST TEMPLATE SERVICE
     // ============================================================
@@ -495,17 +541,17 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         {
             try
             {
-                var codeExists = await _dbContext.WorkOrders.AnyAsync(x => x.woCode == request.woCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã WO '{request.woCode}' đã tồn tại.");
-
                 var assetExists = await _dbContext.Assets.AnyAsync(x => x.id == request.assetId);
                 if (!assetExists)
                     return ResponseConst.Error<bool>(400, "Tài sản không tồn tại.");
 
+                // Mã WO luôn sinh phía server để đảm bảo duy nhất & không cho client tự đặt.
+                var now = DateTime.UtcNow;
+                var woCode = await WorkOrderCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
                 _dbContext.WorkOrders.Add(new WorkOrder
                 {
-                    woCode              = request.woCode,
+                    woCode              = woCode,
                     assetId             = request.assetId,
                     scheduleId          = request.scheduleId,
                     checklistTemplateId = request.checklistTemplateId,
@@ -539,14 +585,13 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy Work Order.");
 
-                if (entity.woCode != request.woCode)
-                {
-                    var codeExists = await _dbContext.WorkOrders.AnyAsync(x => x.woCode == request.woCode);
-                    if (codeExists)
-                        return ResponseConst.Error<bool>(400, $"Mã WO '{request.woCode}' đã tồn tại.");
-                }
+                // Ràng buộc quy trình: chỉ cho chuyển trạng thái hợp lệ (chống nhảy/lùi bước
+                // hoặc sửa phiếu đã đóng khi gọi API trực tiếp).
+                if (!WorkOrderState.CanTransition(entity.status, request.status))
+                    return ResponseConst.Error<bool>(400,
+                        $"Không thể chuyển trạng thái từ '{entity.status}' sang '{request.status}'.");
 
-                entity.woCode         = request.woCode;
+                // Mã WO là bất biến (sinh khi tạo) — bỏ qua giá trị client gửi lên.
                 entity.status         = request.status;
                 entity.reviewerId     = request.reviewerId;
                 entity.woType         = request.woType;

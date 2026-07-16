@@ -1059,6 +1059,26 @@ export interface CreateMaintenanceScheduleInput {
 export interface UpdateMaintenanceScheduleInput extends CreateMaintenanceScheduleInput {
   id: string; nextDueDate?: string; lastExecutedAt?: string; lastWoId?: string;
 }
+
+/**
+ * Dựng payload update từ lịch hiện có, giữ MỌI trường (kể cả nextDueDate/lastExecutedAt/
+ * lastWoId/autoAssignDepartmentId do hệ thống tính), rồi override phần thay đổi.
+ * Endpoint update là full-overwrite — thiếu trường sẽ mất dữ liệu (lịch quá hạn, liên kết WO).
+ */
+export function toScheduleUpdate(
+  s: MaintenanceScheduleResponse,
+  patch: Partial<UpdateMaintenanceScheduleInput> = {},
+): UpdateMaintenanceScheduleInput {
+  return {
+    id: s.id, assetId: s.assetId, scheduleType: s.scheduleType,
+    checklistTemplateId: s.checklistTemplateId, autoAssignDepartmentId: s.autoAssignDepartmentId,
+    frequencyType: s.frequencyType, frequencyDays: s.frequencyDays,
+    startDate: s.startDate, endDate: s.endDate, leadTimeDays: s.leadTimeDays,
+    isActive: s.isActive, description: s.description,
+    nextDueDate: s.nextDueDate, lastExecutedAt: s.lastExecutedAt, lastWoId: s.lastWoId,
+    ...patch,
+  };
+}
 export interface CreateWorkOrderInput {
   woCode: string; assetId: string; checklistTemplateId: string; buildingId: string;
   scheduleId?: string; woType?: string; title?: string; description?: string;
@@ -1069,6 +1089,28 @@ export interface UpdateWorkOrderInput extends CreateWorkOrderInput {
   id: string; status?: string; reviewerId?: string;
   actualStartAt?: string; actualEndAt?: string; approvedAt?: string; rejectedReason?: string;
   actualHours?: number; totalCost?: number;
+}
+
+/**
+ * Dựng payload update từ WO hiện có, giữ nguyên MỌI trường, rồi override phần thay đổi.
+ * Bắt buộc dùng ở mọi bước cập nhật (check-in, checklist, nghiệm thu, phân công...):
+ * endpoint /work-order/update là full-overwrite — trường nào không gửi sẽ bị ghi đè null.
+ */
+export function toWorkOrderUpdate(
+  w: WorkOrderResponse,
+  patch: Partial<UpdateWorkOrderInput> = {},
+): UpdateWorkOrderInput {
+  return {
+    id: w.id, woCode: w.woCode, assetId: w.assetId, checklistTemplateId: w.checklistTemplateId,
+    buildingId: w.buildingId, scheduleId: w.scheduleId, createdBy: w.createdBy,
+    createdByUserId: w.createdByUserId, createdByName: w.createdByName,
+    woType: w.woType, priority: w.priority, title: w.title, description: w.description,
+    scheduledDate: w.scheduledDate, dueDate: w.dueDate, estimatedHours: w.estimatedHours,
+    reviewerId: w.reviewerId, actualStartAt: w.actualStartAt, actualEndAt: w.actualEndAt,
+    approvedAt: w.approvedAt, rejectedReason: w.rejectedReason,
+    actualHours: w.actualHours, totalCost: w.totalCost, status: w.status,
+    ...patch,
+  };
 }
 
 // ─── Maintenance (PM): endpoints ───────────────────────────────────────────────

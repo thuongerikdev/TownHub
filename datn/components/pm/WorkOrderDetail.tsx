@@ -10,8 +10,9 @@ import {
 import { toast } from "sonner";
 import {
   workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, users, EMPTY_GUID,
+  toWorkOrderUpdate,
   type RoleMember,
-  type WorkOrderResponse, type UpdateWorkOrderInput,
+  type WorkOrderResponse,
   type WarehouseResponse, type MaterialResponse,
   type InventoryTransactionResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
@@ -100,17 +101,7 @@ export default function WorkOrderDetail() {
 
   // Full payload: WorkOrder UpdateAsync overwrites every mapped field, so a partial
   // PUT would wipe woType/title/priority/dates. Preserve all current values here.
-  function woBase(w: WorkOrderResponse): UpdateWorkOrderInput {
-    return {
-      id: w.id, woCode: w.woCode, assetId: w.assetId, checklistTemplateId: w.checklistTemplateId,
-      buildingId: w.buildingId, scheduleId: w.scheduleId, createdBy: w.createdBy,
-      woType: w.woType, priority: w.priority, title: w.title, description: w.description,
-      scheduledDate: w.scheduledDate, dueDate: w.dueDate, estimatedHours: w.estimatedHours,
-      reviewerId: w.reviewerId, actualStartAt: w.actualStartAt, actualEndAt: w.actualEndAt,
-      approvedAt: w.approvedAt, rejectedReason: w.rejectedReason,
-      actualHours: w.actualHours, totalCost: w.totalCost, status: w.status,
-    };
-  }
+  const woBase = toWorkOrderUpdate;
 
   async function doAssign() {
     if (!wo) return;
