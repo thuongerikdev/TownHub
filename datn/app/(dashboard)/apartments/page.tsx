@@ -7,32 +7,21 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { apartments, residents, users, buildings } from "@/lib/api";
-import type { ApartmentResponse, ResidentResponse, GetUserResponse, BuildingResponse } from "@/lib/api";
+import { apartments, residents, users, buildings, floors as floorsApi } from "@/lib/api";
+import type { ApartmentResponse, ResidentResponse, GetUserResponse, BuildingResponse, FloorResponse } from "@/lib/api";
 import type { ApartmentInfo } from "@/components/Building3DModel";
 
 const Building3DModel = dynamic(() => import("@/components/Building3DModel"), { ssr: false });
 import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const BUILDING_CODE_MAP: Record<string, string> = {
-  "Tòa A": "A", "Tòa B": "B", "Villa": "V",
-};
-
 const STATUS_LABELS: Record<string, string> = {
   occupied: "Đã có cư dân",
   vacant: "Đang trống",
   maintenance: "Bảo trì",
 };
 const APARTMENT_TYPES = ["Studio", "1PN", "2PN", "3PN", "Penthouse"];
-const BUILDINGS = ["Tòa A", "Tòa B", "Villa"];
-
-// Cấu hình 3D cố định — model là biểu diễn trực quan, không phụ thuộc số căn thực tế từ API
-const BUILDING_3D_CONFIG: Record<string, { floors: number; aptsPerFloor: number }> = {
-  "Tòa A": { floors: 15, aptsPerFloor: 8 },
-  "Tòa B": { floors: 12, aptsPerFloor: 6 },
-  "Villa": { floors:  5, aptsPerFloor: 4 },
-};
+const BUILDINGS = ["Tòa A", "Tòa B", "Tòa C", "Tòa D"];
 const STATUS_OPTIONS = ["occupied", "vacant", "maintenance"];
 const GENDERS = [
   { value: "male", label: "Nam" },
@@ -42,7 +31,7 @@ const GENDERS = [
 
 // ─── Form types ───────────────────────────────────────────────────────────────
 interface AptForm {
-  code: string; building: string; floor: string; unitNumber: string;
+  code: string; building: string; floorId: string; floor: string; unitNumber: string;
   type: string; areaM2: string; status: string; note: string;
 }
 interface ResidentForm {
@@ -52,7 +41,7 @@ interface ResidentForm {
 }
 
 const DEFAULT_APT: AptForm = {
-  code: "", building: "Tòa A", floor: "", unitNumber: "",
+  code: "", building: "Tòa A", floorId: "", floor: "", unitNumber: "",
   type: "2PN", areaM2: "", status: "vacant", note: "",
 };
 const DEFAULT_RESIDENT: ResidentForm = {
@@ -108,9 +97,17 @@ export default function ApartmentsPage() {
   // Danh mục toà nhà lấy từ Base (master data). Fallback về danh sách cũ nếu Base chưa có.
   const [buildingOptions, setBuildingOptions] = useState<string[]>(BUILDINGS);
   const [buildingObjs, setBuildingObjs] = useState<BuildingResponse[]>([]);
+  const [floorList, setFloorList] = useState<FloorResponse[]>([]);
   const buildingIdOf = useCallback(
     (name: string) => buildingObjs.find((b) => b.name === name)?.id,
     [buildingObjs],
+  );
+  const floorsOfBuilding = useCallback(
+    (name: string) => {
+      const bid = buildingObjs.find((b) => b.name === name)?.id;
+      return floorList.filter((f) => f.buildingId === bid).sort((a, b) => a.floorNumber - b.floorNumber);
+    },
+    [buildingObjs, floorList],
   );
 
   // Create apartment modal
@@ -181,6 +178,11 @@ export default function ApartmentsPage() {
           setSelectedBuilding((prev) => (names.includes(prev) ? prev : names[0]));
         }
       } catch { /* giữ fallback danh sách cũ */ }
+      // Danh mục tầng (master) cho toàn bộ toà — dùng cho 3D & dropdown chọn tầng.
+      try {
+        const fr = await floorsApi.getAll();
+        if (fr.errorCode === 200) setFloorList(fr.data ?? []);
+      } catch { /* bỏ qua nếu chưa có */ }
     })();
   }, []);
 
@@ -209,14 +211,15 @@ export default function ApartmentsPage() {
   const handleCreateApt = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAptError(null);
-    if (!aptForm.code || !aptForm.floor || !aptForm.unitNumber || !aptForm.areaM2) {
-      setAptError("Vui lòng điền đầy đủ các trường bắt buộc.");
+    if (!aptForm.code || !aptForm.floorId || !aptForm.unitNumber || !aptForm.areaM2) {
+      setAptError("Vui lòng điền đầy đủ các trường bắt buộc (gồm chọn tầng).");
       return;
     }
     setAptSubmitting(true);
     try {
       const res = await apartments.create({
         code: aptForm.code, building: aptForm.building, buildingId: buildingIdOf(aptForm.building),
+        floorId: aptForm.floorId || undefined,
         floor: Number(aptForm.floor), unitNumber: aptForm.unitNumber,
         type: aptForm.type, areaM2: Number(aptForm.areaM2),
         status: aptForm.status, note: aptForm.note || undefined,
@@ -340,9 +343,35 @@ export default function ApartmentsPage() {
     return onFloor && matchSearch;
   });
 
-  // 3D model dùng config cố định để luôn hiển thị đẹp
-  const cfg3d = BUILDING_3D_CONFIG[selectedBuilding] ?? { floors: 10, aptsPerFloor: 6 };
-  const buildingCode = BUILDING_CODE_MAP[selectedBuilding] ?? "A";
+  // 3D model dựng theo DỮ LIỆU THẬT của toà đang chọn (không hardcode) → xây thêm
+  // toà/tầng là tự hiện. Mã toà lấy từ master; số tầng ưu tiên danh mục tầng,
+  // fallback totalFloors rồi tầng lớn nhất trong dữ liệu; số căn/tầng lấy max thực tế.
+  const selectedBuildingObj = useMemo(
+    () => buildingObjs.find((b) => b.name === selectedBuilding),
+    [buildingObjs, selectedBuilding],
+  );
+  const buildingCode =
+    selectedBuildingObj?.code?.toUpperCase() ||
+    (selectedBuilding.match(/[A-Za-z]+$/)?.[0]?.toUpperCase() ?? "A");
+  const cfg3d = useMemo(() => {
+    const masterFloors = floorsOfBuilding(selectedBuilding);
+    const maxDataFloor = data.length ? Math.max(...data.map((a) => a.floor)) : 0;
+    const floorsCount = Math.max(
+      masterFloors.length ? Math.max(...masterFloors.map((f) => f.floorNumber)) : 0,
+      selectedBuildingObj?.totalFloors ?? 0,
+      maxDataFloor,
+      1,
+    );
+    const perFloor = new Map<number, number>();
+    data.forEach((a) => perFloor.set(a.floor, (perFloor.get(a.floor) ?? 0) + 1));
+    const maxPerFloor = perFloor.size ? Math.max(...perFloor.values()) : 0;
+    const cfgFromUnits =
+      selectedBuildingObj?.totalUnits && selectedBuildingObj.totalFloors
+        ? Math.ceil(selectedBuildingObj.totalUnits / selectedBuildingObj.totalFloors)
+        : 0;
+    const aptsPerFloor = Math.max(maxPerFloor, cfgFromUnits, 1);
+    return { floors: floorsCount, aptsPerFloor };
+  }, [selectedBuilding, selectedBuildingObj, floorsOfBuilding, data]);
 
   // Map aptId 3D → status thực tế từ API (sort by code để đồng nhất với Sơ đồ)
   const statusMap = useMemo(() => {
@@ -911,13 +940,31 @@ export default function ApartmentsPage() {
                     onChange={(e) => setAptForm((p) => ({ ...p, code: e.target.value }))} placeholder="VD: A1201" />
                   <div>
                     <label className="text-xs text-zinc-400 font-medium mb-1.5 block">Tòa nhà</label>
-                    <select value={aptForm.building} onChange={(e) => setAptForm((p) => ({ ...p, building: e.target.value }))}
+                    <select value={aptForm.building}
+                      onChange={(e) => setAptForm((p) => ({ ...p, building: e.target.value, floorId: "", floor: "" }))}
                       className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50">
                       {buildingOptions.map((b) => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
-                  <InputField label="Tầng" required type="number" min={1} value={aptForm.floor}
-                    onChange={(e) => setAptForm((p) => ({ ...p, floor: e.target.value }))} placeholder="VD: 12" />
+                  <div>
+                    <label className="text-xs text-zinc-400 font-medium mb-1.5 block">
+                      Tầng <span className="text-rose-400">*</span>
+                    </label>
+                    <select value={aptForm.floorId}
+                      onChange={(e) => {
+                        const f = floorsOfBuilding(aptForm.building).find((x) => x.id === e.target.value);
+                        setAptForm((p) => ({ ...p, floorId: e.target.value, floor: f ? String(f.floorNumber) : "" }));
+                      }}
+                      disabled={floorsOfBuilding(aptForm.building).length === 0}
+                      className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 disabled:opacity-50">
+                      <option value="">
+                        {floorsOfBuilding(aptForm.building).length === 0 ? "Chưa có tầng — thêm ở mục Tầng" : "Chọn tầng…"}
+                      </option>
+                      {floorsOfBuilding(aptForm.building).map((f) => (
+                        <option key={f.id} value={f.id}>{f.floorName}</option>
+                      ))}
+                    </select>
+                  </div>
                   <InputField label="Số căn" required value={aptForm.unitNumber}
                     onChange={(e) => setAptForm((p) => ({ ...p, unitNumber: e.target.value }))} placeholder="VD: 01" />
                   <div>

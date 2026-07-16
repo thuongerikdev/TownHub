@@ -11,6 +11,8 @@ namespace TH.TownHub.Dtos
         // Chọn toà nhà theo master (Guid). building (tên) tuỳ chọn — server tự điền theo master.
         public Guid? buildingId { get; set; }
         public string? building { get; set; }
+        // Chọn tầng theo master (Guid). 1 tầng có nhiều căn hộ.
+        public Guid? floorId { get; set; }
         public int floor { get; set; }
         public required string unitNumber { get; set; }
         public required string type { get; set; }
@@ -30,6 +32,7 @@ namespace TH.TownHub.Dtos
         public string code { get; set; } = null!;
         public string building { get; set; } = null!;
         public Guid? buildingId { get; set; }
+        public Guid? floorId { get; set; }
         public int floor { get; set; }
         public string unitNumber { get; set; } = null!;
         public string type { get; set; } = null!;

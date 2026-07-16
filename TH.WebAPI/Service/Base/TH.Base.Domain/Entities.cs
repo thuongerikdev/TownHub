@@ -27,6 +27,9 @@ namespace TH.TownHub.Domain.Entities
         // Tham chiếu master Toà nhà ở Base (Guid, KHÔNG nối FK — cross-service style).
         public Guid? BuildingId { get; set; }
 
+        // Tham chiếu master Tầng ở Base (Guid). 1 tầng có nhiều căn hộ.
+        public Guid? FloorId { get; set; }
+
         public int Floor { get; set; }
 
         [Required]

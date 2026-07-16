@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { buildings as buildingsApi, floors as floorsApi } from "@/lib/api";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Building2, CheckCircle, XCircle, Clock, Plus,
@@ -177,10 +178,11 @@ const SERVICE_TYPES = [
 
 type Tab = "management" | "model3d";
 
-const BUILDINGS_3D = [
-  { id: 1, name: "Toà A – Sunrise Tower", code: "A", floors: 20, apartmentsPerFloor: 8 },
-  { id: 2, name: "Toà B – Horizon Block",  code: "B", floors: 15, apartmentsPerFloor: 6 },
-  { id: 3, name: "Toà C – Garden Wing",   code: "C", floors: 12, apartmentsPerFloor: 4 },
+interface Building3D { id: string; name: string; code: string; floors: number; apartmentsPerFloor: number }
+
+// Fallback khi chưa gọi được API (giữ UI không trống).
+const FALLBACK_3D: Building3D[] = [
+  { id: "A", name: "Toà A", code: "A", floors: 20, apartmentsPerFloor: 20 },
 ];
 
 // ─── Apartment detail helpers ─────────────────────────────────────────────────
@@ -396,7 +398,31 @@ export default function BuildingsPage() {
   const [rejectNote, setRejectNote]   = useState("");
   const [addModal, setAddModal] = useState(false);
   const [saving, setSaving]     = useState(false);
-  const [selectedBuilding, setSelectedBuilding] = useState(BUILDINGS_3D[0]);
+  const [buildings3d, setBuildings3d] = useState<Building3D[]>(FALLBACK_3D);
+  const [selectedBuilding, setSelectedBuilding] = useState<Building3D>(FALLBACK_3D[0]);
+
+  // Nạp toà nhà + tầng THẬT từ API cho mô hình 3D (xây thêm toà là tự hiện).
+  useEffect(() => {
+    (async () => {
+      try {
+        const [br, fr] = await Promise.all([buildingsApi.getAll(), floorsApi.getAll()]);
+        if (br.errorCode !== 200 || !br.data?.length) return;
+        const flr = fr.errorCode === 200 ? fr.data ?? [] : [];
+        const list: Building3D[] = br.data.map((b) => {
+          const maxFloor = flr.filter((f) => f.buildingId === b.id)
+            .reduce((m, f) => Math.max(m, f.floorNumber), 0);
+          const floorsCount = Math.max(maxFloor, b.totalFloors || 0, 1);
+          const perFloor = b.totalFloors && b.totalUnits ? Math.ceil(b.totalUnits / b.totalFloors) : 0;
+          return {
+            id: b.id, name: b.name, code: (b.code || b.name).toUpperCase(),
+            floors: floorsCount, apartmentsPerFloor: Math.max(perFloor, 1),
+          };
+        });
+        setBuildings3d(list);
+        setSelectedBuilding((prev) => list.find((x) => x.id === prev.id) ?? list[0]);
+      } catch { /* giữ fallback */ }
+    })();
+  }, []);
   const [selectedApt, setSelectedApt] = useState<ApartmentInfo | null>(null);
   const [viewMode, setViewMode] = useState<"model" | "detail">("model");
   const [form, setForm]         = useState({
@@ -516,7 +542,7 @@ export default function BuildingsPage() {
 
             {/* Building selector */}
             <div className="flex flex-wrap gap-2">
-              {BUILDINGS_3D.map((b) => (
+              {buildings3d.map((b) => (
                 <button
                   key={b.id}
                   onClick={() => { setSelectedBuilding(b); setSelectedApt(null); setViewMode("model"); }}

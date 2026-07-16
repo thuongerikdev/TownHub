@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { Plus, MapPin, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  assetLocations, assetApi, buildings, BUILDING_ID,
+  assetLocations, assetApi, buildings, floors, BUILDING_ID,
   type AssetLocationResponse, type CreateAssetLocationInput, type UpdateAssetLocationInput,
-  type AssetResponse, type BuildingResponse,
+  type AssetResponse, type BuildingResponse, type FloorResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import {
@@ -22,12 +22,13 @@ export default function AssetLocations() {
   const q = useApiList<AssetLocationResponse>(() => assetLocations.getAll());
   const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll());
   const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());
+  const floorsQ = useApiList<FloorResponse>(() => floors.getAll());
   const locs = q.items;
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AssetLocationResponse | null>(null);
-  const [form, setForm] = useState({ buildingId: BUILDING_ID, areaCode: "" });
+  const [form, setForm] = useState({ buildingId: BUILDING_ID, floorId: "", areaCode: "" });
   const [submitting, setSubmitting] = useState(false);
   const [confirmDel, setConfirmDel] = useState<AssetLocationResponse | null>(null);
 
@@ -49,6 +50,15 @@ export default function AssetLocations() {
   const buildingLabel = (id: string) =>
     buildingOptions.find((b) => b.id === id)?.label ?? `Toà nhà ${id.slice(0, 8)}…`;
 
+  // Tầng lọc theo toà nhà đang chọn trong form.
+  const floorOptions = useMemo(
+    () => floorsQ.items
+      .filter((f) => f.buildingId === form.buildingId)
+      .sort((a, b) => a.floorNumber - b.floorNumber),
+    [floorsQ.items, form.buildingId],
+  );
+  const floorLabel = (id?: string) => floorsQ.items.find((f) => f.id === id)?.floorName ?? "—";
+
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return locs;
@@ -57,20 +67,26 @@ export default function AssetLocations() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ buildingId: BUILDING_ID, areaCode: "" });
+    setForm({ buildingId: buildingOptions[0]?.id ?? BUILDING_ID, floorId: "", areaCode: "" });
     setOpen(true);
   }
   function openEdit(l: AssetLocationResponse) {
     setEditing(l);
-    setForm({ buildingId: l.buildingId, areaCode: l.areaCode ?? "" });
+    setForm({ buildingId: l.buildingId, floorId: l.floorId ?? "", areaCode: l.areaCode ?? "" });
     setOpen(true);
+  }
+  function onBuildingChange(buildingId: string) {
+    // Đổi toà nhà → bỏ tầng cũ nếu không thuộc toà nhà mới.
+    const keep = floorsQ.items.find((f) => f.id === form.floorId)?.buildingId === buildingId;
+    setForm((f) => ({ ...f, buildingId, floorId: keep ? f.floorId : "" }));
   }
 
   async function submit() {
     if (!form.buildingId) { toast.error("Chọn toà nhà."); return; }
     if (!form.areaCode.trim()) { toast.error("Nhập khu vực / vị trí."); return; }
     const base: CreateAssetLocationInput = {
-      buildingId: form.buildingId, areaCode: form.areaCode.trim() || undefined,
+      buildingId: form.buildingId, floorId: form.floorId || undefined,
+      areaCode: form.areaCode.trim() || undefined,
     };
     setSubmitting(true);
     const res = editing
@@ -97,6 +113,7 @@ export default function AssetLocations() {
   const columns: Column<AssetLocationResponse>[] = [
     { key: "area", header: "Khu vực / Vị trí", sortable: true, sortAccessor: (l) => l.areaCode ?? "", cell: (l) => <span className="font-medium text-foreground">{l.areaCode ?? "—"}</span> },
     { key: "building", header: "Toà nhà", cell: (l) => <span className="text-muted-foreground">{buildingLabel(l.buildingId)}</span> },
+    { key: "floor", header: "Tầng", cell: (l) => <span className="text-muted-foreground">{floorLabel(l.floorId)}</span> },
     {
       key: "actions", header: "", align: "right",
       cell: (l) => (
@@ -129,14 +146,22 @@ export default function AssetLocations() {
       >
         <div className="space-y-4">
           <Field label="Toà nhà" required>
-            <Select value={form.buildingId} onValueChange={(v) => setForm((f) => ({ ...f, buildingId: v }))}>
+            <Select value={form.buildingId} onValueChange={onBuildingChange}>
               <SelectTrigger><SelectValue placeholder="Chọn toà nhà…" /></SelectTrigger>
               <SelectContent>
                 {buildingOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Khu vực / Vị trí" required hint="Ví dụ: Tầng 3 - Khu A, Phòng kỹ thuật tầng hầm…">
+          <Field label="Tầng" hint={floorOptions.length === 0 ? "Toà nhà này chưa có tầng nào." : "Chọn tầng thuộc toà nhà đã chọn."}>
+            <Select value={form.floorId} onValueChange={(v) => setForm((f) => ({ ...f, floorId: v }))} disabled={!form.buildingId || floorOptions.length === 0}>
+              <SelectTrigger><SelectValue placeholder="Chọn tầng…" /></SelectTrigger>
+              <SelectContent>
+                {floorOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.floorName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Khu vực / Vị trí" required hint="Ví dụ: Khu A, Phòng kỹ thuật, Sảnh thang máy…">
             <Input value={form.areaCode} onChange={(e) => setForm((f) => ({ ...f, areaCode: e.target.value }))} placeholder="Tầng 3 - Khu A" />
           </Field>
         </div>

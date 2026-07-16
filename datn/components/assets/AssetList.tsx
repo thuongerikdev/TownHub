@@ -8,9 +8,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  assetApi, assetCategories, assetLocations, assetQrCodes, buildings, BUILDING_ID,
+  assetApi, assetCategories, assetLocations, assetQrCodes, buildings, floors, BUILDING_ID,
   type AssetResponse, type CreateAssetInput, type UpdateAssetInput,
-  type BuildingResponse,
+  type BuildingResponse, type FloorResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockAssets, mockAssetCategories, mockAssetLocations } from "@/lib/mock/asset";
@@ -50,13 +50,13 @@ const DEPR_OPTIONS = [
 const toDateInput = (iso?: string | null) => (iso ? iso.slice(0, 10) : "");
 
 interface FormState {
-  assetCode: string; name: string; categoryId: string; buildingId: string;
+  assetCode: string; name: string; categoryId: string; buildingId: string; floorId: string;
   locationId: string; status: string; criticalityLevel: string; serialNumber: string;
   purchasePrice: string; purchaseDate: string; warrantyExpiryDate: string;
   usefulLifeMonths: string; salvageValue: string; depreciationMethod: string; notes: string;
 }
 const emptyForm: FormState = {
-  assetCode: "", name: "", categoryId: "", buildingId: BUILDING_ID, locationId: "",
+  assetCode: "", name: "", categoryId: "", buildingId: BUILDING_ID, floorId: "", locationId: "",
   status: "ACTIVE", criticalityLevel: "MEDIUM", serialNumber: "",
   purchasePrice: "", purchaseDate: "", warrantyExpiryDate: "",
   usefulLifeMonths: "", salvageValue: "0", depreciationMethod: "STRAIGHT_LINE", notes: "",
@@ -81,6 +81,7 @@ export default function AssetList() {
   const catsQ = useApiList(() => assetCategories.getAll(), { mock: mockAssetCategories });
   const locsQ = useApiList(() => assetLocations.getAll(), { mock: mockAssetLocations });
   const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());
+  const floorsQ = useApiList<FloorResponse>(() => floors.getAll());
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -114,10 +115,18 @@ export default function AssetList() {
     }));
   }, [buildingsQ.items, locs, assets]);
 
-  // Vị trí lọc theo toà nhà đang chọn — chỉ hiện vị trí thuộc toà nhà đó.
+  // Tầng lọc theo toà nhà đang chọn.
+  const floorOptions = useMemo(
+    () => floorsQ.items
+      .filter((f) => f.buildingId === form.buildingId)
+      .sort((a, b) => a.floorNumber - b.floorNumber),
+    [floorsQ.items, form.buildingId],
+  );
+
+  // Vị trí lọc theo toà nhà (và theo tầng nếu đã chọn tầng).
   const locationOptions = useMemo(
-    () => locs.filter((l) => l.buildingId === form.buildingId),
-    [locs, form.buildingId],
+    () => locs.filter((l) => l.buildingId === form.buildingId && (!form.floorId || l.floorId === form.floorId)),
+    [locs, form.buildingId, form.floorId],
   );
 
   const filtered = useMemo(() => {
@@ -154,7 +163,7 @@ export default function AssetList() {
     setEditing(a);
     setForm({
       assetCode: a.assetCode, name: a.name, categoryId: a.categoryId, buildingId: a.buildingId,
-      locationId: a.locationId ?? "", status: a.status, criticalityLevel: a.criticalityLevel,
+      floorId: a.floorId ?? "", locationId: a.locationId ?? "", status: a.status, criticalityLevel: a.criticalityLevel,
       serialNumber: a.serialNumber ?? "",
       purchasePrice: a.purchasePrice?.toString() ?? "", purchaseDate: toDateInput(a.purchaseDate),
       warrantyExpiryDate: toDateInput(a.warrantyExpiryDate),
@@ -169,13 +178,19 @@ export default function AssetList() {
     setForm((f) => ({ ...f, ...p }));
   }
   function onBuildingChange(buildingId: string) {
-    // Đổi toà nhà → bỏ vị trí cũ nếu không thuộc toà nhà mới.
-    const keep = locs.find((l) => l.id === form.locationId)?.buildingId === buildingId;
-    patch({ buildingId, locationId: keep ? form.locationId : "" });
+    // Đổi toà nhà → bỏ tầng & vị trí cũ nếu không còn thuộc toà nhà mới.
+    const keepFloor = floorsQ.items.find((f) => f.id === form.floorId)?.buildingId === buildingId;
+    const keepLoc = locs.find((l) => l.id === form.locationId)?.buildingId === buildingId;
+    patch({ buildingId, floorId: keepFloor ? form.floorId : "", locationId: keepLoc ? form.locationId : "" });
+  }
+  function onFloorChange(floorId: string) {
+    // Đổi tầng → bỏ vị trí cũ nếu không thuộc tầng mới.
+    const keep = locs.find((l) => l.id === form.locationId)?.floorId === floorId;
+    patch({ floorId, locationId: keep ? form.locationId : "" });
   }
   function onLocationChange(locationId: string) {
     const loc = locs.find((l) => l.id === locationId);
-    patch({ locationId, buildingId: loc?.buildingId ?? form.buildingId });
+    patch({ locationId, buildingId: loc?.buildingId ?? form.buildingId, floorId: loc?.floorId ?? form.floorId });
   }
 
   async function submitForm() {
@@ -187,6 +202,7 @@ export default function AssetList() {
     const base: CreateAssetInput = {
       assetCode: form.assetCode.trim(), name: form.name.trim(),
       categoryId: form.categoryId, buildingId: form.buildingId.trim(),
+      floorId: form.floorId || undefined,
       locationId: form.locationId || undefined,
       status: form.status, serialNumber: form.serialNumber || undefined,
       criticalityLevel: form.criticalityLevel,
@@ -360,7 +376,15 @@ export default function AssetList() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Vị trí" hint={locationOptions.length === 0 ? "Toà nhà này chưa có vị trí." : "Chọn toà nhà trước để lọc vị trí."}>
+              <Field label="Tầng" hint={floorOptions.length === 0 ? "Toà nhà này chưa có tầng." : "Chọn tầng để lọc vị trí."}>
+                <Select value={form.floorId} onValueChange={onFloorChange} disabled={!form.buildingId || floorOptions.length === 0}>
+                  <SelectTrigger><SelectValue placeholder="Chọn tầng" /></SelectTrigger>
+                  <SelectContent>
+                    {floorOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.floorName}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Vị trí" hint={locationOptions.length === 0 ? "Chưa có vị trí phù hợp." : "Lọc theo toà nhà & tầng đã chọn."}>
                 <Select value={form.locationId} onValueChange={onLocationChange} disabled={!form.buildingId}>
                   <SelectTrigger><SelectValue placeholder="Chọn vị trí" /></SelectTrigger>
                   <SelectContent>

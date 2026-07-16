@@ -50,7 +50,7 @@ export interface Permission {
   permissionID: number; permissionName: string; permissionDescription: string; code: string; scope?: string;
 }
 export interface ApartmentResponse {
-  id: number; code: string; building: string; buildingId?: string; floor: number; unitNumber: string;
+  id: number; code: string; building: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string;
   type: string; areaM2: number; status: string; note?: string; createdAt: string;
 }
 export interface ResidentResponse {
@@ -453,9 +453,9 @@ export const apartments = {
     return apiFetch<ApartmentResponse[]>(`/api/Apartment/get-all${q ? "?" + q : ""}`);
   },
   getById: (id: number) => apiFetch<ApartmentResponse>(`/api/Apartment/get/${id}`),
-  create: (body: { code: string; building?: string; buildingId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
+  create: (body: { code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/create", { method: "POST", body: JSON.stringify(body) }),
-  update: (body: { id: number; code: string; building?: string; buildingId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
+  update: (body: { id: number; code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/update", { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: number) => apiFetch<boolean>(`/api/Apartment/delete/${id}`, { method: "DELETE" }),
 };
@@ -979,6 +979,25 @@ export const buildings = {
   update: (body: UpdateBuildingInput) =>
     apiFetch<boolean>(`/api/building/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/building/delete/${id}`, { method: "DELETE" }),
+};
+
+// ─── Base: Tầng (master data — 1 toà nhiều tầng, 1 tầng nhiều căn hộ) ───────────
+export interface FloorResponse {
+  id: string; buildingId: string; floorNumber: number; floorName: string; floorType?: string;
+}
+export interface CreateFloorInput {
+  buildingId: string; floorNumber: number; floorName: string; floorType?: string;
+}
+export interface UpdateFloorInput extends CreateFloorInput { id: string; }
+export const floors = {
+  getAll: (buildingId?: string) =>
+    apiFetch<FloorResponse[]>(`/api/floor/get-all${qs({ buildingId })}`, {}),
+  getById: (id: string) => apiFetch<FloorResponse>(`/api/floor/get/${id}`, {}),
+  create: (body: CreateFloorInput) =>
+    apiFetch<boolean>(`/api/floor/create`, { method: "POST", body: JSON.stringify(body) }),
+  update: (body: UpdateFloorInput) =>
+    apiFetch<boolean>(`/api/floor/update`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => apiFetch<boolean>(`/api/floor/delete/${id}`, { method: "DELETE" }),
 };
 
 export const assetLocations = {

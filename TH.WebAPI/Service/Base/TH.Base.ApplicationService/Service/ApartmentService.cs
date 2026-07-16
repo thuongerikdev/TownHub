@@ -55,6 +55,7 @@ namespace TH.TownHub.ApplicationService.Service
                     Code = request.code,
                     Building = bName,
                     BuildingId = request.buildingId,
+                    FloorId = request.floorId,
                     Floor = request.floor,
                     UnitNumber = request.unitNumber,
                     Type = request.type,
@@ -96,6 +97,7 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.Code = request.code;
                 entity.Building = bName;
                 entity.BuildingId = request.buildingId;
+                entity.FloorId = request.floorId;
                 entity.Floor = request.floor;
                 entity.UnitNumber = request.unitNumber;
                 entity.Type = request.type;
@@ -167,6 +169,7 @@ namespace TH.TownHub.ApplicationService.Service
                         code = x.Code,
                         building = x.Building,
                         buildingId = x.BuildingId,
+                        floorId = x.FloorId,
                         floor = x.Floor,
                         unitNumber = x.UnitNumber,
                         type = x.Type,
@@ -198,6 +201,7 @@ namespace TH.TownHub.ApplicationService.Service
                         code = x.Code,
                         building = x.Building,
                         buildingId = x.BuildingId,
+                        floorId = x.FloorId,
                         floor = x.Floor,
                         unitNumber = x.UnitNumber,
                         type = x.Type,
