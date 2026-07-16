@@ -189,6 +189,12 @@ export default function WorkOrderDetail() {
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
   }
 
+  async function submitPr(prId: string) {
+    const res = await purchaseRequests.submit(prId);
+    if (res.errorCode === 200) { toast.success("Đã gửi phiếu đề xuất chờ duyệt."); linkedPrsQ.refetch(); }
+    else toast.error(res.errorMessage || "Gửi duyệt thất bại.");
+  }
+
   if (q.loading) return <div className="py-10"><LoadingState /></div>;
   if (!wo) return <div className="py-10"><ErrorState message={q.error ?? "Không tìm thấy phiếu công việc."} onRetry={q.refetch} /></div>;
 
@@ -382,6 +388,7 @@ export default function WorkOrderDetail() {
                             <th className="px-3 py-2 text-left">Tiêu đề</th>
                             <th className="px-3 py-2 text-left">Trạng thái</th>
                             <th className="px-3 py-2 text-left">Ngày tạo</th>
+                            <th className="px-3 py-2 text-right">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -393,6 +400,11 @@ export default function WorkOrderDetail() {
                                 <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${pr.status === "APPROVED" ? "bg-success/15 text-success" : pr.status === "REJECTED" ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground"}`}>{pr.status}</span>
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{formatDateTime(pr.createdAt)}</td>
+                              <td className="px-3 py-2 text-right">
+                                {(pr.status === "DRAFT" || pr.status === "REJECTED") && (
+                                  <Button size="sm" variant="outline" onClick={() => submitPr(pr.id)}>Gửi duyệt</Button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

@@ -1380,7 +1380,8 @@ export interface UpdatePurchaseRequestInput extends CreatePurchaseRequestInput {
   id: string; status?: string; approvedBy?: string; approvedAt?: string; rejectedReason?: string;
 }
 export interface CreatePurchaseOrderInput {
-  poCode: string; prId?: string; vendorId: string; issueDate?: string; expectedDelivery?: string;
+  // poCode do server sinh — không gửi khi tạo.
+  poCode?: string; prId?: string; vendorId: string; issueDate?: string; expectedDelivery?: string;
   totalAmount?: number; currency?: string; paymentTerms?: string; notes?: string; createdBy?: string;
 }
 export interface UpdatePurchaseOrderInput extends CreatePurchaseOrderInput { id: string; status?: string; actualDelivery?: string; }
@@ -1408,6 +1409,8 @@ export const purchaseRequests = {
   update: (body: UpdatePurchaseRequestInput) =>
     apiFetch<boolean>(`/api/asset/purchase-request/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/purchase-request/delete/${id}`, { method: "DELETE" }),
+  submit: (id: string) =>
+    apiFetch<boolean>(`/api/asset/purchase-request/submit/${id}`, { method: "PUT" }),
   approve: (id: string, approvedBy: string) =>
     apiFetch<boolean>(`/api/asset/purchase-request/approve/${id}`, { method: "PUT", body: JSON.stringify({ approvedBy }) }),
   reject: (id: string, reason: string) =>

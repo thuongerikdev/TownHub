@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, ShoppingCart, Check, X, Trash2, Eye, Clock, CheckCircle2 } from "lucide-react";
+import { Plus, ShoppingCart, Check, X, Trash2, Eye, Clock, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
   purchaseRequests, displayUser, EMPTY_GUID,
@@ -89,6 +89,11 @@ export default function ProcurementRequests() {
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
   }
 
+  async function submitForApproval(p: PurchaseRequestResponse) {
+    const res = await purchaseRequests.submit(p.id);
+    if (res.errorCode === 200) { toast.success(`Đã gửi duyệt ${p.prCode}.`); q.refetch(); }
+    else toast.error(res.errorMessage || "Gửi duyệt thất bại.");
+  }
   async function approve(p: PurchaseRequestResponse) {
     const res = await purchaseRequests.approve(p.id, EMPTY_GUID);
     if (res.errorCode === 200) { toast.success(`Đã duyệt ${p.prCode}.`); q.refetch(); }
@@ -124,6 +129,9 @@ export default function ProcurementRequests() {
       key: "actions", header: "", align: "right",
       cell: (p) => (
         <div className="flex items-center justify-end gap-1">
+          {(p.status === "DRAFT" || p.status === "REJECTED") && (
+            <Button variant="ghost" size="icon" title="Gửi duyệt" className="text-brand hover:text-brand" onClick={() => submitForApproval(p)}><Send className="size-4" /></Button>
+          )}
           {p.status === "SUBMITTED" && (
             <>
               <Button variant="ghost" size="icon" title="Duyệt" className="text-success hover:text-success" onClick={() => approve(p)}><Check className="size-4" /></Button>

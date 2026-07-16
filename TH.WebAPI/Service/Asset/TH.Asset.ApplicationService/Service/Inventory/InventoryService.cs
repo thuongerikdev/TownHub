@@ -38,6 +38,29 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         }
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Đơn đặt hàng:  PO-{yyyyMM}-{NNN}  (server sinh)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class PurchaseOrderCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"PO-{year}{month:D2}-";
+            var codes = await db.PurchaseOrders
+                .Where(x => x.poCode.StartsWith(prefix))
+                .Select(x => x.poCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
     // ============================================================
     // WAREHOUSE SERVICE
     // ============================================================
@@ -633,6 +656,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
         Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null);
         Task<ResponseDto<PurchaseRequestResponse>> GetByIdAsync(Guid id);
+        Task<ResponseDto<bool>> SubmitAsync(Guid id);
         Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy);
         Task<ResponseDto<bool>> RejectAsync(Guid id, string reason);
         Task<ResponseDto<bool>> AddItemAsync(CreatePurchaseRequestItemDto request);
@@ -838,6 +862,31 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
+        public async Task<ResponseDto<bool>> SubmitAsync(Guid id)
+        {
+            try
+            {
+                var entity = await _dbContext.PurchaseRequests.FirstOrDefaultAsync(x => x.id == id);
+                if (entity == null)
+                    return ResponseConst.Error<bool>(404, "Không tìm thấy phiếu đề xuất.");
+
+                // Chỉ gửi duyệt được phiếu nháp; REJECTED có thể gửi lại.
+                if (entity.status != "DRAFT" && entity.status != "REJECTED")
+                    return ResponseConst.Error<bool>(400, "Chỉ có thể gửi duyệt phiếu đề xuất ở trạng thái nháp.");
+
+                entity.status         = "SUBMITTED";
+                entity.rejectedReason = null;
+
+                await _dbContext.SaveChangesAsync();
+                return ResponseConst.Success("Đã gửi phiếu đề xuất chờ duyệt.", true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi duyệt Purchase Request. ID: {Id}", id);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
         public async Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy)
         {
             try
@@ -846,8 +895,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy phiếu đề xuất.");
 
-                if (entity.status != "DRAFT" && entity.status != "PENDING")
-                    return ResponseConst.Error<bool>(400, "Phiếu đề xuất không ở trạng thái có thể duyệt.");
+                // Chỉ duyệt được phiếu đã gửi duyệt (SUBMITTED); "PENDING" giữ cho dữ liệu cũ.
+                if (entity.status != "SUBMITTED" && entity.status != "PENDING")
+                    return ResponseConst.Error<bool>(400, "Chỉ có thể duyệt phiếu đề xuất đã gửi duyệt.");
 
                 entity.status     = "APPROVED";
                 entity.approvedBy = approvedBy;
@@ -870,6 +920,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 var entity = await _dbContext.PurchaseRequests.FirstOrDefaultAsync(x => x.id == id);
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy phiếu đề xuất.");
+
+                if (entity.status != "SUBMITTED" && entity.status != "PENDING")
+                    return ResponseConst.Error<bool>(400, "Chỉ có thể từ chối phiếu đề xuất đã gửi duyệt.");
 
                 entity.status         = "REJECTED";
                 entity.rejectedReason = reason;
@@ -967,17 +1020,17 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                var codeExists = await _dbContext.PurchaseOrders.AnyAsync(x => x.poCode == request.poCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã PO '{request.poCode}' đã tồn tại.");
-
                 var vendorExists = await _dbContext.Vendors.AnyAsync(x => x.id == request.vendorId);
                 if (!vendorExists)
                     return ResponseConst.Error<bool>(400, "Nhà cung cấp không tồn tại.");
 
+                // Mã PO luôn sinh phía server, duy nhất, không cho client tự đặt.
+                var now = DateTime.UtcNow;
+                var poCode = await PurchaseOrderCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
                 _dbContext.PurchaseOrders.Add(new PurchaseOrder
                 {
-                    poCode           = request.poCode,
+                    poCode           = poCode,
                     prId             = request.prId,
                     vendorId         = request.vendorId,
                     issueDate        = request.issueDate,
