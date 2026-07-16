@@ -23,6 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate, daysUntil } from "@/lib/format";
+import { useAuth } from "@/contexts/AuthContext";
 
 const WO_STATUS: Record<string, StatusDef> = {
   DRAFT: { label: "Nháp", tone: "neutral" },
@@ -61,6 +62,7 @@ function DueCell({ value, done }: { value?: string; done?: boolean }) {
 
 export default function WorkOrderList(_props: { userRole?: string }) {
   const router = useRouter();
+  const { user } = useAuth();
   const q = useApiList<WorkOrderResponse>(() => workOrders.getAll(), { mock: mockWorkOrders });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const tplQ = useApiList(() => checklistTemplates.getAll(), { mock: mockChecklistTemplates });
@@ -114,6 +116,9 @@ export default function WorkOrderList(_props: { userRole?: string }) {
     if (!form.checklistTemplateId) { toast.error("Chọn checklist template."); return; }
     if (!form.title.trim()) { toast.error("Nhập tiêu đề công việc."); return; }
     const buildingId = assetsQ.items.find((a) => a.id === form.assetId)?.buildingId ?? "";
+    const creatorName = user
+      ? `${user.profile?.firstName ?? ""} ${user.profile?.lastName ?? ""}`.trim() || user.userName
+      : undefined;
     const base: CreateWorkOrderInput = {
       woCode: form.woCode.trim(), assetId: form.assetId, checklistTemplateId: form.checklistTemplateId,
       buildingId, woType: form.woType, title: form.title.trim(),
@@ -121,6 +126,8 @@ export default function WorkOrderList(_props: { userRole?: string }) {
       scheduledDate: form.scheduledDate ? new Date(form.scheduledDate + "T00:00:00Z").toISOString() : undefined,
       dueDate: form.dueDate ? new Date(form.dueDate + "T00:00:00Z").toISOString() : undefined,
       estimatedHours: form.estimatedHours ? Number(form.estimatedHours) : undefined,
+      // Người tạo lấy từ tài khoản đang đăng nhập (chỉ gán khi tạo mới)
+      ...(editing ? {} : { createdByUserId: user?.userID, createdByName: creatorName }),
     };
     setSubmitting(true);
     const res = editing
@@ -298,7 +305,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
             <DetailRow label="Ước tính">{detail.estimatedHours != null ? `${detail.estimatedHours} giờ` : "—"}</DetailRow>
             <DetailRow label="Thực tế">{detail.actualHours != null ? `${detail.actualHours} giờ` : "—"}</DetailRow>
             <DetailRow label="Chi phí">{formatCurrency(detail.totalCost)}</DetailRow>
-            <DetailRow label="Người tạo">{detail.createdBy ?? "—"}</DetailRow>
+            <DetailRow label="Người tạo">{detail.createdByName ?? detail.createdBy ?? "—"}</DetailRow>
             {detail.description && <div className="col-span-2"><DetailRow label="Mô tả">{detail.description}</DetailRow></div>}
           </div>
         )}

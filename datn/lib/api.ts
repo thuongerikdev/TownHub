@@ -1029,7 +1029,8 @@ export interface WorkOrderResponse {
   scheduledDate?: string; dueDate?: string; actualStartAt?: string; actualEndAt?: string;
   approvedAt?: string; rejectedReason?: string;
   estimatedHours?: number; actualHours?: number; totalCost?: number;
-  createdBy?: string; createdAt: string; updatedAt: string;
+  createdBy?: string; createdByUserId?: number; createdByName?: string;
+  createdAt: string; updatedAt: string;
 }
 export interface WorkOrderChecklistResponse {
   id: string; woId: string; templateItemId: string; itemLabel?: string; itemType?: string;
@@ -1061,7 +1062,8 @@ export interface UpdateMaintenanceScheduleInput extends CreateMaintenanceSchedul
 export interface CreateWorkOrderInput {
   woCode: string; assetId: string; checklistTemplateId: string; buildingId: string;
   scheduleId?: string; woType?: string; title?: string; description?: string;
-  priority?: string; scheduledDate?: string; dueDate?: string; estimatedHours?: number; createdBy?: string;
+  priority?: string; scheduledDate?: string; dueDate?: string; estimatedHours?: number;
+  createdBy?: string; createdByUserId?: number; createdByName?: string;
 }
 export interface UpdateWorkOrderInput extends CreateWorkOrderInput {
   id: string; status?: string; reviewerId?: string;

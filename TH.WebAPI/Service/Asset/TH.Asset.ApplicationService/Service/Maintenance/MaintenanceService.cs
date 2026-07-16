@@ -517,7 +517,9 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                     scheduledDate       = request.scheduledDate,
                     dueDate             = request.dueDate,
                     estimatedHours      = request.estimatedHours,
-                    createdBy           = request.createdBy
+                    createdBy           = request.createdBy,
+                    createdByUserId     = request.createdByUserId,
+                    createdByName       = request.createdByName
                 });
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Tạo lệnh công việc thành công.", true);
@@ -820,6 +822,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             actualHours           = x.actualHours,
             totalCost             = x.totalCost,
             createdBy             = x.createdBy,
+            createdByUserId       = x.createdByUserId,
+            createdByName         = x.createdByName,
             createdAt             = x.createdAt,
             updatedAt             = x.updatedAt
         };

@@ -445,7 +445,8 @@ export default function WorkOrderDetail() {
         <div className="space-y-6">
           <Section title="Phân công" action={canAssign ? <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công</Button> : undefined}>
             <div className="space-y-3 text-sm">
-              <Row label="Người tạo">{wo.createdBy ?? "—"}</Row>
+              <Row label="KTV phụ trách">{wo.assignedToName ?? "Chưa phân công"}</Row>
+              <Row label="Người tạo">{wo.createdByName ?? wo.createdBy ?? "—"}</Row>
               <Row label="Bắt đầu thực tế">{formatDateTime(wo.actualStartAt)}</Row>
               <Row label="Kết thúc thực tế">{formatDateTime(wo.actualEndAt)}</Row>
               {wo.rejectedReason && <Row label="Lý do từ chối"><span className="text-danger">{wo.rejectedReason}</span></Row>}

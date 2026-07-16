@@ -130,6 +130,8 @@ namespace TH.Asset.Dtos
         public decimal? estimatedHours { get; set; }
         // Cross-service (Auth)
         public Guid? createdBy { get; set; }
+        public int? createdByUserId { get; set; }
+        public string? createdByName { get; set; }
     }
 
     public class UpdateWorkOrderDto : CreateWorkOrderDto
@@ -175,6 +177,8 @@ namespace TH.Asset.Dtos
         public decimal? actualHours { get; set; }
         public decimal? totalCost { get; set; }
         public Guid? createdBy { get; set; }
+        public int? createdByUserId { get; set; }
+        public string? createdByName { get; set; }
         public DateTime createdAt { get; set; }
         public DateTime updatedAt { get; set; }
     }
