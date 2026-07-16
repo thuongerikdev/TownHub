@@ -5,6 +5,20 @@ import { useState } from 'react';
 
 import { ArrowLeft, QrCode, Wrench, Ticket, Package, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  assetApi, workOrders as woApi, checklistTemplates,
+  type AssetResponse, type ChecklistTemplateResponse, type CreateWorkOrderInput,
+} from '@/lib/api';
+import { useApi, useApiList } from '@/lib/use-api';
+import { EntityModal, Field } from '@/components/shared';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const emptyWoForm = {
+  woCode: '', woType: 'PM', checklistTemplateId: '', title: '',
+  priority: 'MEDIUM', estimatedHours: '', scheduledDate: '', dueDate: '', description: '',
+};
 
 type Tab = 'info' | 'history' | 'checklist' | 'cost' | 'depreciation';
 
@@ -44,6 +58,44 @@ export default function AssetDetail() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('info');
 
+  const assetId = String(id ?? '');
+  const assetQ = useApi<AssetResponse>(() => assetApi.getById(assetId), { deps: [assetId], enabled: !!assetId });
+  const asset = assetQ.data;
+  const tplQ = useApiList<ChecklistTemplateResponse>(() => checklistTemplates.getAll());
+
+  const [woOpen, setWoOpen] = useState(false);
+  const [woSubmitting, setWoSubmitting] = useState(false);
+  const [woForm, setWoForm] = useState(emptyWoForm);
+
+  function openWo() {
+    if (!asset) { toast.error('Chưa tải được thông tin tài sản.'); return; }
+    setWoForm({
+      ...emptyWoForm,
+      woCode: `WO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      title: `Bảo trì ${asset.name}`,
+      checklistTemplateId: tplQ.items.find((t) => t.categoryId === asset.categoryId)?.id ?? '',
+    });
+    setWoOpen(true);
+  }
+
+  async function submitWo() {
+    if (!asset) return;
+    if (!woForm.checklistTemplateId) { toast.error('Chọn checklist template.'); return; }
+    if (!woForm.title.trim()) { toast.error('Nhập tiêu đề công việc.'); return; }
+    setWoSubmitting(true);
+    const body: CreateWorkOrderInput = {
+      woCode: woForm.woCode.trim(), assetId: asset.id, checklistTemplateId: woForm.checklistTemplateId,
+      buildingId: asset.buildingId, woType: woForm.woType, title: woForm.title.trim(),
+      description: woForm.description.trim() || undefined, priority: woForm.priority,
+      scheduledDate: woForm.scheduledDate || undefined, dueDate: woForm.dueDate || undefined,
+      estimatedHours: woForm.estimatedHours ? Number(woForm.estimatedHours) : undefined,
+    };
+    const res = await woApi.create(body);
+    setWoSubmitting(false);
+    if (res.errorCode === 200) { toast.success(`Đã tạo WO ${body.woCode}.`); setWoOpen(false); }
+    else toast.error(res.errorMessage || 'Tạo WO thất bại.');
+  }
+
   return (
     <div>
       <button onClick={() => router.push('/assets')} className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300 mb-4 transition-colors">
@@ -53,16 +105,16 @@ export default function AssetDetail() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-zinc-100">Thang máy T1 Block A</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">● Hoạt động</span>
+            <h1 className="text-2xl font-bold text-zinc-100">{asset?.name ?? (assetQ.loading ? 'Đang tải…' : 'Tài sản')}</h1>
+            {asset && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">● {asset.status}</span>}
           </div>
-          <p className="text-sm text-zinc-500 mt-1">AST-2025-0042 · Thang máy · Block A, Tầng 1–20</p>
+          <p className="text-sm text-zinc-500 mt-1">{asset ? `${asset.assetCode}${asset.categoryName ? ' · ' + asset.categoryName : ''}${asset.locationAreaCode ? ' · ' + asset.locationAreaCode : ''}` : ''}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => toast.info('QR code')} className="flex items-center gap-1.5 px-3 py-2 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-950 text-sm font-medium transition-colors">
             <QrCode className="w-4 h-4" /> QR Code
           </button>
-          <button onClick={() => router.push(`/pm/work-orders`)} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
+          <button onClick={openWo} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
             <Wrench className="w-4 h-4" /> Tạo WO
           </button>
         </div>
@@ -293,6 +345,66 @@ export default function AssetDetail() {
           </div>
         </div>
       )}
+
+      <EntityModal
+        open={woOpen}
+        onOpenChange={setWoOpen}
+        title="Tạo Work Order"
+        description={asset ? `${asset.assetCode} · ${asset.name}` : ''}
+        size="lg"
+        onSubmit={submitWo}
+        submitting={woSubmitting}
+        submitLabel="Tạo"
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Mã WO" required>
+            <Input value={woForm.woCode} onChange={(e) => setWoForm((f) => ({ ...f, woCode: e.target.value }))} />
+          </Field>
+          <Field label="Loại">
+            <Select value={woForm.woType} onValueChange={(v) => setWoForm((f) => ({ ...f, woType: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PM">PM — Bảo trì định kỳ</SelectItem>
+                <SelectItem value="CM">CM — Sửa chữa</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Tài sản" className="col-span-2">
+            <Input value={asset ? `${asset.assetCode} · ${asset.name}` : ''} disabled />
+          </Field>
+          <Field label="Checklist template" required className="col-span-2">
+            <Select value={woForm.checklistTemplateId} onValueChange={(v) => setWoForm((f) => ({ ...f, checklistTemplateId: v }))}>
+              <SelectTrigger><SelectValue placeholder={tplQ.loading ? 'Đang tải…' : 'Chọn template'} /></SelectTrigger>
+              <SelectContent>
+                {tplQ.items.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Tiêu đề" required className="col-span-2">
+            <Input value={woForm.title} onChange={(e) => setWoForm((f) => ({ ...f, title: e.target.value }))} />
+          </Field>
+          <Field label="Độ ưu tiên">
+            <Select value={woForm.priority} onValueChange={(v) => setWoForm((f) => ({ ...f, priority: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Ước tính (giờ)">
+            <Input type="number" value={woForm.estimatedHours} onChange={(e) => setWoForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" />
+          </Field>
+          <Field label="Ngày thực hiện">
+            <Input type="date" value={woForm.scheduledDate} onChange={(e) => setWoForm((f) => ({ ...f, scheduledDate: e.target.value }))} />
+          </Field>
+          <Field label="Hạn hoàn thành">
+            <Input type="date" value={woForm.dueDate} onChange={(e) => setWoForm((f) => ({ ...f, dueDate: e.target.value }))} />
+          </Field>
+          <Field label="Mô tả công việc" className="col-span-2">
+            <Textarea rows={3} value={woForm.description} onChange={(e) => setWoForm((f) => ({ ...f, description: e.target.value }))} />
+          </Field>
+        </div>
+      </EntityModal>
     </div>
   );
 }
