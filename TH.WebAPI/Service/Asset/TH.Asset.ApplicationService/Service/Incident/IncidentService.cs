@@ -210,13 +210,39 @@ namespace TH.Asset.ApplicationService.Service.Incident
         public TicketService(ILogger<TicketService> logger, AssetDbContext dbContext)
             : base(logger, dbContext) { }
 
+        // Sinh mã ticket dạng TK-{năm}{tháng}-{số thứ tự 4 chữ số}, tự tăng theo dữ liệu hiện có.
+        private async Task<string> NextTicketCodeAsync(int year, int month)
+        {
+            var prefix = $"TK-{year}{month:D2}-";
+            var codes = await _dbContext.Tickets
+                .Where(x => x.ticketCode.StartsWith(prefix))
+                .Select(x => x.ticketCode)
+                .ToListAsync();
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D4}";
+        }
+
         public async Task<ResponseDto<bool>> CreateAsync(CreateTicketDto request)
         {
             try
             {
-                var codeExists = await _dbContext.Tickets.AnyAsync(x => x.ticketCode == request.ticketCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã ticket '{request.ticketCode}' đã tồn tại.");
+                // Mã ticket: client có thể để trống → server tự sinh.
+                if (string.IsNullOrWhiteSpace(request.ticketCode))
+                {
+                    var now = DateTime.UtcNow;
+                    request.ticketCode = await NextTicketCodeAsync(now.Year, now.Month);
+                }
+                else
+                {
+                    var codeExists = await _dbContext.Tickets.AnyAsync(x => x.ticketCode == request.ticketCode);
+                    if (codeExists)
+                        return ResponseConst.Error<bool>(400, $"Mã ticket '{request.ticketCode}' đã tồn tại.");
+                }
 
                 var ticket = new Ticket
                 {

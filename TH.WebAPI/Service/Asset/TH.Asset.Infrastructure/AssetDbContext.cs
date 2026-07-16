@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TH.Asset.Domain.Core;
 using TH.Asset.Domain.Incident;
 using TH.Asset.Domain.Inventory;
@@ -387,6 +388,25 @@ namespace TH.Asset.Infrastructure.Database
             // CostTracking
             modelBuilder.Entity<CostTracking>()
                 .Property(x => x.amount).HasColumnType("numeric(18,0)");
+
+            // ====== UTC CONVERTERS ======
+            // Ngày client gửi (vd "2026-07-16") có Kind=Unspecified → Npgsql từ chối ghi vào cột
+            // timestamptz. Ép mọi DateTime về UTC khi ghi & đọc (giống AuthDbContext). Đây là cách
+            // đáng tin cậy hơn interceptor SaveChanges (vốn không chặn được ca này).
+            var utcDateTimeConverter = new ValueConverter<DateTime, DateTime>(
+                v => v.Kind == DateTimeKind.Utc ? v : (v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : DateTime.SpecifyKind(v, DateTimeKind.Utc)),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            var utcNullableDateTimeConverter = new ValueConverter<DateTime?, DateTime?>(
+                v => v == null ? (DateTime?)null : (v.Value.Kind == DateTimeKind.Utc ? v.Value : (v.Value.Kind == DateTimeKind.Local ? v.Value.ToUniversalTime() : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc))),
+                v => v == null ? (DateTime?)null : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc));
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var prop in entity.GetProperties())
+                {
+                    if (prop.ClrType == typeof(DateTime)) prop.SetValueConverter(utcDateTimeConverter);
+                    if (prop.ClrType == typeof(DateTime?)) prop.SetValueConverter(utcNullableDateTimeConverter);
+                }
+            }
         }
     }
 }
