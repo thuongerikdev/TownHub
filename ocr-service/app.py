@@ -212,11 +212,23 @@ def _extract_line_items(rows):
         for c in r['cells']:
             k = min(cols, key=lambda kk: abs(_cx(c) - cols[kk]))
             bucket[k].append(c)
+
+        def num_col(key):
+            """Cột số: chọn ô có SỐ gần tâm cột nhất (KHÔNG nối nhiều ô -> tránh dính số)."""
+            if key not in cols: return None
+            best, bd = None, 1e9
+            for c in bucket.get(key, []):
+                v = _num(c['text'])
+                if v is None: continue
+                d = abs(_cx(c) - cols[key])
+                if d < bd: bd, best = d, v
+            return best
+
         desc = ' '.join(c['text'] for c in bucket.get('description', [])).strip()
         desc = re.sub(r'^\s*\d+\s+', '', desc)      # bỏ số thứ tự đầu dòng
-        qty   = _num(' '.join(c['text'] for c in bucket.get('quantity', [])))
-        up    = _num(' '.join(c['text'] for c in bucket.get('unitPrice', [])))
-        tp    = _num(' '.join(c['text'] for c in bucket.get('totalPrice', [])))
+        qty   = num_col('quantity')
+        up    = num_col('unitPrice')
+        tp    = num_col('totalPrice')
         unit  = ' '.join(c['text'] for c in bucket.get('unit', [])).strip()
         # bỏ hàng rác: cần có mô tả chữ + ít nhất 1 số tiền
         if len(re.sub(r'[^A-Za-zÀ-ỹ]', '', desc)) < 2:
