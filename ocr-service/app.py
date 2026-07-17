@@ -177,9 +177,37 @@ def _group_rows(lines, tol_ratio=0.6):
 
 def _cx(cell): return (cell['box'][0] + cell['box'][2]) / 2
 
-def _extract_line_items(rows):
-    """Trích bảng chi tiết dựa vào toạ độ cột của hàng tiêu đề."""
-    hi, cols = None, None
+_HDR_KEYS = ('thanh tien', 'don gia', 'so luong', 'dvt', 'ten hang',
+             'noi dung', 'san pham', 'hang hoa', 'stt')
+
+def _deskew(lines):
+    """Khử nghiêng ảnh: ước lượng độ nghiêng từ các ô HÀNG TIÊU ĐỀ bảng
+    (thẳng hàng ngang) rồi trừ khỏi y mọi ô. Ảnh hoá đơn chụp thường lệch
+    vài độ khiến gom hàng theo y bị sai (gộp nhầm dòng)."""
+    hc = [c for c in lines
+          if any(k in _strip(c['text']) for k in _HDR_KEYS) or _strip(c['text']) == 'sl']
+    if len(hc) < 3:
+        return lines
+    xs = [_cx(c) for c in hc]; ys = [(c['box'][1] + c['box'][3]) / 2 for c in hc]
+    mx = sum(xs) / len(xs); my = sum(ys) / len(ys)
+    var = sum((x - mx) ** 2 for x in xs)
+    slope = (sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / var) if var else 0.0
+    if abs(slope) < 1e-3:
+        return lines
+    out = []
+    for c in lines:
+        dy = slope * _cx(c)
+        b = c['box']
+        out.append({**c, 'box': [b[0], int(b[1] - dy), b[2], int(b[3] - dy)]})
+    return out
+
+STOP_KEYS = ('cong tien hang', 'cong tien', 'tong cong', 'tong tien', 'thue suat',
+             'tien thue', 'thanh toan', 'nguoi mua', 'nguoi ban', 'bang chu')
+
+def _extract_line_items(rows, lines):
+    """Trích bảng chi tiết. Chống ẢNH NGHIÊNG: ước lượng độ nghiêng từ hàng tiêu đề
+    rồi hiệu chỉnh y trước khi gom hàng -> không gộp nhầm 2 dòng vào 1."""
+    hi, cols, hdr = None, None, None
     for i, r in enumerate(rows):
         j = _strip(r['text'])
         has_desc = any(k in j for k in ('noi dung', 'ten hang', 'dien giai', 'san pham', 'hang hoa', 'ten')) or 'stt' in j
@@ -187,63 +215,81 @@ def _extract_line_items(rows):
             cols = {}
             for c in r['cells']:
                 t = _strip(c['text']); x = _cx(c)
-                if 'thanh tien' in t or 'thanh tiên' in t: cols['totalPrice'] = x
-                elif 'don gia' in t:                        cols['unitPrice']  = x
-                elif t in ('sl',) or 'so luong' in t:       cols['quantity']   = x
-                elif 'dvt' in t or 'don vi' in t:           cols['unit']       = x
+                if 'thanh tien' in t:                  cols['totalPrice'] = x
+                elif 'don gia' in t:                   cols['unitPrice']  = x
+                elif t in ('sl',) or 'so luong' in t:  cols['quantity']   = x
+                elif 'dvt' in t or 'don vi' in t:      cols['unit']       = x
                 elif any(k in t for k in ('noi dung','ten hang','dien giai','san pham','hang hoa','ten','stt')):
                     cols.setdefault('description', x)
             if 'totalPrice' in cols and ('description' in cols or 'unitPrice' in cols):
-                hi = i; break
+                hi, hdr = i, r; break
     if hi is None:
         return []
 
-    STOP = ('cong tien hang', 'cong tien', 'tong cong', 'tong tien', 'thue suat',
-            'tien thue', 'thanh toan', 'nguoi mua', 'nguoi ban', 'bang chu')
+    # Độ nghiêng: khớp đường thẳng y = slope*x + b qua các ô của hàng tiêu đề.
+    hc = hdr['cells']; slope = 0.0
+    if len(hc) >= 2:
+        xs = [_cx(c) for c in hc]; ys = [(c['box'][1] + c['box'][3]) / 2 for c in hc]
+        mx = sum(xs) / len(xs); my = sum(ys) / len(ys)
+        var = sum((x - mx) ** 2 for x in xs)
+        if var: slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / var
+    def yc(c): return (c['box'][1] + c['box'][3]) / 2 - slope * _cx(c)   # y đã bỏ nghiêng
+
+    hy = sum(yc(c) for c in hc) / len(hc)
+    hts = [c['box'][3] - c['box'][1] for c in lines if c['box'][3] - c['box'][1] > 0]
+    rh = sorted(hts)[len(hts) // 2] if hts else 20      # chiều cao dòng trung vị
+
+    # ngưỡng dừng = y' nhỏ nhất của dòng chứa từ khoá tổng/thuế (nằm dưới bảng)
+    stop_yc = float('inf')
+    for c in lines:
+        if yc(c) > hy + rh * 0.3 and any(s in _strip(c['text']) for s in STOP_KEYS):
+            stop_yc = min(stop_yc, yc(c))
+
+    # gom các ô trong vùng bảng theo y' (đã hiệu chỉnh nghiêng)
+    body = sorted([c for c in lines if hy + rh * 0.4 < yc(c) < stop_yc - rh * 0.2], key=yc)
+    groups = []
+    for c in body:
+        if groups and abs(yc(c) - groups[-1]['y']) <= rh * 0.6:
+            g = groups[-1]; g['cells'].append(c)
+            g['y'] = sum(yc(x) for x in g['cells']) / len(g['cells'])
+        else:
+            groups.append({'y': yc(c), 'cells': [c]})
+
+    def num_col(bucket, key):
+        if key not in cols: return None
+        best, bd = None, 1e9
+        for c in bucket.get(key, []):
+            v = _num(c['text'])
+            if v is None: continue
+            d = abs(_cx(c) - cols[key])
+            if d < bd: bd, best = d, v
+        return best
+
     items = []
-    for r in rows[hi + 1:]:
-        j = _strip(r['text'])
-        if any(s in j for s in STOP):
-            break
-        if not r['cells']:
-            continue
-        # gán mỗi cell vào cột gần nhất theo x
+    for g in groups:
         bucket = {k: [] for k in cols}
-        for c in r['cells']:
+        for c in sorted(g['cells'], key=_cx):
             k = min(cols, key=lambda kk: abs(_cx(c) - cols[kk]))
             bucket[k].append(c)
-
-        def num_col(key):
-            """Cột số: chọn ô có SỐ gần tâm cột nhất (KHÔNG nối nhiều ô -> tránh dính số)."""
-            if key not in cols: return None
-            best, bd = None, 1e9
-            for c in bucket.get(key, []):
-                v = _num(c['text'])
-                if v is None: continue
-                d = abs(_cx(c) - cols[key])
-                if d < bd: bd, best = d, v
-            return best
-
         desc = ' '.join(c['text'] for c in bucket.get('description', [])).strip()
-        desc = re.sub(r'^\s*\d+\s+', '', desc)      # bỏ số thứ tự đầu dòng
-        qty   = num_col('quantity')
-        up    = num_col('unitPrice')
-        tp    = num_col('totalPrice')
-        unit  = ' '.join(c['text'] for c in bucket.get('unit', [])).strip()
-        # bỏ hàng rác: cần có mô tả chữ + ít nhất 1 số tiền
-        if len(re.sub(r'[^A-Za-zÀ-ỹ]', '', desc)) < 2:
+        desc = re.sub(r'^\s*\d+\s+', '', desc)          # bỏ số thứ tự đầu dòng
+        qty  = num_col(bucket, 'quantity')
+        up   = num_col(bucket, 'unitPrice')
+        tp   = num_col(bucket, 'totalPrice')
+        unit = ' '.join(c['text'] for c in bucket.get('unit', [])).strip()
+        if len(re.sub(r'[^A-Za-zÀ-ỹ]', '', desc)) < 2:   # cần có mô tả chữ
             continue
-        if tp is None and up is None:
+        if tp is None and up is None:                    # cần ít nhất 1 số tiền
             continue
-        item = {'description': desc, 'unit': unit or None,
-                'quantity': qty, 'unitPrice': up, 'totalPrice': tp}
-        items.append(item)
+        items.append({'description': desc, 'unit': unit or None,
+                      'quantity': qty, 'unitPrice': up, 'totalPrice': tp})
     return items
 
 def parse_invoice_vietocr(lines):
     """Bóc tách trường + bảng chi tiết từ 'lines' [{text, box:[x0,y0,x1,y1], prob}].
     Dùng chung cho cả pipeline VietOCR và PaddleOCR. Trả (raw, fields, line_items)."""
     raw    = '\n'.join(l['text'] for l in lines)
+    lines  = _deskew(lines)          # khử nghiêng trước khi gom hàng (fields + bảng đều lợi)
     rows   = _group_rows(lines)
     fields = {'currency': 'VND'}
 
@@ -334,7 +380,7 @@ def parse_invoice_vietocr(lines):
         fields['taxRate'] = round(tax / sub * 100)
 
     # ── Bảng chi tiết ──
-    line_items = _extract_line_items(rows)
+    line_items = _extract_line_items(rows, lines)
     return raw, fields, line_items
 
 def extract_vietocr(url):
