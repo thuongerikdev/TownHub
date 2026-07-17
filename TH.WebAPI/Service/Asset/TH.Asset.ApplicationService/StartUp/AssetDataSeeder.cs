@@ -517,6 +517,159 @@ namespace TH.Asset.ApplicationService.StartUp
             logger.LogInformation("[AssetSeeder] Seeding hoàn tất — đã tạo dữ liệu mẫu cho 6 sub-domain Asset.");
         }
 
+        // ════════════════════════════════════════════════════════════════════
+        // Catalog top-up — bổ sung Nhà cung cấp / Danh mục vật tư / Vật tư
+        // (kèm Đơn vị tính) lấy từ bộ dataset hóa đơn TownHub dùng cho OCR.
+        //
+        // Chạy ĐỘC LẬP với SeedAllAsync (không bị chặn bởi guard AssetCategories):
+        //   • Idempotent theo mã (code / vendorCode / materialCode) — chỉ thêm
+        //     phần còn thiếu nên an toàn cả khi DB đã seed lẫn DB mới.
+        //   • Mỗi vật tư được điền ĐẦY ĐỦ thông tin: ĐVT, tồn min/max, điểm/số
+        //     lượng đặt lại, đơn giá, nhà cung cấp ưu tiên, ghi chú, trạng thái.
+        // ════════════════════════════════════════════════════════════════════
+        public static async Task SeedDatasetCatalogAsync(AssetDbContext context, ILogger logger)
+        {
+            var strategy = context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                context.ChangeTracker.Clear();
+                await using var tx = await context.Database.BeginTransactionAsync();
+
+                // ── 1) Danh mục vật tư còn thiếu (theo dataset hàng hóa) ──────
+                var catByCode = await context.MaterialCategories.ToDictionaryAsync(c => c.code, c => c);
+                var newCats = new (string code, string name)[]
+                {
+                    ("MC-IT",    "Thiết bị tin học - văn phòng"),
+                    ("MC-FURN",  "Nội thất văn phòng"),
+                    ("MC-BUILD", "Vật tư xây dựng - hoàn thiện"),
+                    ("MC-APPL",  "Thiết bị điện gia dụng"),
+                };
+                foreach (var (code, name) in newCats)
+                {
+                    if (catByCode.ContainsKey(code)) continue;
+                    var c = new MaterialCategory { code = code, name = name };
+                    context.MaterialCategories.Add(c);
+                    catByCode[code] = c;
+                }
+
+                // ── 2) Nhà cung cấp còn thiếu (tên rút từ dataset hóa đơn) ────
+                var venByCode = await context.Vendors.ToDictionaryAsync(v => v.vendorCode, v => v);
+                void AddVendor(string code, string name, string tax, string contact,
+                               string email, string phone, string address, string notes)
+                {
+                    if (venByCode.ContainsKey(code)) return;
+                    var v = new VendorEntity
+                    {
+                        vendorCode = code, name = name, taxId = tax, status = "ACTIVE",
+                        contactName = contact, contactEmail = email, contactPhone = phone,
+                        address = address, notes = notes
+                    };
+                    context.Vendors.Add(v);
+                    venByCode[code] = v;
+                }
+                AddVendor("V006", "Công ty TNHH Thương Mại Phương Nam",   "0106123456", "Trần Minh Phương", "phuong.tran@phuongnam.com.vn",  "0906123456", "Số 12 Nguyễn Trãi, Thanh Xuân, Hà Nội",       "Cung cấp thiết bị điện gia dụng, quạt, bình nóng lạnh.");
+                AddVendor("V007", "Công ty Cổ Phần Đông Á",               "0106234567", "Lê Thị Hồng Đào",  "dao.le@donga.com.vn",           "0906234567", "Số 45 Trần Duy Hưng, Cầu Giấy, Hà Nội",       "Phân phối thiết bị tin học - văn phòng, camera an ninh.");
+                AddVendor("V008", "Công ty TNHH Dịch Vụ Thành Đạt",       "0106345678", "Phạm Văn Thành",   "thanh.pham@thanhdat.com.vn",    "0906345678", "Số 78 Lê Văn Lương, Nam Từ Liêm, Hà Nội",     "Cung cấp nội thất văn phòng: bàn ghế, tủ tài liệu.");
+                AddVendor("V009", "Công ty TNHH MTV Sơn Hà",              "0106456789", "Nguyễn Sơn Hà",    "ha.nguyen@sonha.com.vn",        "0906456789", "Số 210 Giải Phóng, Hoàng Mai, Hà Nội",        "Vật tư xây dựng, thép hộp, ống nhựa, xi măng.");
+                AddVendor("V010", "Công ty TNHH Thương Mại Bình Minh",    "0106567890", "Đỗ Bình Minh",     "minh.do@binhminh.com.vn",       "0906567890", "Số 5 Nguyễn Văn Cừ, Long Biên, Hà Nội",       "Máy lạnh, thiết bị điều hòa - thông gió.");
+                AddVendor("V011", "Công ty TNHH Dịch Vụ An Khang",        "0106678901", "Vũ An Khang",      "khang.vu@ankhang.com.vn",       "0906678901", "Số 33 Cầu Giấy, Cầu Giấy, Hà Nội",            "Vật tư điện: dây điện, bóng đèn, aptomat.");
+                AddVendor("V012", "Công ty Cổ Phần Phú Thịnh",            "0106789012", "Hoàng Phú Thịnh",  "thinh.hoang@phuthinh.com.vn",   "0906789012", "Số 88 Phạm Hùng, Nam Từ Liêm, Hà Nội",        "Nội thất & thiết bị văn phòng nhập khẩu.");
+                AddVendor("V013", "Công ty TNHH Thương Mại Trường Sơn",   "0106890123", "Bùi Trường Sơn",   "son.bui@truongson.com.vn",      "0906890123", "Số 156 Trường Chinh, Đống Đa, Hà Nội",        "Vật tư hoàn thiện: sơn nước, gạch ốp lát.");
+                AddVendor("V014", "Doanh Nghiệp Tư Nhân Nam Sơn",         "0106901234", "Đinh Nam Sơn",     "son.dinh@namson.com.vn",        "0906901234", "Số 27 Khuất Duy Tiến, Thanh Xuân, Hà Nội",    "Vật liệu xây dựng, xi măng, thép.");
+                AddVendor("V015", "Công ty TNHH MTV Việt Long",           "0107012345", "Trịnh Việt Long",  "long.trinh@vietlong.com.vn",    "0907012345", "Số 64 Xuân Thủy, Cầu Giấy, Hà Nội",           "Thiết bị lưu trữ, linh kiện máy tính, mực in.");
+
+                await context.SaveChangesAsync(); // để có id cho FK bên dưới
+
+                // ── 3) Vật tư còn thiếu — đầy đủ thông tin, theo 20 mặt hàng
+                //        xuất hiện trong dataset hóa đơn OCR của TownHub ──────
+                var matCodes = await context.Materials.Select(m => m.materialCode).ToListAsync();
+                var existing = new HashSet<string>(matCodes);
+
+                void AddMat(string code, string name, string catCode, string vendorCode, string uom,
+                            decimal min, decimal max, decimal reorderPt, decimal reorderQty,
+                            decimal price, string notes)
+                {
+                    if (existing.Contains(code)) return;
+                    if (!catByCode.TryGetValue(catCode, out var mc)) return;         // danh mục phải tồn tại
+                    venByCode.TryGetValue(vendorCode, out var pv);                    // NCC ưu tiên (nếu có)
+                    context.Materials.Add(new Material
+                    {
+                        materialCode = code, name = name, categoryId = mc.id,
+                        preferredVendorId = pv?.id, unitOfMeasure = uom,
+                        minStock = min, maxStock = max, reorderPoint = reorderPt,
+                        reorderQuantity = reorderQty, unitPrice = price,
+                        isActive = true, notes = notes
+                    });
+                    existing.Add(code);
+                }
+
+                // Thiết bị tin học - văn phòng (MC-IT)
+                AddMat("MAT-011", "Bàn phím cơ",           "MC-IT",   "V007", "Chiếc",   10,  60,  15,  20,     850_000, "Bàn phím cơ dùng cho khối văn phòng.");
+                AddMat("MAT-012", "Chuột không dây",       "MC-IT",   "V007", "Chiếc",   10,  60,  15,  20,     350_000, "Chuột không dây kết nối USB/Bluetooth.");
+                AddMat("MAT-013", "Ổ cứng SSD 512GB",      "MC-IT",   "V015", "Chiếc",    5,  40,  10,  15,   1_150_000, "Ổ SSD 512GB nâng cấp máy tính văn phòng.");
+                AddMat("MAT-014", "Mực in HP 12A",         "MC-IT",   "V015", "Hộp",      8,  50,  12,  20,   1_450_000, "Hộp mực HP 12A cho máy in laser.");
+                AddMat("MAT-015", "Máy in Canon 2900",     "MC-IT",   "V007", "Chiếc",    2,  15,   3,   5,   3_200_000, "Máy in laser Canon LBP 2900.");
+                AddMat("MAT-016", "Giấy A4 Double A",      "MC-IT",   "V015", "Ram",     30, 200,  50,  80,      75_000, "Giấy in A4 70gsm, 500 tờ/ram.");
+                AddMat("MAT-017", "Camera an ninh 4MP",    "MC-IT",   "V007", "Chiếc",    5,  40,  10,  15,   1_250_000, "Camera IP giám sát an ninh 4MP.");
+                // Nội thất văn phòng (MC-FURN)
+                AddMat("MAT-018", "Tủ tài liệu sắt",       "MC-FURN", "V008", "Chiếc",    3,  25,   5,   8,   2_400_000, "Tủ hồ sơ sắt 4 ngăn cho văn phòng.");
+                AddMat("MAT-019", "Ghế xoay văn phòng",    "MC-FURN", "V012", "Chiếc",    5,  40,  10,  15,   1_150_000, "Ghế xoay có tựa lưng, tay vịn.");
+                AddMat("MAT-020", "Bàn làm việc gỗ MDF",   "MC-FURN", "V008", "Chiếc",    3,  30,   6,  10,   1_800_000, "Bàn làm việc gỗ MDF phủ melamine.");
+                // Vật tư xây dựng - hoàn thiện (MC-BUILD)
+                AddMat("MAT-021", "Thép hộp mạ kẽm",       "MC-BUILD","V009", "Cây",     20, 200,  40,  60,     185_000, "Thép hộp mạ kẽm dùng cho kết cấu phụ.");
+                AddMat("MAT-022", "Ống nhựa PVC D110",     "MC-BUILD","V009", "Cây",     15, 150,  30,  50,     210_000, "Ống nhựa PVC D110 thoát nước.");
+                AddMat("MAT-023", "Xi măng PCB40",         "MC-BUILD","V014", "Bao",     20, 200,  40,  60,      95_000, "Xi măng PCB40 bao 50kg.");
+                AddMat("MAT-024", "Sơn nước ngoại thất",   "MC-BUILD","V013", "Thùng",    5,  40,  10,  15,   1_650_000, "Sơn nước ngoại thất thùng 18L.");
+                AddMat("MAT-025", "Gạch ốp lát 60x60",     "MC-BUILD","V013", "m²",      30, 300,  60, 100,     285_000, "Gạch ốp lát granite 60x60cm.");
+                // Thiết bị điện gia dụng (MC-APPL)
+                AddMat("MAT-026", "Máy lạnh Daikin 1.5HP", "MC-APPL", "V010", "Bộ",       2,  20,   4,   6,  12_500_000, "Máy lạnh Daikin 1.5HP inverter.");
+                AddMat("MAT-027", "Quạt trần Panasonic",   "MC-APPL", "V010", "Chiếc",    3,  30,   6,  10,   1_850_000, "Quạt trần Panasonic 3 cánh.");
+                AddMat("MAT-028", "Bình nước nóng 20L",    "MC-APPL", "V006", "Chiếc",    3,  25,   5,   8,   3_100_000, "Bình nước nóng gián tiếp 20L.");
+                // Vật tư điện (MC-ELEC — đã tồn tại)
+                AddMat("MAT-029", "Bóng đèn LED 18W",      "MC-ELEC", "V011", "Bóng",    30, 250,  60, 100,      95_000, "Bóng đèn LED tuýp/panel 18W.");
+
+                await context.SaveChangesAsync();
+
+                // ── 4) Tồn kho ban đầu cho vật tư mới tại kho chính (WH-01) ──
+                var whMain = await context.Warehouses.FirstOrDefaultAsync(w => w.code == "WH-01");
+                if (whMain != null)
+                {
+                    var newMats = await context.Materials
+                        .Where(m => existing.Contains(m.materialCode))
+                        .Select(m => new { m.id, m.materialCode })
+                        .ToListAsync();
+                    var leveledMatIds = await context.InventoryLevels
+                        .Where(l => l.warehouseId == whMain.id)
+                        .Select(l => l.materialId)
+                        .ToListAsync();
+                    var leveled = new HashSet<Guid>(leveledMatIds);
+
+                    var initialQty = new Dictionary<string, decimal>
+                    {
+                        ["MAT-011"] = 25, ["MAT-012"] = 30, ["MAT-013"] = 18, ["MAT-014"] = 22,
+                        ["MAT-015"] = 6,  ["MAT-016"] = 120,["MAT-017"] = 14, ["MAT-018"] = 8,
+                        ["MAT-019"] = 16, ["MAT-020"] = 10, ["MAT-021"] = 60, ["MAT-022"] = 45,
+                        ["MAT-023"] = 80, ["MAT-024"] = 12, ["MAT-025"] = 90, ["MAT-026"] = 5,
+                        ["MAT-027"] = 12, ["MAT-028"] = 7,  ["MAT-029"] = 100,
+                    };
+                    foreach (var m in newMats)
+                    {
+                        if (leveled.Contains(m.id)) continue;
+                        if (!initialQty.TryGetValue(m.materialCode, out var qty)) continue;
+                        context.InventoryLevels.Add(new InventoryLevel
+                        {
+                            warehouseId = whMain.id, materialId = m.id, quantityOnHand = qty
+                        });
+                    }
+                    await context.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+            });
+
+            logger.LogInformation("[AssetSeeder] Catalog top-up hoàn tất — đã đồng bộ NCC / danh mục / vật tư từ dataset.");
+        }
+
         private static string KpiJson(double mttr, double mtbf, int tNew, int tRes, int tOver,
             int woComp, double woRate, double sla, double avail, int pmOver, long cost)
         {

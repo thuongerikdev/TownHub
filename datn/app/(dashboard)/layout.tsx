@@ -64,6 +64,9 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
           { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
           { label: "Chứng từ kế toán", path: "/assets/documents", perm: "asset.view" },
           { label: "Thanh lý", path: "/assets/disposals", perm: "asset.view" },
+          { label: "Nhật ký chung", path: "/assets/journal", perm: "asset.view" },
+          { label: "Sổ cái", path: "/assets/ledger", perm: "asset.view" },
+          { label: "Báo cáo kế toán", path: "/assets/reports", perm: "asset.view" },
         ],
       },
       {

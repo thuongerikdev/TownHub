@@ -375,4 +375,68 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ASSET REPORT CONTROLLER — Sổ kế toán & báo cáo (Nhật ký chung, Sổ cái,
+    // Bảng cân đối SPS, Sổ TSCĐ, Báo cáo tăng/giảm TSCĐ)
+    // ════════════════════════════════════════════════════════════════════════
+    [ApiController]
+    [Route("api/asset/asset-report")]
+    public class AssetReportController : ControllerBase
+    {
+        private readonly IAssetReportService _service;
+        public AssetReportController(IAssetReportService service) => _service = service;
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("accounts")]
+        public async Task<IActionResult> GetAccounts()
+        {
+            var result = await _service.GetAccountsAsync();
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("journal")]
+        public async Task<IActionResult> GetJournal(
+            [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string? account)
+        {
+            var result = await _service.GetJournalAsync(from, to, account);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("ledger")]
+        public async Task<IActionResult> GetLedger(
+            [FromQuery] string account, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _service.GetLedgerAsync(account, from, to);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 400) return BadRequest(result);
+            return BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("trial-balance")]
+        public async Task<IActionResult> GetTrialBalance([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _service.GetTrialBalanceAsync(from, to);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("asset-register")]
+        public async Task<IActionResult> GetAssetRegister()
+        {
+            var result = await _service.GetAssetRegisterAsync();
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "AssetView")]
+        [HttpGet("movement")]
+        public async Task<IActionResult> GetMovement([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _service.GetAssetMovementAsync(from, to);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+    }
 }

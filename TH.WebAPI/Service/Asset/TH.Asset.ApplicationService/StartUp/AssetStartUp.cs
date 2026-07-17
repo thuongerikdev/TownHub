@@ -126,6 +126,7 @@ namespace TH.Asset.ApplicationService.StartUp
             builder.Services.AddScoped<IAssetDepreciationService,  AssetDepreciationService>();
             builder.Services.AddScoped<IAssetDocumentService,      AssetDocumentService>();
             builder.Services.AddScoped<IAssetDisposalService,      AssetDisposalService>();
+            builder.Services.AddScoped<IAssetReportService,        AssetReportService>();
 
             // ── Maintenance ──
             builder.Services.AddScoped<IChecklistTemplateService,  ChecklistTemplateService>();
@@ -198,6 +199,10 @@ namespace TH.Asset.ApplicationService.StartUp
 
                 // ── Seed dữ liệu mẫu cho toàn bộ module (idempotent) ──────
                 await AssetDataSeeder.SeedAllAsync(context, logger);
+
+                // ── Bổ sung NCC / danh mục / vật tư từ dataset hóa đơn OCR ──
+                //     (idempotent theo mã — chạy được cả trên DB đã seed) ────
+                await AssetDataSeeder.SeedDatasetCatalogAsync(context, logger);
 
                 logger.LogInformation("Asset module migration completed successfully.");
             }

@@ -1043,6 +1043,69 @@ export const assetDisposals = {
     apiFetch<AssetDisposalResponse>(`/api/asset/asset-disposal/create`, { method: "POST", body: JSON.stringify(body) }),
 };
 
+// ─── Sổ kế toán & báo cáo: types ────────────────────────────────────────────
+export interface AccountInfo { account: string; accountName: string; }
+export interface JournalEntry {
+  lineId: string; documentId: string; documentCode: string; documentType: string;
+  documentDate: string; description?: string;
+  debitAccount?: string; creditAccount?: string; amount: number;
+  assetCode?: string; assetName?: string;
+}
+export interface JournalReport {
+  fromDate?: string; toDate?: string; totalDebit: number; totalCredit: number;
+  entries: JournalEntry[];
+}
+export interface LedgerEntry {
+  lineId: string; documentId: string; documentCode: string; documentDate: string;
+  description?: string; counterAccount?: string; debit: number; credit: number;
+  balance: number; assetCode?: string;
+}
+export interface LedgerReport {
+  account: string; accountName: string; fromDate?: string; toDate?: string;
+  openingBalance: number; periodDebit: number; periodCredit: number;
+  closingBalance: number; entries: LedgerEntry[];
+}
+export interface TrialBalanceRow {
+  account: string; accountName: string;
+  openingDebit: number; openingCredit: number;
+  periodDebit: number; periodCredit: number;
+  closingDebit: number; closingCredit: number;
+}
+export interface TrialBalanceReport {
+  fromDate?: string; toDate?: string; rows: TrialBalanceRow[]; totals: TrialBalanceRow;
+}
+export interface AssetRegisterRow {
+  assetId: string; assetCode: string; name: string; categoryName?: string;
+  accountCode?: string; purchaseDate?: string; usefulLifeMonths?: number;
+  originalCost: number; accumulatedDepreciation: number; bookValue: number; status: string;
+}
+export interface AssetRegisterReport {
+  totalOriginalCost: number; totalAccumulatedDepreciation: number; totalBookValue: number;
+  assetCount: number; rows: AssetRegisterRow[];
+}
+export interface AssetMovementRow {
+  assetId: string; assetCode?: string; assetName?: string; documentCode: string;
+  date: string; movementType: string; amount: number; gainLoss?: number; note?: string;
+}
+export interface AssetMovementReport {
+  fromDate?: string; toDate?: string;
+  totalIncrease: number; totalDecrease: number; increaseCount: number; decreaseCount: number;
+  increases: AssetMovementRow[]; decreases: AssetMovementRow[];
+}
+
+export const assetReports = {
+  accounts: () => apiFetch<AccountInfo[]>(`/api/asset/asset-report/accounts`, {}),
+  journal: (params?: { from?: string; to?: string; account?: string }) =>
+    apiFetch<JournalReport>(`/api/asset/asset-report/journal${qs(params)}`, {}),
+  ledger: (account: string, params?: { from?: string; to?: string }) =>
+    apiFetch<LedgerReport>(`/api/asset/asset-report/ledger${qs({ account, ...params })}`, {}),
+  trialBalance: (params?: { from?: string; to?: string }) =>
+    apiFetch<TrialBalanceReport>(`/api/asset/asset-report/trial-balance${qs(params)}`, {}),
+  assetRegister: () => apiFetch<AssetRegisterReport>(`/api/asset/asset-report/asset-register`, {}),
+  movement: (params?: { from?: string; to?: string }) =>
+    apiFetch<AssetMovementReport>(`/api/asset/asset-report/movement${qs(params)}`, {}),
+};
+
 // ─── Maintenance (PM): types ───────────────────────────────────────────────────
 export interface ChecklistTemplateResponse {
   id: string; code: string; name: string; categoryId?: string; categoryName?: string;

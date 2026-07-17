@@ -235,7 +235,12 @@
       "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\render_pdf.ps1\")",
       "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\render_pdf.ps1\" -Pdf \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\BaoCao_final.pdf\" -OutDir \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\pages_final\")",
       "Bash(pandoc -t markdown \"2. Đề cương HP-ĐATN-V2.docx\" -o \"C:/Users/ADMIN/AppData/Local/Temp/claude/D--DATN-TownHub/e3bed8ec-380c-45dc-b3d7-78c9e33b6a20/scratchpad/decuong.md\")",
-      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Read(//d/DATN/New folder/**)",
+      "Bash(unzip -l ocr-service.zip)",
+      "Bash(cd /tmp/ocr_x && sed -n '1,90p' app.py)",
+      "Bash(unzip -l townhub_ocr-20260714T161102Z-1-001.zip)",
+      "Bash(awk '{print $4}')"
     ]
   }
 }
