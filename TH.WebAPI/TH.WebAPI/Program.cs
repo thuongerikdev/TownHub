@@ -90,7 +90,13 @@ namespace TH.WebAPI
                 .WithHttpTransport()
                 .WithToolsFromAssembly();
 
-            builder.Services.AddControllers()
+            // Audit log tự động cho mọi hành động quan trọng (POST/PUT/PATCH/DELETE) ở cả 3 module.
+            builder.Services.AddScoped<TH.WebAPI.Filters.AuditLogActionFilter>();
+
+            builder.Services.AddControllers(mvc =>
+                {
+                    mvc.Filters.AddService<TH.WebAPI.Filters.AuditLogActionFilter>();
+                })
                 .AddJsonOptions(options =>
                 {
                     // Dòng này giúp bỏ qua các vòng lặp tham chiếu (Fix lỗi Object cycle)

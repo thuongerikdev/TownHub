@@ -12,6 +12,7 @@ using TH.Auth.ApplicationService.Service.User;
 using TH.Auth.Dtos.User;
 using TH.Auth.Infrastructure.Repository.Token;
 using TH.Constant;
+using TH.WebAPI.Filters;
 
 namespace TH.WebAPI.Controllers.Auth
 {
@@ -33,6 +34,7 @@ namespace TH.WebAPI.Controllers.Auth
             _cfg = cfg;
         }
 
+        [SkipAudit] // Đã tự ghi audit chi tiết trong AuthLoginService
         [HttpPost("userLogin")]
         public async Task<IActionResult> UserLogin([FromBody] LoginRequest loginRequest, CancellationToken ct)
         {
@@ -66,6 +68,7 @@ namespace TH.WebAPI.Controllers.Auth
 
             return Ok(result);
         }
+        [SkipAudit] // Đã tự ghi audit chi tiết trong AuthLoginService
         [HttpPost("StaffLogin")]
         public async Task<IActionResult> StaffLogin([FromBody] LoginRequest loginRequest, CancellationToken ct)
         {
@@ -100,6 +103,7 @@ namespace TH.WebAPI.Controllers.Auth
             return Ok(result);
         }
 
+        [SkipAudit] // Đã tự ghi audit chi tiết trong AuthLoginService
         [HttpPost("login/mobile")]
         [AllowAnonymous]
         public async Task<IActionResult> MobileLogin([FromBody] LoginRequest req, CancellationToken ct)
@@ -171,6 +175,7 @@ namespace TH.WebAPI.Controllers.Auth
             return Ok(res);
         }
 
+        [SkipAudit] // Đã tự ghi audit chi tiết trong AuthLoginService
         [HttpPost("login/mobile/google")]
         [AllowAnonymous]
         public async Task<IActionResult> MobileGoogleLogin([FromBody] GoogleMobileLoginRequest req, CancellationToken ct)
@@ -393,6 +398,7 @@ namespace TH.WebAPI.Controllers.Auth
         //    });
         //}
 
+        [SkipAudit] // Đã tự ghi audit chi tiết trong AuthLoginService
         [HttpPost("mfa/verify")]
         [AllowAnonymous]
         public async Task<IActionResult> VerifyMfa([FromBody] MfaLoginVerifyRequest req, CancellationToken ct)
@@ -415,6 +421,7 @@ namespace TH.WebAPI.Controllers.Auth
 
         public sealed record RefreshRequest(string? RefreshToken);
 
+        [SkipAudit] // Refresh token diễn ra thường xuyên — tránh nhiễu log
         [HttpPost("auth/refresh")]
         [AllowAnonymous]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest? body, CancellationToken ct)
