@@ -7,54 +7,96 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import uvicorn
 
-# Đọc hóa đơn điện tử PDF (lớp text) — không cần OCR. Thiếu thư viện thì tự bỏ qua nhánh PDF.
-try:
-    import pdfplumber
-    _HAS_PDFPLUMBER = True
-except ImportError:
-    _HAS_PDFPLUMBER = False
+
+
 
 # ── Cấu hình ──
 GEMINI_API_KEY = os.environ.get("GEMINIKEY", "")
 API_KEY        = os.environ.get("OCRKEY", "doan-ocr-2026")
 genai.configure(api_key=GEMINI_API_KEY)
 
-# ── Load VietOCR một lần lúc khởi động ──
-import torch, easyocr
-from vietocr.tool.predictor import Predictor
-from vietocr.tool.config import Cfg
+# ── Tự nhận GPU ──
+# OCR_USE_GPU=1/0 để ép; mặc định 'auto' -> dùng GPU nếu torch thấy CUDA.
+# Cùng một app.py chạy được cả Colab (GPU) lẫn HF cpu-basic (CPU).
+def _use_gpu():
+    v = os.environ.get("OCR_USE_GPU", "auto").lower()
+    if v in ("1", "true", "yes", "on"):  return True
+    if v in ("0", "false", "no", "off"): return False
+    try:
+        import torch; return bool(torch.cuda.is_available())
+    except Exception:
+        return False
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-det_reader = easyocr.Reader(['vi'], gpu=False)
-cfg = Cfg.load_config_from_name('vgg_transformer')
-cfg['device'] = 'cpu'
-cfg['predictor']['beamsearch'] = False
-# Nạp weights fine-tune nếu có (đặt VIETOCR_WEIGHTS=./weights/vietocr_invoice.pth).
-# Không set -> dùng pretrain mặc định do VietOCR tự tải.
-_viet_w = os.environ.get("VIETOCR_WEIGHTS", "")
-if _viet_w:
-    cfg['weights'] = _viet_w
-    print(f"➡️  VietOCR dùng weights fine-tune: {_viet_w}")
-recognizer = Predictor(cfg)
-print("✅ VietOCR sẵn sàng")
+# ── LAZY-LOAD engine (chỉ nạp khi gọi tới) ──
+# Nạp cả 3 engine cùng lúc lúc import sẽ ngốn RAM (OOM trên Colab free / HF cpu-basic).
+# Mỗi engine chỉ được khởi tạo ở lần gọi đầu và cache lại.
+_det_reader = None   # easyocr detector (cho pipeline vietocr)
+_recognizer = None   # VietOCR recognizer
+_paddle_ocr = None   # PaddleOCR (det + rec + cls)
 
-# ── Load PaddleOCR một lần lúc khởi động ──
-# Chưa fine-tune: để trống các biến -> dùng pretrain 'vi'.
-# Sau khi fine-tune + export: trỏ 3 biến dưới sang thư mục inference của bạn.
-from paddleocr import PaddleOCR
+def get_det_reader():
+    global _det_reader
+    if _det_reader is None:
+        import easyocr
+        _det_reader = easyocr.Reader(['vi'], gpu=_use_gpu())
+        print(f"✅ easyocr detector sẵn sàng ({'GPU' if _use_gpu() else 'CPU'})")
+    return _det_reader
 
-PADDLE_DET_DIR  = os.environ.get("PADDLE_DET_DIR",  "") or None
-PADDLE_REC_DIR  = os.environ.get("PADDLE_REC_DIR",  "") or None
-PADDLE_REC_DICT = os.environ.get("PADDLE_REC_DICT", "") or None
+def get_recognizer():
+    global _recognizer
+    if _recognizer is None:
+        from vietocr.tool.predictor import Predictor
+        from vietocr.tool.config import Cfg
+        cfg = Cfg.load_config_from_name('vgg_transformer')
+        cfg['device'] = 'cuda:0' if _use_gpu() else 'cpu'
+        cfg['predictor']['beamsearch'] = False
+        _viet_w = os.environ.get("VIETOCR_WEIGHTS", "")
+        if _viet_w:
+            cfg['weights'] = _viet_w
+            print(f"➡️  VietOCR dùng weights fine-tune: {_viet_w}")
+        _recognizer = Predictor(cfg)
+        print("✅ VietOCR sẵn sàng")
+    return _recognizer
 
-_paddle_kwargs = dict(use_angle_cls=True, lang='vi', show_log=False,
-                      use_gpu=(DEVICE == 'cuda'))
-if PADDLE_DET_DIR:  _paddle_kwargs['det_model_dir']      = PADDLE_DET_DIR
-if PADDLE_REC_DIR:  _paddle_kwargs['rec_model_dir']      = PADDLE_REC_DIR
-if PADDLE_REC_DICT: _paddle_kwargs['rec_char_dict_path'] = PADDLE_REC_DICT
-paddle_ocr = PaddleOCR(**_paddle_kwargs)
-print("✅ PaddleOCR sẵn sàng"
-      + (" (weights fine-tune)" if PADDLE_REC_DIR or PADDLE_DET_DIR else " (pretrain)"))
+def _patch_paddle_no_ir_optim():
+    """Tắt IR optim trên config inference của paddle.
+    Một số CPU (Colab, HF cpu-basic) thiếu tập lệnh AVX mà pass tối ưu
+    (vd SelfAttentionFusePass) dùng -> paddle crash `Illegal instruction (SIGILL)`.
+    Tắt ir_optim bỏ qua các pass đó, chạy được trên mọi CPU (chậm hơn không đáng kể)."""
+    import paddle.inference as pi
+    if getattr(pi, "_th_no_ir", False):
+        return
+    _orig = pi.create_predictor
+    def _patched(cfg):
+        try: cfg.switch_ir_optim(False)
+        except Exception: pass
+        return _orig(cfg)
+    pi.create_predictor = _patched
+    pi._th_no_ir = True
+
+def get_paddle():
+    global _paddle_ocr
+    if _paddle_ocr is None:
+        _patch_paddle_no_ir_optim()
+        from paddleocr import PaddleOCR
+        det = os.environ.get("PADDLE_DET_DIR",  "") or None
+        rec = os.environ.get("PADDLE_REC_DIR",  "") or None
+        dic = os.environ.get("PADDLE_REC_DICT", "") or None
+        # chỉ bật GPU cho paddle nếu bản paddle được biên dịch kèm CUDA
+        pgpu = False
+        if _use_gpu():
+            try:
+                import paddle; pgpu = bool(paddle.is_compiled_with_cuda())
+            except Exception:
+                pgpu = False
+        kw = dict(use_angle_cls=True, lang='vi', show_log=False, use_gpu=pgpu)
+        if det: kw['det_model_dir']      = det
+        if rec: kw['rec_model_dir']      = rec
+        if dic: kw['rec_char_dict_path'] = dic
+        _paddle_ocr = PaddleOCR(**kw)
+        print("✅ PaddleOCR sẵn sàng" + (" (fine-tune)" if rec or det else " (pretrain)")
+              + f" [{'GPU' if pgpu else 'CPU'}]")
+    return _paddle_ocr
 
 # ════════════════════════════════════════
 # UTILS CHUNG
@@ -71,8 +113,8 @@ def _to_images(content):
 
 def _strip(s):
     s = ''.join(c for c in unicodedata.normalize('NFD', s)
-                if unicodedata.category(c) != 'Mn').lower()
-    return s.replace('đ', 'd')   # đ/Đ không tách được bằng NFD → gộp thủ công về 'd'
+                if unicodedata.category(c) != 'Mn')
+    return s.replace('đ', 'd').replace('Đ', 'D').lower()   # NFD không tách đ/Đ
 
 def _num(s):
     s = re.sub(r'[^\d.,]', '', s)
@@ -95,6 +137,8 @@ def _last_number(s):
 # PIPELINE VIETOCR  (easyocr detect + VietOCR recognize)
 # ════════════════════════════════════════
 def _ocr_image(pil_img):
+    det_reader = get_det_reader()
+    recognizer = get_recognizer()
     horizontal, _ = det_reader.detect(np.array(pil_img))
     boxes = horizontal[0] if horizontal else []
     lines = []
@@ -110,118 +154,186 @@ def _ocr_image(pil_img):
     lines.sort(key=lambda l: (l['box'][1] // 10, l['box'][0]))
     return lines
 
+def _group_rows(lines, tol_ratio=0.6):
+    """Gom các cell thành hàng trực quan theo trùng khớp toạ độ y."""
+    items = sorted(lines, key=lambda l: (l['box'][1] + l['box'][3]) / 2)
+    rows = []
+    for l in items:
+        cy = (l['box'][1] + l['box'][3]) / 2
+        h  = max(l['box'][3] - l['box'][1], 8)
+        for r in rows:
+            if abs(r['cy'] - cy) <= max(h, r['h']) * tol_ratio:
+                r['cells'].append(l)
+                r['cy'] = (r['cy'] * r['n'] + cy) / (r['n'] + 1)
+                r['n'] += 1; r['h'] = max(r['h'], h)
+                break
+        else:
+            rows.append({'cy': cy, 'h': h, 'n': 1, 'cells': [l]})
+    for r in rows:
+        r['cells'].sort(key=lambda l: l['box'][0])
+        r['text'] = ' '.join(c['text'] for c in r['cells'])
+    rows.sort(key=lambda r: r['cy'])
+    return rows
+
+def _cx(cell): return (cell['box'][0] + cell['box'][2]) / 2
+
+def _extract_line_items(rows):
+    """Trích bảng chi tiết dựa vào toạ độ cột của hàng tiêu đề."""
+    hi, cols = None, None
+    for i, r in enumerate(rows):
+        j = _strip(r['text'])
+        has_desc = any(k in j for k in ('noi dung', 'ten hang', 'dien giai', 'san pham', 'hang hoa', 'ten')) or 'stt' in j
+        if has_desc and ('thanh tien' in j or 'don gia' in j):
+            cols = {}
+            for c in r['cells']:
+                t = _strip(c['text']); x = _cx(c)
+                if 'thanh tien' in t or 'thanh tiên' in t: cols['totalPrice'] = x
+                elif 'don gia' in t:                        cols['unitPrice']  = x
+                elif t in ('sl',) or 'so luong' in t:       cols['quantity']   = x
+                elif 'dvt' in t or 'don vi' in t:           cols['unit']       = x
+                elif any(k in t for k in ('noi dung','ten hang','dien giai','san pham','hang hoa','ten','stt')):
+                    cols.setdefault('description', x)
+            if 'totalPrice' in cols and ('description' in cols or 'unitPrice' in cols):
+                hi = i; break
+    if hi is None:
+        return []
+
+    STOP = ('cong tien hang', 'cong tien', 'tong cong', 'tong tien', 'thue suat',
+            'tien thue', 'thanh toan', 'nguoi mua', 'nguoi ban', 'bang chu')
+    items = []
+    for r in rows[hi + 1:]:
+        j = _strip(r['text'])
+        if any(s in j for s in STOP):
+            break
+        if not r['cells']:
+            continue
+        # gán mỗi cell vào cột gần nhất theo x
+        bucket = {k: [] for k in cols}
+        for c in r['cells']:
+            k = min(cols, key=lambda kk: abs(_cx(c) - cols[kk]))
+            bucket[k].append(c)
+        desc = ' '.join(c['text'] for c in bucket.get('description', [])).strip()
+        desc = re.sub(r'^\s*\d+\s+', '', desc)      # bỏ số thứ tự đầu dòng
+        qty   = _num(' '.join(c['text'] for c in bucket.get('quantity', [])))
+        up    = _num(' '.join(c['text'] for c in bucket.get('unitPrice', [])))
+        tp    = _num(' '.join(c['text'] for c in bucket.get('totalPrice', [])))
+        unit  = ' '.join(c['text'] for c in bucket.get('unit', [])).strip()
+        # bỏ hàng rác: cần có mô tả chữ + ít nhất 1 số tiền
+        if len(re.sub(r'[^A-Za-zÀ-ỹ]', '', desc)) < 2:
+            continue
+        if tp is None and up is None:
+            continue
+        item = {'description': desc, 'unit': unit or None,
+                'quantity': qty, 'unitPrice': up, 'totalPrice': tp}
+        items.append(item)
+    return items
+
 def parse_invoice_vietocr(lines):
-    """Bóc tách trường từ danh sách 'lines' [{text, box:[x0,y0,x1,y1], prob}].
-    Dùng chung cho cả pipeline VietOCR và PaddleOCR."""
-    raw = '\n'.join(l['text'] for l in lines)
+    """Bóc tách trường + bảng chi tiết từ 'lines' [{text, box:[x0,y0,x1,y1], prob}].
+    Dùng chung cho cả pipeline VietOCR và PaddleOCR. Trả (raw, fields, line_items)."""
+    raw    = '\n'.join(l['text'] for l in lines)
+    rows   = _group_rows(lines)
     fields = {'currency': 'VND'}
 
-    def row_h(l): return max(l['box'][3] - l['box'][1], 8)
+    def value_after(label_keys, row):
+        """Lấy giá trị sau nhãn: phần sau ':' cùng cell, hoặc các cell bên phải cùng hàng."""
+        for c in row['cells']:
+            if any(k in _strip(c['text']) for k in label_keys):
+                after = c['text'].split(':', 1)
+                if len(after) > 1 and after[1].strip():
+                    return after[1].strip(), c
+                right = [x for x in row['cells'] if x['box'][0] > c['box'][2] - 3]
+                if right:
+                    return ' '.join(x['text'] for x in right).strip(), c
+                return '', c
+        return None, None
 
-    def same_row_number(anchor, min_val=1000):
-        # Lấy số CÙNG DÒNG với nhãn: chọn box gần theo phương dọc nhất, dung sai chặt (0.9×
-        # chiều cao dòng) để không "rỉ" sang dòng kế (tránh lấy nhầm Tổng cộng khi đọc Tiền thuế).
-        ay = (anchor['box'][1] + anchor['box'][3]) / 2
-        rh = row_h(anchor)
-        best = None; best_dy = None
-        for c in lines:
-            if c is anchor or '%' in c['text']: continue
-            cy = (c['box'][1] + c['box'][3]) / 2
-            dy = abs(cy - ay)
-            if dy > rh * 0.9: continue
-            v = _last_number(c['text'])
-            if v is not None and v >= min_val and (best_dy is None or dy < best_dy):
-                best = v; best_dy = dy
-        return best
-
-    def next_row_number(anchor, min_val=1000, max_rows=3):
-        ay_bot = anchor['box'][3]
-        rh = row_h(anchor)
-        below = sorted([c for c in lines
-                        if c is not anchor
-                        and c['box'][1] >= ay_bot - 4
-                        and c['box'][1] <= ay_bot + rh * max_rows
-                        and '%' not in c['text']],
-                       key=lambda c: c['box'][1])
-        for c in below:
-            v = _last_number(c['text'])
-            if v is not None and v >= min_val: return v
+    def row_number_after(label_keys, min_val=None):
+        """Số nằm bên phải nhãn (cùng hàng) — cho các dòng tiền tổng."""
+        for r in rows:
+            if not any(k in _strip(r['text']) for k in label_keys):
+                continue
+            lbl = next((c for c in r['cells'] if any(k in _strip(c['text']) for k in label_keys)), None)
+            best = None
+            for c in r['cells']:
+                if lbl and c['box'][0] < lbl['box'][2] - 3: continue
+                if '%' in c['text']: continue
+                v = _last_number(c['text'])
+                if v is not None and (min_val is None or v >= min_val):
+                    best = v
+            if best is not None:
+                return best
         return None
 
-    def find_amount(keys, min_val=1000):
-        for l in lines:
-            n = _strip(l['text'])
-            if not any(k in n for k in keys): continue
-            if '%' not in l['text']:                     # số nằm ngay trên dòng nhãn (1 box)
-                v = _last_number(l['text'])
-                if v is not None and v >= min_val: return v
-            v = same_row_number(l, min_val)              # số ở box khác cùng dòng
-            if v is not None: return v
-            v = next_row_number(l, min_val)              # số ở dòng dưới
-            if v is not None: return v
-        return None
+    # ── Tên người bán ──
+    for r in rows:
+        v, _ = value_after(('ben ban', 'don vi ban', 'nha cung cap', 'nguoi ban'), r)
+        if v and _strip(v) not in ('', 'nguoi ban hang'):
+            fields['sellerName'] = v; break
+    # ── Tên người mua / đơn vị mua ──
+    for r in rows:
+        v, _ = value_after(('ten don vi', 'don vi mua', 'ho ten nguoi mua', 'nguoi mua hang', 'ten khach hang'), r)
+        if v:
+            fields['buyerName'] = v; break
 
-    for l in lines:
-        n = _strip(l['text'])
-        if 'mst' in n or 'ma so thue' in n:
-            mm = re.search(r'\d{10}(?:-\d{3})?', l['text'])
-            if mm: fields['sellerTaxCode'] = mm.group(0); break
+    # ── Mã số thuế: đầu tiên = người bán, kế tiếp = người mua ──
+    tax_codes = []
+    for r in rows:
+        if 'ma so thue' in _strip(r['text']) or 'mst' in _strip(r['text']):
+            mm = re.search(r'\d{10}(?:-\d{3})?', r['text'])
+            if mm: tax_codes.append(mm.group(0))
+    if tax_codes: fields['sellerTaxCode'] = tax_codes[0]
+    if len(tax_codes) > 1: fields['buyerTaxCode'] = tax_codes[1]
 
-    for i, l in enumerate(lines):
-        n = _strip(l['text'])
-        if 'hoa don' in n:                               # bỏ qua dòng tiêu đề "HÓA ĐƠN ..."
+    # ── Số hoá đơn ──
+    for r in rows:
+        v, _ = value_after(('so:', 'so hoa don', 'so hd', 'so ct', 'invoice no', 'number'), r)
+        if v is None:
+            m = re.search(r'\bs[oố]\s*:\s*([A-Za-z0-9/\-]{3,20})', r['text'], re.I)
+            if m: fields['invoiceNumber'] = m.group(1).strip('(): '); break
             continue
-        if ('don vi ban hang' in n or 'nha cung cap' in n or 'ben ban' in n or 'don vi ban' in n
-                or ('ban hang' in n and 'nguoi' not in n)):
-            parts = l['text'].split(':', 1)
-            name = parts[1].strip() if len(parts) > 1 else ''
-            if not name and i + 1 < len(lines):
-                name = lines[i + 1]['text'].strip()
-            if name: fields['sellerName'] = name
-            break
+        mm = re.search(r'([A-Za-z0-9/\-]{3,20})', v)
+        if mm and not mm.group(1).replace('-', '').isalpha():
+            fields['invoiceNumber'] = mm.group(1); break
 
-    for l in lines:
-        n = _strip(l['text'])
-        if ('so' in n or 'no' in n) and ('hoa don' in n or 'invoice' in n or len(n) < 35):
-            mm = re.search(r'(?:so|no)[^:A-Za-z]{0,12}:?\s*\)?\s*([A-Za-z0-9/\-]{4,20})', l['text'], re.I)
-            if mm:
-                val = mm.group(1).strip('(): ')
-                if not val.replace('-', '').isalpha():
-                    fields['invoiceNumber'] = val; break
-
-    m = re.search(r'\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\b', raw)
+    # ── Ngày hoá đơn ──
+    m = re.search(r'ng[aà]y\s*(\d{1,2}).{0,10}?th[aá]ng\s*(\d{1,2}).{0,10}?n[aă]m\s*(\d{4})', raw, re.I | re.DOTALL)
     if not m:
-        m = re.search(r'ng[aà]y.{0,30}?(\d{1,2}).{0,20}?th[aá]ng.{0,10}?(\d{1,2}).{0,20}?n[aă]m.{0,10}?(\d{4})',
-                      raw, re.I | re.DOTALL)
+        m = re.search(r'\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\b', raw)
     if m:
         d, mo, y = m.groups()
         fields['invoiceDate'] = f"{y}-{int(mo):02d}-{int(d):02d}"
 
-    fields['subtotal']    = find_amount(['cong tien hang', 'tien hang', 'thanh tien chua thue',
-                                          'tong tien hang', 'cong tien chua thue', 'subtotal'])
-    fields['taxAmount']   = find_amount(['tien thue', 'thue gtgt', 'thue gia tri gia tang',
-                                         'thue suat vat', 'thue vat'])
-    if fields['taxAmount'] is None:
-        for l in lines:
-            if 'vat' in _strip(l['text']) or 'thue suat' in _strip(l['text']):
-                v = same_row_number(l, 1000) or next_row_number(l, 1000)
-                if v: fields['taxAmount'] = v; break
-    fields['totalAmount'] = find_amount(['tong cong tien thanh toan', 'tong tien thanh toan',
-                                          'tong cong thanh toan', 'tong tien phai thanh toan',
-                                          'tong cong tien', 'tong thanh toan', 'total amount'])
-    if fields['totalAmount'] is None:
-        fields['totalAmount'] = find_amount(['tong cong', 'total'])
+    # ── Thuế suất (%) ──
+    m = re.search(r'thu[eế]\s*su[aấ]t[^%\d]*(\d{1,2})\s*%', raw, re.I)
+    if m: fields['taxRate'] = int(m.group(1))
 
-    return raw, fields
+    # ── Tiền: cộng tiền hàng / tiền thuế / tổng thanh toán ──
+    fields['subtotal']    = row_number_after(('cong tien hang', 'tien hang', 'thanh tien chua thue', 'subtotal'))
+    fields['taxAmount']   = row_number_after(('tien thue gtgt', 'tien thue', 'thue gtgt'))
+    fields['totalAmount'] = row_number_after(('tong cong tien thanh toan', 'tong tien thanh toan',
+                                              'tong thanh toan', 'tong cong', 'total'))
 
-def extract_vietocr(content):
+    # ── Fallback khi nhãn bị mộc/nhiễu che ──
+    sub, tax, tot = fields.get('subtotal'), fields.get('taxAmount'), fields.get('totalAmount')
+    if tot is None and sub is not None and tax is not None:
+        fields['totalAmount'] = sub + tax
+    if fields.get('taxRate') is None and sub and tax:
+        fields['taxRate'] = round(tax / sub * 100)
+
+    # ── Bảng chi tiết ──
+    line_items = _extract_line_items(rows)
+    return raw, fields, line_items
+
+def extract_vietocr(url):
+    content  = _download(url)
     images   = _to_images(content)
     all_lines = []
     for im in images:
         all_lines += _ocr_image(im)
-    raw, fields = parse_invoice_vietocr(all_lines)
+    raw, fields, line_items = parse_invoice_vietocr(all_lines)
     probs = [l['prob'] for l in all_lines] or [0.0]
-    return raw, fields, [], round(float(statistics.mean(probs)), 4)
+    return raw, fields, line_items, round(float(statistics.mean(probs)), 4)
 
 # ════════════════════════════════════════
 # PIPELINE PADDLEOCR  (Paddle detect + Paddle recognize)
@@ -245,15 +357,17 @@ def _paddle_to_lines(result):
     lines.sort(key=lambda l: (l['box'][1] // 10, l['box'][0]))
     return lines
 
-def extract_paddle(content):
+def extract_paddle(url):
+    paddle_ocr = get_paddle()
+    content   = _download(url)
     images    = _to_images(content)
     all_lines = []
     for im in images:
         result = paddle_ocr.ocr(np.array(im), cls=True)
         all_lines += _paddle_to_lines(result)
-    raw, fields = parse_invoice_vietocr(all_lines)   # tái dùng parser
+    raw, fields, line_items = parse_invoice_vietocr(all_lines)   # tái dùng parser
     probs = [l['prob'] for l in all_lines] or [0.0]
-    return raw, fields, [], round(float(statistics.mean(probs)), 4)
+    return raw, fields, line_items, round(float(statistics.mean(probs)), 4)
 
 # ════════════════════════════════════════
 # PIPELINE GEMINI VISION
@@ -286,7 +400,8 @@ def _resize_for_gemini(img, max_dim=1200):
     buf.seek(0)
     return Image.open(buf)
 
-def extract_gemini(content):
+def extract_gemini(url):
+    content = _download(url)
     images  = _to_images(content)
     if len(images) == 1:
         img = _resize_for_gemini(images[0])
@@ -317,40 +432,6 @@ def extract_gemini(content):
     return json.dumps(data, ensure_ascii=False, indent=2), fields, data.get("lineItems") or [], 0.95
 
 # ════════════════════════════════════════
-# PIPELINE PDF — hóa đơn điện tử có lớp text (đọc trực tiếp, KHÔNG OCR → chính xác nhất)
-# ════════════════════════════════════════
-def _pdf_to_lines(content):
-    """Trích từng dòng text + toạ độ từ PDF (bản thể hiện hóa đơn điện tử), dựng về format 'lines'."""
-    lines, yo = [], 0.0
-    with pdfplumber.open(io.BytesIO(content)) as pdf:
-        for page in pdf.pages:
-            try:
-                tl = page.extract_text_lines()
-            except Exception:
-                tl = []
-            for ln in tl:
-                t = (ln.get("text") or "").strip()
-                if not t:
-                    continue
-                lines.append({"text": t,
-                              "box": [int(ln["x0"]), int(ln["top"] + yo),
-                                      int(ln["x1"]), int(ln["bottom"] + yo)],
-                              "prob": 1.0})
-            yo += float(page.height or 0)
-    lines.sort(key=lambda l: (l["box"][1] // 10, l["box"][0]))
-    return lines
-
-def extract_pdf(content):
-    """Đọc hóa đơn từ lớp text PDF. Trả None nếu PDF không có text (bản scan) → để OCR xử lý."""
-    if not _HAS_PDFPLUMBER:
-        return None
-    lines = _pdf_to_lines(content)
-    if len(lines) < 3:                       # gần như không có chữ → PDF scan → chuyển OCR
-        return None
-    raw, fields = parse_invoice_vietocr(lines)   # tái dùng đúng parser đang có
-    return raw, fields, [], 1.0
-
-# ════════════════════════════════════════
 # FASTAPI
 # ════════════════════════════════════════
 app = FastAPI(title="Invoice OCR Service")
@@ -367,37 +448,17 @@ class ExtractReq(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "engines": list(ENGINES.keys()), "pdfTextLayer": _HAS_PDFPLUMBER}
+    return {"status": "ok", "engines": list(ENGINES.keys())}
 
 @app.post("/extract")
 def extract(req: ExtractReq, x_api_key: str = Header(default="")):
     if API_KEY and x_api_key != API_KEY:
         raise HTTPException(401, "Sai X-API-Key")
+    runner = ENGINES.get(req.model, extract_gemini)
     try:
-        content = _download(req.fileUrl)
-
-        # ── CHẾ ĐỘ PDF (hóa đơn điện tử): chỉ đọc lớp text, KHÔNG OCR ──
-        if req.model == "pdf":
-            if content[:4] != b"%PDF":
-                return {"status": "FAILED", "errorMessage": "Chế độ PDF chỉ nhận tệp PDF."}
-            try:
-                pr = extract_pdf(content)
-            except Exception as e:
-                return {"status": "FAILED", "errorMessage": "Lỗi đọc PDF: " + str(e)}
-            if not pr:
-                return {"status": "FAILED",
-                        "errorMessage": "PDF không có lớp text (có thể là bản scan). Hãy dùng chế độ OCR ảnh."}
-            raw, fields, line_items, confidence = pr
-            return {"status": "DONE", "confidence": confidence, "rawText": raw,
-                    "fields": fields, "lineItems": line_items,
-                    "model": req.model, "source": "pdf-text"}
-
-        # ── CHẾ ĐỘ OCR ẢNH: dùng engine đã chọn (ảnh, hoặc PDF scan sẽ được rasterize) ──
-        runner = ENGINES.get(req.model, extract_gemini)
-        raw, fields, line_items, confidence = runner(content)
-        return {"status": "DONE", "confidence": confidence, "rawText": raw,
-                "fields": fields, "lineItems": line_items,
-                "model": req.model, "source": "ocr"}
+        raw, fields, line_items, confidence = runner(req.fileUrl)
+        return {"status": "DONE", "confidence": confidence,
+                "rawText": raw, "fields": fields, "lineItems": line_items, "model": req.model}
     except Exception as e:
         return {"status": "FAILED", "errorMessage": str(e)}
 
