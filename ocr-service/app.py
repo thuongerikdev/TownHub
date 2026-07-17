@@ -114,7 +114,11 @@ def _to_images(content):
 def _strip(s):
     s = ''.join(c for c in unicodedata.normalize('NFD', s)
                 if unicodedata.category(c) != 'Mn')
-    return s.replace('đ', 'd').replace('Đ', 'D').lower()   # NFD không tách đ/Đ
+    s = s.replace('đ', 'd').replace('Đ', 'D')
+    # OCR đôi khi chèn dấu sắc/huyền rời (´ ` ˊ) giữa chữ -> đưa về khoảng trắng, gộp lại
+    for ch in ('´', '`', 'ˊ', 'ˋ', '’', '‘'):
+        s = s.replace(ch, ' ')
+    return re.sub(r'\s+', ' ', s).strip().lower()
 
 def _num(s):
     s = re.sub(r'[^\d.,]', '', s)
@@ -368,7 +372,8 @@ def parse_invoice_vietocr(lines):
 
     # ── Tiền: cộng tiền hàng / tiền thuế / tổng thanh toán ──
     fields['subtotal']    = row_number_after(('cong tien hang', 'tien hang', 'thanh tien chua thue', 'subtotal'))
-    fields['taxAmount']   = row_number_after(('tien thue gtgt', 'tien thue', 'thue gtgt'))
+    fields['taxAmount']   = row_number_after(('tien thue gtgt', 'tien thue', 'thue gtgt',
+                                              'thue vat', 'tien thue vat'))
     fields['totalAmount'] = row_number_after(('tong cong tien thanh toan', 'tong tien thanh toan',
                                               'tong thanh toan', 'tong cong', 'total'))
 
