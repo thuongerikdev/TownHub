@@ -1,0 +1,68 @@
+<mxfile host="app.diagrams.net" version="24.7.17">
+  <diagram name="Deskew" id="deskew-1">
+    <mxGraphModel dx="900" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="start" value="Bắt đầu: tập ô OCR L&#10;(văn bản + hộp bao toạ độ)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=50;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="250" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pA" value="PHA A — KHỬ NGHIÊNG" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#2E5A88;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="240" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="h1" value="Lọc ô HÀNG TIÊU ĐỀ&#10;(STT, ĐVT, SL, Đơn giá, Thành tiền)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="290" y="120" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="h2" value="Hồi quy tuyến tính (bình phương tối thiểu)&#10;qua tâm ô tiêu đề  →  hệ số góc a = độ nghiêng" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="290" y="200" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dec" value="|a| ≥ ε ?&#10;(ảnh có nghiêng?)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="335" y="280" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="shear" value="Khử nghiêng (shear ngược):&#10;y′ = y − a·x  cho MỌI ô" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="290" y="400" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="keep" value="Giữ nguyên&#10;y′ = y" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="620" y="300" width="150" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pB" value="PHA B — TÁI TẠO BẢNG (trên y′ đã nắn)" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#2E5A88;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="480" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="Xác định biên bảng&#10;(giữa hàng tiêu đề và dòng Tổng/Thuế)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="500" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="Gom dòng: phân cụm 1-D theo y′&#10;(ngưỡng τ = 0,6 × chiều cao dòng trung vị)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="580" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="Gán cột theo tâm hoành độ gần nhất&#10;k = argminₖ |x̄ − Xₖ|" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="660" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="Cột số (SL/đơn giá/thành tiền):&#10;chọn ô gần tâm cột (không nối → tránh dính số)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="740" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="Ghép mỗi cụm thành 1 dòng hàng&#10;+ loại dòng rác" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="820" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="end" value="Kết quả: các trường + bảng hàng hóa (JSON)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=50;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="300" y="900" width="250" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="start" target="h1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="h1" target="h2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="h2" target="dec"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="Có" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="dec" target="shear"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="Không" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="dec" target="keep"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="shear" target="b1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=1;entryY=0.25;" edge="1" parent="1" source="keep" target="b1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="b1" target="b2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="b2" target="b3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="b3" target="b4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="b4" target="b5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="b5" target="end"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
