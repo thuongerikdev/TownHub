@@ -50,6 +50,7 @@ Ví dụ chạy:
 import os, re, csv, time, argparse, difflib
 from collections import Counter
 import numpy as np
+os.environ["MPLBACKEND"] = "Agg"   # xoá backend inline của Colab (gây lỗi khi chạy qua !python)
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
