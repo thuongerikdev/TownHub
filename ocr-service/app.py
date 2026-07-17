@@ -428,6 +428,60 @@ def extract_paddle(url):
     return raw, fields, line_items, round(float(statistics.mean(probs)), 4)
 
 # ════════════════════════════════════════
+# PIPELINE HYBRID  (Paddle DBNet detect + VietOCR recognize)
+# ════════════════════════════════════════
+def _warp_crop(img_rgb, box):
+    """Cắt & làm thẳng 1 box đa giác 4 điểm của DBNet thành ảnh dòng đứng
+    (perspective warp) để đưa vào VietOCR — giống get_rotate_crop_image của PaddleOCR."""
+    import cv2
+    pts = np.array(box, dtype='float32')
+    w = int(max(np.linalg.norm(pts[0] - pts[1]), np.linalg.norm(pts[2] - pts[3])))
+    h = int(max(np.linalg.norm(pts[0] - pts[3]), np.linalg.norm(pts[1] - pts[2])))
+    if w < 3 or h < 3:
+        return None
+    dst = np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype='float32')
+    M = cv2.getPerspectiveTransform(pts, dst)
+    crop = cv2.warpPerspective(img_rgb, M, (w, h), borderMode=cv2.BORDER_REPLICATE, flags=cv2.INTER_CUBIC)
+    if h * 1.0 / max(w, 1) >= 1.5:      # box dọc -> xoay ngang cho recognizer
+        crop = np.rot90(crop)
+    return crop
+
+def _paddledet_viet_lines(img_rgb):
+    """Detect bằng Paddle DBNet, nhận dạng bằng VietOCR. Trả 'lines' chuẩn."""
+    from PIL import Image as _I
+    pocr = get_paddle(); rec = get_recognizer()
+    det = pocr.ocr(img_rgb, det=True, rec=False, cls=False)
+    boxes = det[0] if det else []
+    lines = []
+    for box in (boxes or []):
+        crop = _warp_crop(img_rgb, box)
+        if crop is None:
+            continue
+        try:
+            text, prob = rec.predict(_I.fromarray(crop), return_prob=True)
+        except Exception:
+            continue
+        text = (text or '').strip()
+        if not text:
+            continue
+        xs = [p[0] for p in box]; ys = [p[1] for p in box]
+        lines.append({'text': text,
+                      'box': [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))],
+                      'prob': float(prob)})
+    lines.sort(key=lambda l: (l['box'][1] // 10, l['box'][0]))
+    return lines
+
+def extract_paddledet_viet(url):
+    content   = _download(url)
+    images    = _to_images(content)
+    all_lines = []
+    for im in images:
+        all_lines += _paddledet_viet_lines(np.array(im))
+    raw, fields, line_items = parse_invoice_vietocr(all_lines)
+    probs = [l['prob'] for l in all_lines] or [0.0]
+    return raw, fields, line_items, round(float(statistics.mean(probs)), 4)
+
+# ════════════════════════════════════════
 # PIPELINE GEMINI VISION
 # ════════════════════════════════════════
 INVOICE_PROMPT = """Bạn là chuyên gia đọc hóa đơn Việt Nam và quốc tế.
@@ -495,9 +549,10 @@ def extract_gemini(url):
 app = FastAPI(title="Invoice OCR Service")
 
 ENGINES = {
-    "gemini":    extract_gemini,
-    "vietocr":   extract_vietocr,
-    "paddleocr": extract_paddle,
+    "gemini":         extract_gemini,
+    "vietocr":        extract_vietocr,
+    "paddleocr":      extract_paddle,
+    "paddledet_viet": extract_paddledet_viet,   # hybrid: Paddle DBNet detect + VietOCR rec
 }
 
 class ExtractReq(BaseModel):
