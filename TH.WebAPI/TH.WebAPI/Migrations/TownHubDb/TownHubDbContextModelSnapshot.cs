@@ -22,6 +22,127 @@ namespace TH.WebAPI.Migrations.TownHubDb
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TH.Base.Domain.Entities.Building", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("managementCompany")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("totalFloors")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("totalUnits")
+                        .HasColumnType("integer");
+
+                    b.HasKey("id");
+
+                    b.ToTable("buildings", "base");
+                });
+
+            modelBuilder.Entity("TH.Base.Domain.Entities.Floor", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("buildingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("floorName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("floorNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("floorType")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("buildingId", "floorNumber")
+                        .IsUnique();
+
+                    b.ToTable("floors", "base");
+                });
+
+            modelBuilder.Entity("TH.TownHub.Domain.Entities.AccessEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CameraName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DetectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime?>("HandledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("HandledByAuthUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PersonType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("ResidentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SnapshotUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResidentId");
+
+                    b.HasIndex("PersonType", "DetectedAt");
+
+                    b.ToTable("access_events", "townhub");
+                });
+
             modelBuilder.Entity("TH.TownHub.Domain.Entities.Apartment", b =>
                 {
                     b.Property<int>("Id")
@@ -37,6 +158,9 @@ namespace TH.WebAPI.Migrations.TownHubDb
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("BuildingId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasColumnType("text");
@@ -46,6 +170,9 @@ namespace TH.WebAPI.Migrations.TownHubDb
 
                     b.Property<int>("Floor")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("FloorId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Note")
                         .HasColumnType("text");
@@ -223,6 +350,9 @@ namespace TH.WebAPI.Migrations.TownHubDb
                     b.Property<int>("ActorAuthUserId")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("ChangedBy")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -234,6 +364,13 @@ namespace TH.WebAPI.Migrations.TownHubDb
 
                     b.Property<string>("OldData")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("RecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TableName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int?>("TargetId")
                         .HasColumnType("integer");
@@ -287,6 +424,46 @@ namespace TH.WebAPI.Migrations.TownHubDb
                             TargetType = "Fee",
                             UserAgent = "TownHubResidentApp/1.0"
                         });
+                });
+
+            modelBuilder.Entity("TH.TownHub.Domain.Entities.FaceProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AiStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("EmbeddingRef")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ResidentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResidentId")
+                        .IsUnique();
+
+                    b.ToTable("face_profiles", "townhub");
                 });
 
             modelBuilder.Entity("TH.TownHub.Domain.Entities.Fee", b =>
@@ -764,6 +941,9 @@ namespace TH.WebAPI.Migrations.TownHubDb
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Body")
+                        .HasColumnType("text");
+
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasColumnType("text");
@@ -781,8 +961,29 @@ namespace TH.WebAPI.Migrations.TownHubDb
                     b.Property<int>("FailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RecipientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReferenceType")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<DateTime?>("ScheduledAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SendStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime?>("SentAt")
                         .HasColumnType("timestamp with time zone");
@@ -823,6 +1024,8 @@ namespace TH.WebAPI.Migrations.TownHubDb
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedByAuthUserId = 1,
                             FailedCount = 0,
+                            IsRead = false,
+                            SendStatus = "PENDING",
                             SentAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             SentCount = 50,
                             Status = "sent",
@@ -840,7 +1043,9 @@ namespace TH.WebAPI.Migrations.TownHubDb
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedByAuthUserId = 1,
                             FailedCount = 0,
+                            IsRead = false,
                             ScheduledAt = new DateTime(2024, 1, 16, 0, 0, 0, 0, DateTimeKind.Utc),
+                            SendStatus = "PENDING",
                             SentCount = 0,
                             Status = "scheduled",
                             TemplateId = 1,
@@ -1162,8 +1367,14 @@ namespace TH.WebAPI.Migrations.TownHubDb
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("UnitId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -1373,8 +1584,15 @@ namespace TH.WebAPI.Migrations.TownHubDb
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Scope")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
 
                     b.Property<int?>("UpdatedByAuthUserId")
                         .HasColumnType("integer");
@@ -1441,6 +1659,26 @@ namespace TH.WebAPI.Migrations.TownHubDb
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Value = "false"
                         });
+                });
+
+            modelBuilder.Entity("TH.TownHub.Domain.Entities.AccessEvent", b =>
+                {
+                    b.HasOne("TH.TownHub.Domain.Entities.Resident", "Resident")
+                        .WithMany("AccessEvents")
+                        .HasForeignKey("ResidentId");
+
+                    b.Navigation("Resident");
+                });
+
+            modelBuilder.Entity("TH.TownHub.Domain.Entities.FaceProfile", b =>
+                {
+                    b.HasOne("TH.TownHub.Domain.Entities.Resident", "Resident")
+                        .WithOne("FaceProfile")
+                        .HasForeignKey("TH.TownHub.Domain.Entities.FaceProfile", "ResidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Resident");
                 });
 
             modelBuilder.Entity("TH.TownHub.Domain.Entities.Fee", b =>
@@ -1586,6 +1824,13 @@ namespace TH.WebAPI.Migrations.TownHubDb
                     b.Navigation("ServiceListings");
 
                     b.Navigation("ServiceRequests");
+                });
+
+            modelBuilder.Entity("TH.TownHub.Domain.Entities.Resident", b =>
+                {
+                    b.Navigation("AccessEvents");
+
+                    b.Navigation("FaceProfile");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { buildings as buildingsApi, floors as floorsApi } from "@/lib/api";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Building2, CheckCircle, XCircle, Clock, Plus,
   X, Loader2, AlertCircle, Phone, Mail, Briefcase,
   Home, AlertTriangle, ChevronRight, ShieldCheck,
   FileWarning, Users, Store, Wrench, Send,
-  ClipboardList, Box,
+  ClipboardList, Box, ArrowLeft, LayoutGrid,
 } from "lucide-react";
 import type { ApartmentInfo } from "@/components/Building3DModel";
+import type { CampusBuildingInfo } from "@/components/CampusOverview3D";
 
 const Building3DModel = dynamic(() => import("@/components/Building3DModel"), { ssr: false });
+const CampusOverview3D = dynamic(() => import("@/components/CampusOverview3D"), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -177,10 +180,11 @@ const SERVICE_TYPES = [
 
 type Tab = "management" | "model3d";
 
-const BUILDINGS_3D = [
-  { id: 1, name: "Toà A – Sunrise Tower", code: "A", floors: 20, apartmentsPerFloor: 8 },
-  { id: 2, name: "Toà B – Horizon Block",  code: "B", floors: 15, apartmentsPerFloor: 6 },
-  { id: 3, name: "Toà C – Garden Wing",   code: "C", floors: 12, apartmentsPerFloor: 4 },
+interface Building3D { id: string; name: string; code: string; floors: number; apartmentsPerFloor: number }
+
+// Fallback khi chưa gọi được API (giữ UI không trống).
+const FALLBACK_3D: Building3D[] = [
+  { id: "A", name: "Toà A", code: "A", floors: 20, apartmentsPerFloor: 20 },
 ];
 
 // ─── Apartment detail helpers ─────────────────────────────────────────────────
@@ -396,9 +400,34 @@ export default function BuildingsPage() {
   const [rejectNote, setRejectNote]   = useState("");
   const [addModal, setAddModal] = useState(false);
   const [saving, setSaving]     = useState(false);
-  const [selectedBuilding, setSelectedBuilding] = useState(BUILDINGS_3D[0]);
+  const [buildings3d, setBuildings3d] = useState<Building3D[]>(FALLBACK_3D);
+  const [selectedBuilding, setSelectedBuilding] = useState<Building3D>(FALLBACK_3D[0]);
+
+  // Nạp toà nhà + tầng THẬT từ API cho mô hình 3D (xây thêm toà là tự hiện).
+  useEffect(() => {
+    (async () => {
+      try {
+        const [br, fr] = await Promise.all([buildingsApi.getAll(), floorsApi.getAll()]);
+        if (br.errorCode !== 200 || !br.data?.length) return;
+        const flr = fr.errorCode === 200 ? fr.data ?? [] : [];
+        const list: Building3D[] = br.data.map((b) => {
+          const maxFloor = flr.filter((f) => f.buildingId === b.id)
+            .reduce((m, f) => Math.max(m, f.floorNumber), 0);
+          const floorsCount = Math.max(maxFloor, b.totalFloors || 0, 1);
+          const perFloor = b.totalFloors && b.totalUnits ? Math.ceil(b.totalUnits / b.totalFloors) : 0;
+          return {
+            id: b.id, name: b.name, code: (b.code || b.name).toUpperCase(),
+            floors: floorsCount, apartmentsPerFloor: Math.max(perFloor, 1),
+          };
+        });
+        setBuildings3d(list);
+        setSelectedBuilding((prev) => list.find((x) => x.id === prev.id) ?? list[0]);
+      } catch { /* giữ fallback */ }
+    })();
+  }, []);
   const [selectedApt, setSelectedApt] = useState<ApartmentInfo | null>(null);
   const [viewMode, setViewMode] = useState<"model" | "detail">("model");
+  const [showOverview, setShowOverview] = useState(true);
   const [form, setForm]         = useState({
     title: "", providerName: PROVIDERS_LIST[0], serviceType: SERVICE_TYPES[0],
     description: "", priority: "medium" as Priority, estimatedDays: 5,
@@ -514,65 +543,93 @@ export default function BuildingsPage() {
           {/* Model view */}
           {viewMode === "model" && (<>
 
-            {/* Building selector */}
-            <div className="flex flex-wrap gap-2">
-              {BUILDINGS_3D.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => { setSelectedBuilding(b); setSelectedApt(null); setViewMode("model"); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
-                    selectedBuilding.id === b.id
-                      ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
-                      : "bg-white/[0.03] border-white/5 text-zinc-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <Building2 className="w-4 h-4" />
-                  {b.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Info bar */}
-            <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs text-zinc-400">
-              <span><span className="text-white font-semibold">{selectedBuilding.floors}</span> tầng</span>
-              <span>·</span>
-              <span><span className="text-white font-semibold">{selectedBuilding.apartmentsPerFloor}</span> căn/tầng</span>
-              <span>·</span>
-              <span>Tổng <span className="text-white font-semibold">{selectedBuilding.floors * selectedBuilding.apartmentsPerFloor}</span> căn hộ</span>
-              {selectedApt ? (
-                <span className="ml-auto flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                  <span className="text-yellow-300 font-mono font-semibold">{selectedApt.aptId}</span>
-                  <span className="text-zinc-500">đang chọn</span>
-                </span>
-              ) : (
-                <span className="ml-auto text-zinc-600">Click căn để xem · Kéo để xoay · Scroll để zoom</span>
-              )}
-            </div>
-
-            {/* Split: 3D canvas + side panel */}
-            <div className={`flex gap-4 items-start transition-all ${selectedApt ? "" : ""}`}>
-              <div className={`h-[600px] rounded-2xl overflow-hidden border border-white/5 transition-all ${selectedApt ? "flex-1" : "w-full"}`}>
-                <Building3DModel
-                  floors={selectedBuilding.floors}
-                  apartmentsPerFloor={selectedBuilding.apartmentsPerFloor}
-                  buildingCode={selectedBuilding.code}
-                  selectedAptId={selectedApt?.aptId}
-                  onApartmentClick={(apt) => { setSelectedApt(apt); if (apt) setViewMode("model"); }}
-                />
+            {showOverview ? (<>
+              {/* Overview info bar */}
+              <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs text-zinc-400">
+                <LayoutGrid className="w-4 h-4 text-indigo-400" />
+                <span>Toàn cảnh <span className="text-white font-semibold">{buildings3d.length}</span> toà nhà</span>
+                <span className="ml-auto text-zinc-600">Click vào 1 toà để xem chi tiết từng căn hộ · Kéo để xoay · Scroll để zoom</span>
               </div>
 
-              <AnimatePresence>
-                {selectedApt && (
-                  <AptSidePanel
-                    info={selectedApt}
-                    detail={getAptDetail(selectedApt)}
-                    onClose={() => setSelectedApt(null)}
-                    onExpand={() => setViewMode("detail")}
-                  />
+              {/* Site-wide overview: all buildings */}
+              <div className="h-[600px] rounded-2xl overflow-hidden border border-white/5">
+                <CampusOverview3D
+                  buildings={buildings3d}
+                  onSelect={(b: CampusBuildingInfo) => {
+                    setSelectedBuilding(b);
+                    setSelectedApt(null);
+                    setShowOverview(false);
+                  }}
+                />
+              </div>
+            </>) : (<>
+              {/* Building selector */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => { setShowOverview(true); setSelectedApt(null); }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/5 bg-white/[0.03] text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Toàn cảnh
+                </button>
+                {buildings3d.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => { setSelectedBuilding(b); setSelectedApt(null); setViewMode("model"); }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                      selectedBuilding.id === b.id
+                        ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
+                        : "bg-white/[0.03] border-white/5 text-zinc-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Building2 className="w-4 h-4" />
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Info bar */}
+              <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs text-zinc-400">
+                <span><span className="text-white font-semibold">{selectedBuilding.floors}</span> tầng</span>
+                <span>·</span>
+                <span><span className="text-white font-semibold">{selectedBuilding.apartmentsPerFloor}</span> căn/tầng</span>
+                <span>·</span>
+                <span>Tổng <span className="text-white font-semibold">{selectedBuilding.floors * selectedBuilding.apartmentsPerFloor}</span> căn hộ</span>
+                {selectedApt ? (
+                  <span className="ml-auto flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                    <span className="text-yellow-300 font-mono font-semibold">{selectedApt.aptId}</span>
+                    <span className="text-zinc-500">đang chọn</span>
+                  </span>
+                ) : (
+                  <span className="ml-auto text-zinc-600">Click căn để xem · Kéo để xoay · Scroll để zoom</span>
                 )}
-              </AnimatePresence>
-            </div>
+              </div>
+
+              {/* Split: 3D canvas + side panel */}
+              <div className={`flex gap-4 items-start transition-all ${selectedApt ? "" : ""}`}>
+                <div className={`h-[600px] rounded-2xl overflow-hidden border border-white/5 transition-all ${selectedApt ? "flex-1" : "w-full"}`}>
+                  <Building3DModel
+                    floors={selectedBuilding.floors}
+                    apartmentsPerFloor={selectedBuilding.apartmentsPerFloor}
+                    buildingCode={selectedBuilding.code}
+                    selectedAptId={selectedApt?.aptId}
+                    onApartmentClick={(apt) => { setSelectedApt(apt); if (apt) setViewMode("model"); }}
+                  />
+                </div>
+
+                <AnimatePresence>
+                  {selectedApt && (
+                    <AptSidePanel
+                      info={selectedApt}
+                      detail={getAptDetail(selectedApt)}
+                      onClose={() => setSelectedApt(null)}
+                      onExpand={() => setViewMode("detail")}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+            </>)}
           </>)}
 
         </div>

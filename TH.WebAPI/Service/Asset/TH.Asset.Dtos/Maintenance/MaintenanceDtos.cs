@@ -114,7 +114,8 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreateWorkOrderDto
     {
-        public required string woCode { get; set; }
+        // Mã WO do server sinh — client không cần gửi.
+        public string? woCode { get; set; }
         public Guid assetId { get; set; }
         public Guid? scheduleId { get; set; }
         public Guid checklistTemplateId { get; set; }
@@ -130,6 +131,8 @@ namespace TH.Asset.Dtos
         public decimal? estimatedHours { get; set; }
         // Cross-service (Auth)
         public Guid? createdBy { get; set; }
+        public int? createdByUserId { get; set; }
+        public string? createdByName { get; set; }
     }
 
     public class UpdateWorkOrderDto : CreateWorkOrderDto
@@ -159,6 +162,8 @@ namespace TH.Asset.Dtos
         public Guid buildingId { get; set; }
         public string status { get; set; } = null!;
         public Guid? reviewerId { get; set; }
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
         public string woType { get; set; } = null!;
         public string? title { get; set; }
         public string? description { get; set; }
@@ -173,6 +178,8 @@ namespace TH.Asset.Dtos
         public decimal? actualHours { get; set; }
         public decimal? totalCost { get; set; }
         public Guid? createdBy { get; set; }
+        public int? createdByUserId { get; set; }
+        public string? createdByName { get; set; }
         public DateTime createdAt { get; set; }
         public DateTime updatedAt { get; set; }
     }
@@ -185,6 +192,9 @@ namespace TH.Asset.Dtos
         public Guid woId { get; set; }
         // Cross-service (Auth)
         public Guid assignedTo { get; set; }
+        // KTV được chọn từ danh sách (Auth userID int + tên hiển thị)
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
         public Guid? checkinQrAssetId { get; set; }
     }
 

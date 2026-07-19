@@ -1,0 +1,39 @@
+@startuml
+skinparam defaultTextAlignment center
+skinparam swimlane {
+  BorderColor black
+  BorderThickness 2
+  TitleBackgroundColor #E2E2F0
+}
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+}
+
+|Hệ thống (Cronjob / IoT)|
+start
+:Phát hiện đến hạn bảo trì / Nhận cảnh báo;
+:Tự động sinh Work Order (WO);
+
+|Kỹ sư trưởng|
+:Tiếp nhận WO trên Dashboard;
+:Phân công Kỹ thuật viên (Gán KTV);
+
+|Kỹ thuật viên|
+repeat
+  :Nhận WO & di chuyển đến vị trí tài sản;
+  :Quét mã QR Check-in hiện trường;
+  :Thực hiện Checklist & Chụp ảnh minh chứng;
+  :Cập nhật trạng thái "Chờ nghiệm thu";
+
+  |Kỹ sư trưởng|
+  :Kiểm tra Checklist và Ảnh thực tế;
+' Vòng lặp BPMN Gateway
+repeat while (Đánh giá nghiệm thu?) is (Không đạt)
+-> Đạt;
+
+|Hệ thống (Cronjob / IoT)|
+:Ghi nhận lịch sử bảo trì tài sản;
+:Đóng WO & Tính toán chu kỳ tiếp theo;
+stop
+@enduml

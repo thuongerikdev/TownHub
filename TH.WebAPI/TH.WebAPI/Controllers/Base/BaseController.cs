@@ -41,9 +41,9 @@ namespace TH.TownHub.WebAPI.Controllers
         }
 
         [HttpGet("get-all")]
-        public async Task<IActionResult> GetAll([FromQuery] string? building, [FromQuery] string? status)
+        public async Task<IActionResult> GetAll([FromQuery] string? building, [FromQuery] string? status, [FromQuery] Guid? buildingId)
         {
-            var result = await _service.GetAllAsync(building, status);
+            var result = await _service.GetAllAsync(building, status, buildingId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
@@ -476,6 +476,25 @@ namespace TH.TownHub.WebAPI.Controllers
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);
+        }
+    }
+
+    // ============================================================
+    // DAMAGE DETECTION CONTROLLER
+    // Cư dân chụp ảnh sự cố ở Portal → AI gợi ý category NCC phù hợp
+    // ============================================================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class DamageDetectionController : ControllerBase
+    {
+        private readonly IDamageDetectionService _service;
+        public DamageDetectionController(IDamageDetectionService service) => _service = service;
+
+        [HttpPost("detect")]
+        public async Task<IActionResult> Detect([FromBody] DetectDamageRequestDto request)
+        {
+            var result = await _service.DetectAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
     }
 

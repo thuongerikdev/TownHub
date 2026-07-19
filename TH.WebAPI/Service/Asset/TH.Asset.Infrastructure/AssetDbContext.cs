@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TH.Asset.Domain.Core;
 using TH.Asset.Domain.Incident;
 using TH.Asset.Domain.Inventory;
@@ -25,6 +26,11 @@ namespace TH.Asset.Infrastructure.Database
         public DbSet<AssetTransfer> AssetTransfers { get; set; }
         public DbSet<AssetDepreciationLog> AssetDepreciationLogs { get; set; }
         public DbSet<IotSensorReading> IotSensorReadings { get; set; }
+
+        // ── Kế toán (chứng từ / định khoản / thanh lý) ─────────────────────────
+        public DbSet<AssetDocument> AssetDocuments { get; set; }
+        public DbSet<AssetDocumentLine> AssetDocumentLines { get; set; }
+        public DbSet<AssetDisposal> AssetDisposals { get; set; }
 
         // ── Maintenance ───────────────────────────────────────────────────────
         public DbSet<ChecklistTemplate> ChecklistTemplates { get; set; }
@@ -171,6 +177,51 @@ namespace TH.Asset.Infrastructure.Database
             modelBuilder.Entity<AssetEntity>()
                 .HasIndex(x => x.assetCode).IsUnique();
 
+            // ── Kế toán ──
+            // Mã chứng từ duy nhất
+            modelBuilder.Entity<AssetDocument>()
+                .HasIndex(x => x.documentCode).IsUnique();
+
+            // Line → Document: xoá chứng từ thì xoá luôn dòng định khoản
+            modelBuilder.Entity<AssetDocumentLine>(b =>
+            {
+                b.HasOne(x => x.document)
+                    .WithMany(d => d.lines)
+                    .HasForeignKey(x => x.documentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Line → Asset: giữ lại (Restrict) để tránh vòng cascade qua Asset
+                b.HasOne(x => x.asset)
+                    .WithMany()
+                    .HasForeignKey(x => x.assetId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // DepreciationLog → Document: không xoá theo (Restrict)
+            modelBuilder.Entity<AssetDepreciationLog>()
+                .HasOne(x => x.document)
+                .WithMany()
+                .HasForeignKey(x => x.documentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Disposal → Asset / Document
+            modelBuilder.Entity<AssetDisposal>(b =>
+            {
+                b.HasOne(x => x.asset)
+                    .WithMany()
+                    .HasForeignKey(x => x.assetId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasOne(x => x.document)
+                    .WithMany()
+                    .HasForeignKey(x => x.documentId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Chống 1 tài sản bị khấu hao trùng trong cùng 1 kỳ
+            modelBuilder.Entity<AssetDepreciationLog>()
+                .HasIndex(x => new { x.assetId, x.periodYear, x.periodMonth }).IsUnique();
+
             modelBuilder.Entity<AssetCategory>()
                 .HasIndex(x => x.code).IsUnique();
 
@@ -250,6 +301,22 @@ namespace TH.Asset.Infrastructure.Database
                 b.Property(x => x.accumulatedTotal).HasColumnType("numeric(18,2)");
             });
 
+            // Kế toán: chứng từ / định khoản / thanh lý
+            modelBuilder.Entity<AssetDocument>()
+                .Property(x => x.totalAmount).HasColumnType("numeric(18,2)");
+
+            modelBuilder.Entity<AssetDocumentLine>()
+                .Property(x => x.amount).HasColumnType("numeric(18,2)");
+
+            modelBuilder.Entity<AssetDisposal>(b =>
+            {
+                b.Property(x => x.originalCost).HasColumnType("numeric(18,2)");
+                b.Property(x => x.accumulatedDepreciation).HasColumnType("numeric(18,2)");
+                b.Property(x => x.bookValue).HasColumnType("numeric(18,2)");
+                b.Property(x => x.disposalValue).HasColumnType("numeric(18,2)");
+                b.Property(x => x.gainLoss).HasColumnType("numeric(18,2)");
+            });
+
             // SLA thời gian (giờ)
             modelBuilder.Entity<SlaConfig>(b =>
             {
@@ -321,6 +388,25 @@ namespace TH.Asset.Infrastructure.Database
             // CostTracking
             modelBuilder.Entity<CostTracking>()
                 .Property(x => x.amount).HasColumnType("numeric(18,0)");
+
+            // ====== UTC CONVERTERS ======
+            // Ngày client gửi (vd "2026-07-16") có Kind=Unspecified → Npgsql từ chối ghi vào cột
+            // timestamptz. Ép mọi DateTime về UTC khi ghi & đọc (giống AuthDbContext). Đây là cách
+            // đáng tin cậy hơn interceptor SaveChanges (vốn không chặn được ca này).
+            var utcDateTimeConverter = new ValueConverter<DateTime, DateTime>(
+                v => v.Kind == DateTimeKind.Utc ? v : (v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : DateTime.SpecifyKind(v, DateTimeKind.Utc)),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            var utcNullableDateTimeConverter = new ValueConverter<DateTime?, DateTime?>(
+                v => v == null ? (DateTime?)null : (v.Value.Kind == DateTimeKind.Utc ? v.Value : (v.Value.Kind == DateTimeKind.Local ? v.Value.ToUniversalTime() : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc))),
+                v => v == null ? (DateTime?)null : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc));
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var prop in entity.GetProperties())
+                {
+                    if (prop.ClrType == typeof(DateTime)) prop.SetValueConverter(utcDateTimeConverter);
+                    if (prop.ClrType == typeof(DateTime?)) prop.SetValueConverter(utcNullableDateTimeConverter);
+                }
+            }
         }
     }
 }

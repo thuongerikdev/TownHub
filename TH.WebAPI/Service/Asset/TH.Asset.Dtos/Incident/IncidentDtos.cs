@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace TH.Asset.Dtos
 {
@@ -69,7 +68,6 @@ namespace TH.Asset.Dtos
         public string? category { get; set; }         // ELECTRICAL | PLUMBING | HVAC | OTHER
         public string priority { get; set; } = "MEDIUM";
         public string source { get; set; } = "APP";   // APP | RECEPTION | PHONE | EMAIL
-        public List<string>? photoUrls { get; set; }   // ảnh đính kèm lúc tạo (lưu thành TicketAttachment)
     }
 
     public class UpdateTicketDto : CreateTicketDto
@@ -96,6 +94,8 @@ namespace TH.Asset.Dtos
         // Cross-service (Auth)
         public Guid reportedBy { get; set; }
         public string? reportedByName { get; set; }
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
         public Guid? slaConfigId { get; set; }
         public string? slaConfigName { get; set; }
         public Guid? purchaseRequestId { get; set; }
@@ -121,6 +121,9 @@ namespace TH.Asset.Dtos
         public Guid ticketId { get; set; }
         // Cross-service (Auth)
         public Guid assignedTo { get; set; }
+        // KTV được chọn từ danh sách (Auth userID int + tên hiển thị)
+        public int? assignedToUserId { get; set; }
+        public string? assignedToName { get; set; }
     }
 
     public class TicketAssignmentResponse
@@ -207,28 +210,5 @@ namespace TH.Asset.Dtos
         public string? message { get; set; }
         public DateTime? acknowledgedAt { get; set; }
         public Guid? acknowledgedBy { get; set; }
-    }
-
-    // ============================================================
-    // AI DAMAGE DETECTION DTOs (goi y category khi tao ticket)
-    // ============================================================
-    public class DetectDamageRequestDto
-    {
-        public required string imageDataUrl { get; set; }
-    }
-
-    public class DamageDetectionItem
-    {
-        public string label { get; set; } = null!;
-        public string labelVi { get; set; } = null!;
-        public double confidence { get; set; }
-    }
-
-    public class DamageDetectionResponse
-    {
-        public bool available { get; set; }
-        public List<DamageDetectionItem> detections { get; set; } = new();
-        public string? suggestedCategory { get; set; }
-        public double? topConfidence { get; set; }
     }
 }

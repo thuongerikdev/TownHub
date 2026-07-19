@@ -39,6 +39,7 @@ namespace TH.Auth.Infrastructure.Repository.User
         Task<List<GetUserResponseDto?>> GetAllUserWhereScopeUserAsync(CancellationToken ct);
         Task<bool> CheckUserScopeAsync(int userId, string scope, CancellationToken ct);
         Task<List<RoleSlimDto>> GetRolesByUserIdAsync(int userId, CancellationToken ct);
+        Task<List<RoleMemberDto>> GetMembersByRoleNameAsync(string roleName, CancellationToken ct);
     }
     public sealed class UserRepository : IUserRepository
     {
@@ -71,6 +72,30 @@ namespace TH.Auth.Infrastructure.Repository.User
                 _db.authUsers.Update(user);
             }
             return Task.CompletedTask;
+        }
+
+        // Lấy user thuộc 1 vai trò (theo tên role) — nhẹ, chỉ id/username/họ tên.
+        public async Task<List<RoleMemberDto>> GetMembersByRoleNameAsync(string roleName, CancellationToken ct)
+        {
+            // OrderBy trên entity + chiếu anonymous để EF dịch được; ghép tên ở bộ nhớ.
+            var rows = await _db.authUsers
+                .AsNoTracking()
+                .Where(u => u.userRoles.Any(ur => ur.role.roleName == roleName))
+                .OrderBy(u => u.userName)
+                .Select(u => new
+                {
+                    u.userID,
+                    u.userName,
+                    firstName = u.profile != null ? u.profile.firstName : null,
+                    lastName = u.profile != null ? u.profile.lastName : null,
+                })
+                .ToListAsync(ct);
+
+            return rows.Select(r =>
+            {
+                var full = $"{r.firstName} {r.lastName}".Trim();
+                return new RoleMemberDto(r.userID, r.userName, string.IsNullOrWhiteSpace(full) ? null : full);
+            }).ToList();
         }
 
         // >>> NEW: trả DTO để không loop

@@ -8,7 +8,11 @@ namespace TH.TownHub.Dtos
     public class CreateApartmentRequestDto
     {
         public required string code { get; set; }
-        public required string building { get; set; }
+        // Chọn toà nhà theo master (Guid). building (tên) tuỳ chọn — server tự điền theo master.
+        public Guid? buildingId { get; set; }
+        public string? building { get; set; }
+        // Chọn tầng theo master (Guid). 1 tầng có nhiều căn hộ.
+        public Guid? floorId { get; set; }
         public int floor { get; set; }
         public required string unitNumber { get; set; }
         public required string type { get; set; }
@@ -27,6 +31,8 @@ namespace TH.TownHub.Dtos
         public int id { get; set; }
         public string code { get; set; } = null!;
         public string building { get; set; } = null!;
+        public Guid? buildingId { get; set; }
+        public Guid? floorId { get; set; }
         public int floor { get; set; }
         public string unitNumber { get; set; } = null!;
         public string type { get; set; } = null!;
@@ -695,5 +701,28 @@ namespace TH.TownHub.Dtos
         public int? entityId { get; set; }
         public int uploadedByAuthUserId { get; set; }
         public DateTime createdAt { get; set; }
+    }
+
+    // ============================================================
+    // AI DAMAGE DETECTION DTOs (goi y category tim NCC dich vu o Portal)
+    // ============================================================
+    public class DetectDamageRequestDto
+    {
+        public required string imageDataUrl { get; set; }
+    }
+
+    public class DamageDetectionItem
+    {
+        public string label { get; set; } = null!;
+        public string labelVi { get; set; } = null!;
+        public double confidence { get; set; }
+    }
+
+    public class DamageDetectionResponse
+    {
+        public bool available { get; set; }
+        public List<DamageDetectionItem> detections { get; set; } = new();
+        public string? suggestedCategory { get; set; }  // khớp key CAT_META ở app/portal (electrical | renovation | ...)
+        public double? topConfidence { get; set; }
     }
 }

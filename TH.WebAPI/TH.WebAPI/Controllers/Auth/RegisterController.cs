@@ -32,6 +32,22 @@ namespace TH.WebAPI.Controllers.Auth
             _providerService = providerService;
         }
 
+        // ── Public ─────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Cư dân tự đăng ký tài khoản (public).
+        /// Tạo AuthUser (scope="user") + gán role mặc định. Email được xác thực ngay
+        /// (RegisterAsync set isEmailVerified=true) nên đăng nhập được luôn, không cần OTP.
+        /// </summary>
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
+        {
+            var result = await _authRegisterService.RegisterAsync(req, ct);
+            if (result.ErrorCode != 200) return BadRequest(result);
+            return Ok(result);
+        }
+
         // ── Admin only ────────────────────────────────────────────────────────────
 
         /// <summary>

@@ -19,7 +19,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         /// </summary>
         bool RequiresHostedUrl { get; }
 
-        Task<OcrExtractionResult> ExtractAsync(string fileUrl, CancellationToken ct = default);
+        /// <param name="model">Engine con phía service Python: "gemini" | "vietocr" | "paddleocr".</param>
+        Task<OcrExtractionResult> ExtractAsync(string fileUrl, string model, CancellationToken ct = default);
     }
 
     /// <summary>Kết quả OCR đã chuẩn hoá để worker ghi vào OcrJob + (sau này) Invoice.</summary>

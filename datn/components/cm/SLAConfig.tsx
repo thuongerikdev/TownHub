@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Edit2, Trash2, Clock, ShieldCheck, Power } from "lucide-react";
+import { Plus, Edit2, Trash2, Clock, ShieldCheck, Power, Ticket, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  slaConfigs,
+  slaConfigs, tickets, buildings, assetApi,
   type SlaConfigResponse, type CreateSlaConfigInput,
+  type BuildingResponse, type AssetResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { Textarea } from "@/components/ui/textarea";
 import { mockSlaConfigs } from "@/lib/mock/cm";
 import {
   PageHeader, StatCard, DataTable, EntityModal, Field, MockBanner,
@@ -46,6 +48,8 @@ const hrs = (n?: number) => (n != null ? `${n}h` : "—");
 
 export default function SLAConfig() {
   const q = useApiList<SlaConfigResponse>(() => slaConfigs.getAll(), { mock: mockSlaConfigs });
+  const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());
+  const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll());
   const list = q.items;
 
   const [open, setOpen] = useState(false);
@@ -53,6 +57,40 @@ export default function SLAConfig() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [confirmDel, setConfirmDel] = useState<SlaConfigResponse | null>(null);
+
+  // ── Tạo ticket từ 1 cấu hình SLA ──
+  const [ticketSla, setTicketSla] = useState<SlaConfigResponse | null>(null);
+  const [ticketForm, setTicketForm] = useState({ buildingId: "", assetId: NONE, title: "", description: "" });
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+  const [ticketDoneIds, setTicketDoneIds] = useState<Set<string>>(new Set());
+
+  function openTicket(s: SlaConfigResponse) {
+    setTicketSla(s);
+    setTicketForm({ buildingId: buildingsQ.items[0]?.id ?? "", assetId: NONE, title: "", description: "" });
+  }
+  async function submitTicket() {
+    if (!ticketSla) return;
+    if (!ticketForm.buildingId) { toast.error("Chọn toà nhà."); return; }
+    if (!ticketForm.title.trim()) { toast.error("Nhập tiêu đề sự cố."); return; }
+    setTicketSubmitting(true);
+    const res = await tickets.create({
+      ticketCode: "", // server tự sinh
+      buildingId: ticketForm.buildingId,
+      assetId: ticketForm.assetId === NONE ? undefined : ticketForm.assetId,
+      slaConfigId: ticketSla.id,
+      priority: ticketSla.priorityLevel,
+      category: ticketSla.issueCategory ?? undefined,
+      title: ticketForm.title.trim(),
+      description: ticketForm.description.trim() || undefined,
+      source: "STAFF",
+    });
+    setTicketSubmitting(false);
+    if (res.errorCode === 200) {
+      setTicketDoneIds((prev) => new Set(prev).add(ticketSla.id));
+      toast.success("Đã tạo ticket từ cấu hình SLA.");
+      setTicketSla(null);
+    } else toast.error(res.errorMessage || "Tạo ticket thất bại.");
+  }
 
   const stats = useMemo(() => ({
     total: list.length,
@@ -150,6 +188,13 @@ export default function SLAConfig() {
       key: "actions", header: "", align: "right",
       cell: (s) => (
         <div className="flex items-center justify-end gap-1">
+          {ticketDoneIds.has(s.id) ? (
+            <ToneBadge tone="success" dot>Đã tạo ticket</ToneBadge>
+          ) : (
+            <Button variant="outline" size="sm" className="h-8 gap-1.5" title="Tạo ticket dùng cấu hình SLA này" onClick={() => openTicket(s)}>
+              <Ticket className="size-3.5" /> Tạo ticket
+            </Button>
+          )}
           <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(s)}><Edit2 className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(s)}><Trash2 className="size-4" /></Button>
         </div>
@@ -236,6 +281,54 @@ export default function SLAConfig() {
               <Switch checked={form.isActive} onCheckedChange={(v) => set("isActive", v)} />
             </div>
           </div>
+        </div>
+      </EntityModal>
+
+      <EntityModal
+        open={!!ticketSla}
+        onOpenChange={(o) => !o && setTicketSla(null)}
+        title="Tạo ticket từ cấu hình SLA"
+        description={ticketSla?.name}
+        onSubmit={submitTicket}
+        submitting={ticketSubmitting}
+        submitLabel="Tạo ticket"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm">
+            <span className="text-muted-foreground">Áp dụng SLA:</span>
+            <PriorityBadge value={ticketSla?.priorityLevel ?? "MEDIUM"} />
+            <span className="text-foreground">{ticketSla?.issueCategory ? (CATEGORY[ticketSla.issueCategory] ?? ticketSla.issueCategory) : "Mọi loại sự cố"}</span>
+            {ticketSla?.responseTimeHours != null && <span className="text-xs text-muted-foreground">· phản hồi ≤ {ticketSla.responseTimeHours}h</span>}
+            {ticketSla?.resolutionTimeHours != null && <span className="text-xs text-muted-foreground">· giải quyết ≤ {ticketSla.resolutionTimeHours}h</span>}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Toà nhà" required>
+              <Select value={ticketForm.buildingId} onValueChange={(v) => setTicketForm((f) => ({ ...f, buildingId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Chọn toà nhà…" /></SelectTrigger>
+                <SelectContent>
+                  {buildingsQ.items.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Tài sản liên quan">
+              <Select value={ticketForm.assetId} onValueChange={(v) => setTicketForm((f) => ({ ...f, assetId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Không gắn" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>Không gắn tài sản</SelectItem>
+                  {assetsQ.items
+                    .filter((a) => !ticketForm.buildingId || a.buildingId === ticketForm.buildingId)
+                    .map((a) => <SelectItem key={a.id} value={a.id}>{a.assetCode} · {a.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+          <Field label="Tiêu đề sự cố" required>
+            <Input value={ticketForm.title} onChange={(e) => setTicketForm((f) => ({ ...f, title: e.target.value }))} placeholder="VD: Mất điện tầng hầm B1" />
+          </Field>
+          <Field label="Mô tả">
+            <Textarea rows={3} value={ticketForm.description} onChange={(e) => setTicketForm((f) => ({ ...f, description: e.target.value }))} placeholder="Mô tả chi tiết sự cố…" />
+          </Field>
+          <p className="text-xs text-muted-foreground">Mã ticket sẽ được hệ thống tự sinh khi tạo.</p>
         </div>
       </EntityModal>
 

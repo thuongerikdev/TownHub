@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, ClipboardList, Pencil, Trash2, Eye, Wrench, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, assetApi, checklistTemplates,
-  type WorkOrderResponse, type CreateWorkOrderInput, type UpdateWorkOrderInput,
+  workOrders, assetApi, checklistTemplates, toWorkOrderUpdate,
+  type WorkOrderResponse, type CreateWorkOrderInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockWorkOrders } from "@/lib/mock/pm";
@@ -23,6 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate, daysUntil } from "@/lib/format";
+import { useAuth } from "@/contexts/AuthContext";
 
 const WO_STATUS: Record<string, StatusDef> = {
   DRAFT: { label: "Nháp", tone: "neutral" },
@@ -61,6 +62,7 @@ function DueCell({ value, done }: { value?: string; done?: boolean }) {
 
 export default function WorkOrderList(_props: { userRole?: string }) {
   const router = useRouter();
+  const { user } = useAuth();
   const q = useApiList<WorkOrderResponse>(() => workOrders.getAll(), { mock: mockWorkOrders });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const tplQ = useApiList(() => checklistTemplates.getAll(), { mock: mockChecklistTemplates });
@@ -95,7 +97,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...emptyForm, woCode: `WO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}` });
+    setForm(emptyForm); // Mã WO do server sinh khi lưu.
     setOpen(true);
   }
   function openEdit(w: WorkOrderResponse) {
@@ -114,16 +116,22 @@ export default function WorkOrderList(_props: { userRole?: string }) {
     if (!form.checklistTemplateId) { toast.error("Chọn checklist template."); return; }
     if (!form.title.trim()) { toast.error("Nhập tiêu đề công việc."); return; }
     const buildingId = assetsQ.items.find((a) => a.id === form.assetId)?.buildingId ?? "";
+    const creatorName = user
+      ? `${user.profile?.firstName ?? ""} ${user.profile?.lastName ?? ""}`.trim() || user.userName
+      : undefined;
     const base: CreateWorkOrderInput = {
       woCode: form.woCode.trim(), assetId: form.assetId, checklistTemplateId: form.checklistTemplateId,
       buildingId, woType: form.woType, title: form.title.trim(),
       description: form.description.trim() || undefined, priority: form.priority,
-      scheduledDate: form.scheduledDate || undefined, dueDate: form.dueDate || undefined,
+      scheduledDate: form.scheduledDate ? new Date(form.scheduledDate + "T00:00:00Z").toISOString() : undefined,
+      dueDate: form.dueDate ? new Date(form.dueDate + "T00:00:00Z").toISOString() : undefined,
       estimatedHours: form.estimatedHours ? Number(form.estimatedHours) : undefined,
+      // Người tạo lấy từ tài khoản đang đăng nhập (chỉ gán khi tạo mới)
+      ...(editing ? {} : { createdByUserId: user?.userID, createdByName: creatorName }),
     };
     setSubmitting(true);
     const res = editing
-      ? await workOrders.update({ ...base, id: editing.id } as UpdateWorkOrderInput)
+      ? await workOrders.update(toWorkOrderUpdate(editing, base))
       : await workOrders.create(base);
     setSubmitting(false);
     if (res.errorCode === 200) {
@@ -219,8 +227,9 @@ export default function WorkOrderList(_props: { userRole?: string }) {
         submitLabel={editing ? "Lưu" : "Tạo"}
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã WO" required>
-            <Input value={form.woCode} onChange={(e) => setForm((f) => ({ ...f, woCode: e.target.value }))} />
+          <Field label="Mã WO">
+            {/* Mã tự sinh phía server, không cho sửa. */}
+            <Input value={editing ? form.woCode : ""} placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Loại">
             <Select value={form.woType} onValueChange={(v) => setForm((f) => ({ ...f, woType: v }))}>
@@ -297,7 +306,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
             <DetailRow label="Ước tính">{detail.estimatedHours != null ? `${detail.estimatedHours} giờ` : "—"}</DetailRow>
             <DetailRow label="Thực tế">{detail.actualHours != null ? `${detail.actualHours} giờ` : "—"}</DetailRow>
             <DetailRow label="Chi phí">{formatCurrency(detail.totalCost)}</DetailRow>
-            <DetailRow label="Người tạo">{detail.createdBy ?? "—"}</DetailRow>
+            <DetailRow label="Người tạo">{detail.createdByName ?? detail.createdBy ?? "—"}</DetailRow>
             {detail.description && <div className="col-span-2"><DetailRow label="Mô tả">{detail.description}</DetailRow></div>}
           </div>
         )}

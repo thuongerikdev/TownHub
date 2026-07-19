@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { systemConfig, type SystemConfigResponse } from "@/lib/api";
+import MfaCard from "@/components/settings/MfaCard";
 
 const SETTINGS_SECTIONS = [
   { id: "general", label: "Cấu hình chung", icon: Globe },
@@ -178,7 +179,7 @@ export default function SettingsPage() {
               <Loader2 className="w-5 h-5 animate-spin" />
               <span className="text-sm">Đang tải cấu hình...</span>
             </div>
-          ) : tabConfigs.length === 0 ? (
+          ) : tabConfigs.length === 0 && activeTab !== "security" ? (
             <div className="h-64 flex flex-col items-center justify-center text-center animate-in fade-in">
               <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
                 <SettingsIcon className="w-8 h-8 text-zinc-500" style={{ animationDuration: "3s" }} />
@@ -257,6 +258,9 @@ export default function SettingsPage() {
                   );
                 })}
               </div>
+
+              {/* MFA / xác thực 2 lớp — cấu hình bảo mật tài khoản */}
+              {activeTab === "security" && <MfaCard />}
 
               {/* Maintenance toggle special treatment */}
               {activeTab === "general" && (

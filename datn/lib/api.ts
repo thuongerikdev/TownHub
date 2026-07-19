@@ -43,11 +43,14 @@ export interface UserSlim {
 export interface Role {
   roleID: number; roleName: string; roleDescription: string; isDefault: boolean; scope?: string;
 }
+export interface RoleMember {
+  userID: number; userName: string; fullName?: string;
+}
 export interface Permission {
   permissionID: number; permissionName: string; permissionDescription: string; code: string; scope?: string;
 }
 export interface ApartmentResponse {
-  id: number; code: string; building: string; floor: number; unitNumber: string;
+  id: number; code: string; building: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string;
   type: string; areaM2: number; status: string; note?: string; createdAt: string;
 }
 export interface ResidentResponse {
@@ -279,6 +282,21 @@ async function apiFetch<T>(
   }
 }
 
+// ─── MFA (TOTP) ──────────────────────────────────────────────────────────────
+export interface MfaStatus {
+  enabled: boolean;
+  status: "Pending" | "Enabled" | "Disabled" | string;
+  type: string;
+  label?: string;
+  enabledAt?: string;
+  lastVerifiedAt?: string;
+}
+export interface StartTotpResponse {
+  secretBase32: string;
+  otpauthUri: string;
+  label?: string;
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const auth = {
   staffLogin: (userName: string, password: string) =>
@@ -323,6 +341,15 @@ export const auth = {
       body: JSON.stringify({ ticket, oldPassword, newPassword }),
     }),
 
+  // ── MFA (TOTP) self-service: bật/tắt xác thực 2 lớp cho tài khoản đang đăng nhập ──
+  mfaStatus: () => apiFetch<MfaStatus>("/account/mfa/status"),
+  mfaStart: () =>
+    apiFetch<StartTotpResponse>("/account/mfa/totp/start", { method: "POST" }),
+  mfaConfirm: (code: string) =>
+    apiFetch<boolean>("/account/mfa/totp/confirm", { method: "POST", body: JSON.stringify({ code }) }),
+  mfaDisable: (confirmCode?: string) =>
+    apiFetch<boolean>("/account/mfa/totp/disable", { method: "POST", body: JSON.stringify({ confirmCode: confirmCode ?? null }) }),
+
   registerStart: (email: string) =>
     apiFetch<boolean>("/register/email/start", { method: "POST", body: JSON.stringify({ email }) }),
 
@@ -354,6 +381,7 @@ export const users = {
   getAllAdmin: () => apiFetch<GetUserResponse[]>("/user/admin/getAllUsers", {}),
   getAllResidents: () => apiFetch<GetUserResponse[]>("/user/getAllUsers", {}),
   getAllSlim: () => apiFetch<UserSlim[]>("/user/getAllUsersSlim", {}),
+  getByRole: (roleName: string) => apiFetch<RoleMember[]>(`/user/by-role${qs({ roleName })}`, {}),
   getById: (id: number) => apiFetch<GetUserResponse>(`/user/admin/getUserById?userId=${id}`, {}),
   deleteUser: (id: number) => apiFetch<unknown>(`/user/deleteUser?userId=${id}`, { method: "DELETE" }),
   updateProfile: (form: FormData) =>
@@ -425,14 +453,15 @@ export const permissions = {
 
 // ─── Apartments ───────────────────────────────────────────────────────────────
 export const apartments = {
-  getAll: (params?: { building?: string; status?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
+  getAll: (params?: { building?: string; status?: string; buildingId?: string }) => {
+    const clean = Object.fromEntries(Object.entries(params ?? {}).filter(([, v]) => v != null && v !== ""));
+    const q = new URLSearchParams(clean as Record<string, string>).toString();
     return apiFetch<ApartmentResponse[]>(`/api/Apartment/get-all${q ? "?" + q : ""}`);
   },
   getById: (id: number) => apiFetch<ApartmentResponse>(`/api/Apartment/get/${id}`),
-  create: (body: { code: string; building: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
+  create: (body: { code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/create", { method: "POST", body: JSON.stringify(body) }),
-  update: (body: { id: number; code: string; building: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
+  update: (body: { id: number; code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/update", { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: number) => apiFetch<boolean>(`/api/Apartment/delete/${id}`, { method: "DELETE" }),
 };
@@ -692,6 +721,19 @@ export const providers = {
     apiFetch<boolean>(`/api/Provider/delete/${id}`, { method: "DELETE" }),
 };
 
+// ─── AI Damage Detection (Portal: gợi ý category NCC từ ảnh sự cố) ────────────
+export interface DamageDetectionItem {
+  label: string; labelVi: string; confidence: number;
+}
+export interface DamageDetectionResponse {
+  available: boolean; detections: DamageDetectionItem[];
+  suggestedCategory?: string; topConfidence?: number;
+}
+export const damageDetection = {
+  detect: (imageDataUrl: string) =>
+    apiFetch<DamageDetectionResponse>("/api/DamageDetection/detect", { method: "POST", body: JSON.stringify({ imageDataUrl }) }),
+};
+
 // ─── Service Requests ──────────────────────────────────────────────────────────
 export const serviceRequests = {
   getAll: (params?: { providerId?: number; apartmentId?: number; status?: ServiceRequestStatus; requestedBy?: ServiceRequest["requestedBy"] }) => {
@@ -841,6 +883,7 @@ export interface AssetResponse {
   status: string; serialNumber?: string;
   purchasePrice?: number; purchaseDate?: string; warrantyExpiryDate?: string;
   usefulLifeMonths?: number; salvageValue: number; depreciationMethod: string;
+  accountCode?: string; paymentMethod?: string;
   accumulatedDepreciation: number; bookValue?: number;
   installationDate?: string; lastMaintenanceDate?: string; nextMaintenanceDate?: string;
   criticalityLevel: string; notes?: string;
@@ -853,7 +896,8 @@ export interface CreateAssetInput {
   status?: string; serialNumber?: string;
   purchasePrice?: number; purchaseDate?: string; warrantyExpiryDate?: string;
   usefulLifeMonths?: number; salvageValue?: number; depreciationMethod?: string;
-  installationDate?: string; criticalityLevel?: string; notes?: string;
+  accountCode?: string; paymentMethod?: string;
+  installationDate?: string; criticalityLevel?: string; notes?: string; createdBy?: string;
 }
 export interface UpdateAssetInput extends CreateAssetInput {
   id: string;
@@ -888,6 +932,34 @@ export interface AssetDepreciationLogResponse {
   periodYear: number; periodMonth: number;
   depreciationAmount: number; bookValueBefore?: number; bookValueAfter?: number;
   accumulatedTotal?: number; calculatedAt: string; calculatedBy?: string;
+  documentId?: string; documentCode?: string;
+}
+export interface RunDepreciationResult {
+  year: number; month: number; assetCount: number; totalAmount: number;
+  documentId?: string; documentCode?: string; skippedExisting: number;
+}
+export interface AssetDocumentLineResponse {
+  id: string; documentId: string;
+  debitAccount?: string; creditAccount?: string;
+  amount: number; description?: string;
+  assetId?: string; assetCode?: string; assetName?: string;
+}
+export interface AssetDocumentResponse {
+  id: string; documentCode: string; documentType: string;
+  documentDate: string; description?: string; totalAmount: number;
+  status: string; createdBy?: string; createdAt: string;
+  lines: AssetDocumentLineResponse[];
+}
+export interface CreateAssetDisposalInput {
+  assetId: string; disposalDate?: string; disposalValue: number;
+  disposalType?: string; reason?: string; note?: string; createdBy?: string;
+}
+export interface AssetDisposalResponse {
+  id: string; assetId: string; assetCode?: string; assetName?: string;
+  disposalDate: string; originalCost: number; accumulatedDepreciation: number;
+  bookValue: number; disposalValue: number; gainLoss: number;
+  disposalType?: string; reason?: string; note?: string; status: string;
+  documentId?: string; documentCode?: string; createdBy?: string; createdAt: string;
 }
 
 // ─── Core: Asset endpoints ─────────────────────────────────────────────────────
@@ -910,6 +982,43 @@ export const assetCategories = {
     apiFetch<boolean>(`/api/asset/asset-category/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/asset-category/delete/${id}`, { method: "DELETE" }),
 };
+// ─── Base: Toà nhà (master data, dùng cho vị trí tài sản) ──────────────────────
+export interface BuildingResponse {
+  id: string; code: string; name: string; totalFloors: number; totalUnits: number; managementCompany?: string;
+}
+export interface CreateBuildingInput {
+  code: string; name: string; totalFloors?: number; totalUnits?: number; managementCompany?: string;
+}
+export interface UpdateBuildingInput extends CreateBuildingInput { id: string; }
+export const buildings = {
+  getAll: () => apiFetch<BuildingResponse[]>(`/api/building/get-all`, {}),
+  getById: (id: string) => apiFetch<BuildingResponse>(`/api/building/get/${id}`, {}),
+  create: (body: CreateBuildingInput) =>
+    apiFetch<boolean>(`/api/building/create`, { method: "POST", body: JSON.stringify(body) }),
+  update: (body: UpdateBuildingInput) =>
+    apiFetch<boolean>(`/api/building/update`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => apiFetch<boolean>(`/api/building/delete/${id}`, { method: "DELETE" }),
+};
+
+// ─── Base: Tầng (master data — 1 toà nhiều tầng, 1 tầng nhiều căn hộ) ───────────
+export interface FloorResponse {
+  id: string; buildingId: string; floorNumber: number; floorName: string; floorType?: string;
+}
+export interface CreateFloorInput {
+  buildingId: string; floorNumber: number; floorName: string; floorType?: string;
+}
+export interface UpdateFloorInput extends CreateFloorInput { id: string; }
+export const floors = {
+  getAll: (buildingId?: string) =>
+    apiFetch<FloorResponse[]>(`/api/floor/get-all${qs({ buildingId })}`, {}),
+  getById: (id: string) => apiFetch<FloorResponse>(`/api/floor/get/${id}`, {}),
+  create: (body: CreateFloorInput) =>
+    apiFetch<boolean>(`/api/floor/create`, { method: "POST", body: JSON.stringify(body) }),
+  update: (body: UpdateFloorInput) =>
+    apiFetch<boolean>(`/api/floor/update`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => apiFetch<boolean>(`/api/floor/delete/${id}`, { method: "DELETE" }),
+};
+
 export const assetLocations = {
   getAll: (buildingId?: string) =>
     apiFetch<AssetLocationResponse[]>(`/api/asset/asset-location/get-all${qs({ buildingId })}`, {}),
@@ -936,6 +1045,21 @@ export const assetDepreciation = {
   getByAsset: (assetId: string) => apiFetch<AssetDepreciationLogResponse[]>(`/api/asset/asset-depreciation/get-by-asset/${assetId}`, {}),
   getByPeriod: (year: number, month: number) =>
     apiFetch<AssetDepreciationLogResponse[]>(`/api/asset/asset-depreciation/get-by-period${qs({ year, month })}`, {}),
+  runPeriod: (body: { year: number; month: number; createdBy?: string }) =>
+    apiFetch<RunDepreciationResult>(`/api/asset/asset-depreciation/run-period`, { method: "POST", body: JSON.stringify(body) }),
+};
+export const assetDocuments = {
+  getAll: (documentType?: string) =>
+    apiFetch<AssetDocumentResponse[]>(`/api/asset/asset-document/get-all${qs({ documentType })}`, {}),
+  getById: (id: string) => apiFetch<AssetDocumentResponse>(`/api/asset/asset-document/get/${id}`, {}),
+  getByAsset: (assetId: string) => apiFetch<AssetDocumentResponse[]>(`/api/asset/asset-document/get-by-asset/${assetId}`, {}),
+};
+export const assetDisposals = {
+  getAll: () => apiFetch<AssetDisposalResponse[]>(`/api/asset/asset-disposal/get-all`, {}),
+  getById: (id: string) => apiFetch<AssetDisposalResponse>(`/api/asset/asset-disposal/get/${id}`, {}),
+  getByAsset: (assetId: string) => apiFetch<AssetDisposalResponse[]>(`/api/asset/asset-disposal/get-by-asset/${assetId}`, {}),
+  create: (body: CreateAssetDisposalInput) =>
+    apiFetch<AssetDisposalResponse>(`/api/asset/asset-disposal/create`, { method: "POST", body: JSON.stringify(body) }),
 };
 
 // ─── Maintenance (PM): types ───────────────────────────────────────────────────
@@ -957,11 +1081,13 @@ export interface WorkOrderResponse {
   id: string; woCode: string; assetId: string; assetCode?: string; assetName?: string;
   scheduleId?: string; checklistTemplateId: string; checklistTemplateName?: string;
   buildingId: string; status: string; reviewerId?: string; woType: string;
+  assignedToUserId?: number; assignedToName?: string;
   title?: string; description?: string; priority: string;
   scheduledDate?: string; dueDate?: string; actualStartAt?: string; actualEndAt?: string;
   approvedAt?: string; rejectedReason?: string;
   estimatedHours?: number; actualHours?: number; totalCost?: number;
-  createdBy?: string; createdAt: string; updatedAt: string;
+  createdBy?: string; createdByUserId?: number; createdByName?: string;
+  createdAt: string; updatedAt: string;
 }
 export interface WorkOrderChecklistResponse {
   id: string; woId: string; templateItemId: string; itemLabel?: string; itemType?: string;
@@ -990,15 +1116,58 @@ export interface CreateMaintenanceScheduleInput {
 export interface UpdateMaintenanceScheduleInput extends CreateMaintenanceScheduleInput {
   id: string; nextDueDate?: string; lastExecutedAt?: string; lastWoId?: string;
 }
+
+/**
+ * Dựng payload update từ lịch hiện có, giữ MỌI trường (kể cả nextDueDate/lastExecutedAt/
+ * lastWoId/autoAssignDepartmentId do hệ thống tính), rồi override phần thay đổi.
+ * Endpoint update là full-overwrite — thiếu trường sẽ mất dữ liệu (lịch quá hạn, liên kết WO).
+ */
+export function toScheduleUpdate(
+  s: MaintenanceScheduleResponse,
+  patch: Partial<UpdateMaintenanceScheduleInput> = {},
+): UpdateMaintenanceScheduleInput {
+  return {
+    id: s.id, assetId: s.assetId, scheduleType: s.scheduleType,
+    checklistTemplateId: s.checklistTemplateId, autoAssignDepartmentId: s.autoAssignDepartmentId,
+    frequencyType: s.frequencyType, frequencyDays: s.frequencyDays,
+    startDate: s.startDate, endDate: s.endDate, leadTimeDays: s.leadTimeDays,
+    isActive: s.isActive, description: s.description,
+    nextDueDate: s.nextDueDate, lastExecutedAt: s.lastExecutedAt, lastWoId: s.lastWoId,
+    ...patch,
+  };
+}
 export interface CreateWorkOrderInput {
   woCode: string; assetId: string; checklistTemplateId: string; buildingId: string;
   scheduleId?: string; woType?: string; title?: string; description?: string;
-  priority?: string; scheduledDate?: string; dueDate?: string; estimatedHours?: number; createdBy?: string;
+  priority?: string; scheduledDate?: string; dueDate?: string; estimatedHours?: number;
+  createdBy?: string; createdByUserId?: number; createdByName?: string;
 }
 export interface UpdateWorkOrderInput extends CreateWorkOrderInput {
   id: string; status?: string; reviewerId?: string;
   actualStartAt?: string; actualEndAt?: string; approvedAt?: string; rejectedReason?: string;
   actualHours?: number; totalCost?: number;
+}
+
+/**
+ * Dựng payload update từ WO hiện có, giữ nguyên MỌI trường, rồi override phần thay đổi.
+ * Bắt buộc dùng ở mọi bước cập nhật (check-in, checklist, nghiệm thu, phân công...):
+ * endpoint /work-order/update là full-overwrite — trường nào không gửi sẽ bị ghi đè null.
+ */
+export function toWorkOrderUpdate(
+  w: WorkOrderResponse,
+  patch: Partial<UpdateWorkOrderInput> = {},
+): UpdateWorkOrderInput {
+  return {
+    id: w.id, woCode: w.woCode, assetId: w.assetId, checklistTemplateId: w.checklistTemplateId,
+    buildingId: w.buildingId, scheduleId: w.scheduleId, createdBy: w.createdBy,
+    createdByUserId: w.createdByUserId, createdByName: w.createdByName,
+    woType: w.woType, priority: w.priority, title: w.title, description: w.description,
+    scheduledDate: w.scheduledDate, dueDate: w.dueDate, estimatedHours: w.estimatedHours,
+    reviewerId: w.reviewerId, actualStartAt: w.actualStartAt, actualEndAt: w.actualEndAt,
+    approvedAt: w.approvedAt, rejectedReason: w.rejectedReason,
+    actualHours: w.actualHours, totalCost: w.totalCost, status: w.status,
+    ...patch,
+  };
 }
 
 // ─── Maintenance (PM): endpoints ───────────────────────────────────────────────
@@ -1039,7 +1208,7 @@ export const workOrders = {
   update: (body: UpdateWorkOrderInput) =>
     apiFetch<boolean>(`/api/asset/work-order/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/work-order/delete/${id}`, { method: "DELETE" }),
-  assignTechnician: (body: { woId: string; assignedTo?: string; checkinQrAssetId?: string }) =>
+  assignTechnician: (body: { woId: string; assignedTo?: string; assignedToUserId?: number; assignedToName?: string; checkinQrAssetId?: string }) =>
     apiFetch<boolean>(`/api/asset/work-order/assign-technician`, { method: "POST", body: JSON.stringify(body) }),
   addChecklistResponse: (body: { woId: string; templateItemId: string; isPassed: boolean; valueText?: string; notes?: string; photoUrl?: string }) =>
     apiFetch<boolean>(`/api/asset/work-order/add-checklist-response`, { method: "POST", body: JSON.stringify(body) }),
@@ -1062,6 +1231,7 @@ export interface TicketResponse {
   id: string; ticketCode: string; status: string;
   buildingId: string; floorId?: string; unitId?: string;
   assetId?: string; assetCode?: string; reportedBy: string; reportedByName?: string;
+  assignedToUserId?: number; assignedToName?: string;
   slaConfigId?: string; slaConfigName?: string; purchaseRequestId?: string; prCode?: string;
   title?: string; description?: string; category?: string; priority: string; source: string;
   resolvedAt?: string; closedAt?: string; autoClosed: boolean; resolutionNote?: string;
@@ -1073,13 +1243,6 @@ export interface TicketStatusHistoryResponse {
 }
 export interface TicketAttachmentResponse {
   id: string; ticketId: string; fileUrl: string;
-}
-export interface DamageDetectionItem {
-  label: string; labelVi: string; confidence: number;
-}
-export interface DamageDetectionResponse {
-  available: boolean; detections: DamageDetectionItem[];
-  suggestedCategory?: string; topConfidence?: number;
 }
 export interface SlaEscalationLogResponse {
   id: string; ticketId: string; ticketCode?: string; escalationLevel: number; escalatedAt: string;
@@ -1096,7 +1259,6 @@ export interface CreateTicketInput {
   ticketCode: string; buildingId: string; floorId?: string; unitId?: string;
   assetId?: string; reportedBy?: string; reportedByName?: string; slaConfigId?: string; purchaseRequestId?: string;
   title?: string; description?: string; category?: string; priority?: string; source?: string;
-  photoUrls?: string[];
 }
 export interface UpdateTicketInput extends CreateTicketInput {
   id: string; status?: string; resolvedAt?: string; closedAt?: string;
@@ -1125,7 +1287,7 @@ export const tickets = {
   delete: (id: string) => apiFetch<boolean>(`/api/asset/ticket/delete/${id}`, { method: "DELETE" }),
   changeStatus: (body: { ticketId: string; toStatus: string; fromStatus?: string; changedBy?: string; note?: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/change-status`, { method: "POST", body: JSON.stringify(body) }),
-  assign: (body: { ticketId: string; assignedTo?: string }) =>
+  assign: (body: { ticketId: string; assignedTo?: string; assignedToUserId?: number; assignedToName?: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/assign`, { method: "POST", body: JSON.stringify(body) }),
   addAttachment: (body: { ticketId: string; fileUrl: string }) =>
     apiFetch<boolean>(`/api/asset/ticket/add-attachment`, { method: "POST", body: JSON.stringify(body) }),
@@ -1137,8 +1299,6 @@ export const tickets = {
     apiFetch<TicketStatusHistoryResponse[]>(`/api/asset/ticket/get-status-history/${ticketId}`, {}),
   getEscalationLogs: (ticketId: string) =>
     apiFetch<SlaEscalationLogResponse[]>(`/api/asset/ticket/get-escalation-logs/${ticketId}`, {}),
-  detectDamage: (imageDataUrl: string) =>
-    apiFetch<DamageDetectionResponse>(`/api/asset/ticket/detect-damage`, { method: "POST", body: JSON.stringify({ imageDataUrl }) }),
 };
 
 // ─── Inventory (Kho): types ────────────────────────────────────────────────────
@@ -1212,7 +1372,7 @@ export const inventoryTransactions = {
 // ─── Procurement (Mua sắm): types ──────────────────────────────────────────────
 export interface PurchaseRequestResponse {
   id: string; prCode: string; ticketId?: string; ticketCode?: string; woId?: string; woCode?: string;
-  departmentId?: string; requestedBy: string; requestedByName?: string; status: string; title?: string; justification?: string;
+  departmentId?: string; requestedBy: string; requestedByUserId?: number; requestedByName?: string; status: string; title?: string; justification?: string;
   priority: string; neededByDate?: string; approvedBy?: string; approvedAt?: string;
   rejectedReason?: string; createdAt: string;
 }
@@ -1242,7 +1402,7 @@ export interface InvoiceItemResponse {
   description?: string; quantity?: number; unitPrice?: number; totalPrice?: number; poItemId?: string;
 }
 export interface OcrJobResponse {
-  id: string; documentType: string; status: string; reviewedBy?: string; reviewedByName?: string;
+  id: string; documentType: string; ocrEngine?: string; status: string; reviewedBy?: string; reviewedByName?: string;
   fileUrl?: string; fileName?: string; fileSizeBytes?: number; confidenceScore?: number;
   rawExtractedText?: string;   // JSON do worker OCR ghi: { rawText, fields, lineItems }
   errorMessage?: string; startedAt?: string; completedAt?: string; submittedBy?: string; submittedByName?: string; submittedAt: string;
@@ -1268,21 +1428,28 @@ export function parseOcrPayload(raw?: string | null): OcrExtractedPayload | null
   } catch { return null; }
 }
 export interface CreatePurchaseRequestInput {
-  prCode: string; ticketId?: string; woId?: string; departmentId?: string; requestedBy?: string; requestedByName?: string;
+  // prCode do server sinh — không gửi. requestedBy* server tự suy từ KTV phụ trách WO.
+  prCode?: string; ticketId?: string; woId?: string; departmentId?: string;
+  requestedBy?: string; requestedByUserId?: number; requestedByName?: string;
   title?: string; justification?: string; priority?: string; neededByDate?: string;
 }
 export interface UpdatePurchaseRequestInput extends CreatePurchaseRequestInput {
   id: string; status?: string; approvedBy?: string; approvedAt?: string; rejectedReason?: string;
 }
 export interface CreatePurchaseOrderInput {
-  poCode: string; prId?: string; vendorId: string; issueDate?: string; expectedDelivery?: string;
+  // poCode do server sinh — không gửi khi tạo.
+  poCode?: string; prId?: string; vendorId: string; issueDate?: string; expectedDelivery?: string;
   totalAmount?: number; currency?: string; paymentTerms?: string; notes?: string; createdBy?: string;
 }
 export interface UpdatePurchaseOrderInput extends CreatePurchaseOrderInput { id: string; status?: string; actualDelivery?: string; }
+export interface CreateInvoiceItemLine {
+  materialId: string; description?: string; quantity?: number; unitPrice?: number; totalPrice?: number;
+}
 export interface CreateInvoiceInput {
   invoiceCode: string; vendorId: string; poId?: string; ocrJobId?: string; invoiceDate?: string;
   invoiceNumber?: string; subtotal?: number; taxAmount?: number; totalAmount?: number;
   currency?: string; paymentDueDate?: string; notes?: string;
+  items?: CreateInvoiceItemLine[];   // hạng mục đã đối chiếu ra materialId, lưu cùng hóa đơn
 }
 export interface UpdateInvoiceInput extends CreateInvoiceInput {
   id: string; status?: string; paymentStatus?: string; paidDate?: string; paymentMethod?: string;
@@ -1299,6 +1466,8 @@ export const purchaseRequests = {
   update: (body: UpdatePurchaseRequestInput) =>
     apiFetch<boolean>(`/api/asset/purchase-request/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/purchase-request/delete/${id}`, { method: "DELETE" }),
+  submit: (id: string) =>
+    apiFetch<boolean>(`/api/asset/purchase-request/submit/${id}`, { method: "PUT" }),
   approve: (id: string, approvedBy: string) =>
     apiFetch<boolean>(`/api/asset/purchase-request/approve/${id}`, { method: "PUT", body: JSON.stringify({ approvedBy }) }),
   reject: (id: string, reason: string) =>
@@ -1342,7 +1511,7 @@ export const ocrJobs = {
   // submittedBy là Guid? cross-service (Auth) — chưa có directory người dùng nên luôn gửi
   // EMPTY_GUID; tên người gửi (free-text) ghi riêng vào submittedByName (theo pattern
   // reportedByName/requestedByName). Tránh lỗi 400 khi serialize tên → Guid.
-  submit: (body: { documentType: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedByName?: string }) =>
+  submit: (body: { documentType: string; ocrEngine?: string; fileUrl?: string; fileName?: string; fileSizeBytes?: number; submittedByName?: string }) =>
     apiFetch<string>(`/api/asset/ocr-job/submit`, { method: "POST", body: JSON.stringify({ ...body, submittedBy: EMPTY_GUID }) }),
   markReviewed: (id: string, reviewedByName?: string) =>
     apiFetch<boolean>(`/api/asset/ocr-job/mark-reviewed/${id}`, { method: "PUT", body: JSON.stringify({ reviewedBy: EMPTY_GUID, reviewedByName }) }),

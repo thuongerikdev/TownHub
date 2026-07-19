@@ -131,6 +131,11 @@ namespace TH.Asset.Domain.Maintenance
         // Cross-service (Auth) — không dùng navigation property
         public Guid? reviewerId { get; set; }
 
+        // Kỹ thuật viên được phân công (Auth userID là int → lưu id + tên hiển thị)
+        public int? assignedToUserId { get; set; }
+        [MaxLength(150)]
+        public string? assignedToName { get; set; }
+
         // Patch fields
         [MaxLength(10)]
         public string woType { get; set; } = "PM"; // PM | CM
@@ -150,6 +155,10 @@ namespace TH.Asset.Domain.Maintenance
         public decimal? totalCost { get; set; }
         // Cross-service (Auth) — không dùng navigation property
         public Guid? createdBy { get; set; }
+        // Người tạo (Auth userID là int → lưu id + tên hiển thị, giống assignee)
+        public int? createdByUserId { get; set; }
+        [MaxLength(150)]
+        public string? createdByName { get; set; }
         public DateTime createdAt { get; set; } = DateTime.UtcNow;
         public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 
@@ -181,6 +190,11 @@ namespace TH.Asset.Domain.Maintenance
 
         // Cross-service (Auth) — không dùng navigation property
         public Guid assignedTo { get; set; }
+        // Auth userID (int) + tên hiển thị của KTV được phân công
+        public int? assignedToUserId { get; set; }
+        [MaxLength(150)]
+        public string? assignedToName { get; set; }
+        public DateTime assignedAt { get; set; } = DateTime.UtcNow;
 
         public Guid? checkinQrAssetId { get; set; }
 

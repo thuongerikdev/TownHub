@@ -29,6 +29,15 @@ namespace TH.WebAPI.Controllers.Auth
             return Ok(result);
         }
 
+        // Danh sách user theo vai trò (vd "Kỹ thuật viên") — cho dropdown phân công.
+        [Authorize]
+        [HttpGet("by-role")]
+        public async Task<IActionResult> GetByRole([FromQuery] string roleName, CancellationToken ct)
+        {
+            var result = await _userService.GetMembersByRoleNameAsync(roleName, ct);
+            return result.ErrorCode == 200 ? Ok(result) : StatusCode(result.ErrorCode, result);
+        }
+
         [Authorize]
         [HttpGet("me")]
         public async Task<IActionResult> Me(CancellationToken ct)

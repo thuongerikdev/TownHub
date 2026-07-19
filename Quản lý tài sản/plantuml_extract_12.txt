@@ -1,0 +1,44 @@
+@startuml
+skinparam defaultTextAlignment center
+skinparam swimlane {
+  BorderColor black
+  BorderThickness 2
+  TitleBackgroundColor #E2E2F0
+}
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+}
+
+|Ban Quản Lý / Kế toán|
+start
+:Tạo yêu cầu Kiểm kê kho định kỳ;
+
+|Hệ thống (Core API)|
+:Chốt sổ dữ liệu tồn kho hệ thống (Snapshot);
+
+|Kỹ sư trưởng / Thủ kho|
+:Nhận phiếu kiểm kê (Web/App);
+:Tiến hành đếm vật tư thực tế tại kho;
+:Nhập số liệu thực tế lên hệ thống;
+
+|Hệ thống (Core API)|
+:Đối chiếu (Số liệu thực tế vs Số liệu Snapshot);
+
+' BPMN XOR Gateway
+if (Phát hiện chênh lệch?) then (Có lệch)
+  |Ban Quản Lý / Kế toán|
+  :Xem báo cáo chênh lệch Thừa / Thiếu;
+  :Kiểm tra nguyên nhân & Nhập giải trình;
+  :Phê duyệt phiếu điều chỉnh tồn kho;
+  
+  |Hệ thống (Core API)|
+  :Tự động sinh Phiếu Nhập/Xuất điều chỉnh;
+else (Khớp 100%)
+endif
+
+|Hệ thống (Core API)|
+:Lưu lại lịch sử & Cập nhật tồn kho mới;
+:Hoàn tất & Đóng kỳ kiểm kê;
+stop
+@enduml

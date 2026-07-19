@@ -6,8 +6,8 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, ClipboardCheck, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, checklistTemplates,
-  type WorkOrderResponse, type ChecklistTemplateItemResponse, type UpdateWorkOrderInput,
+  workOrders, checklistTemplates, toWorkOrderUpdate,
+  type WorkOrderResponse, type ChecklistTemplateItemResponse,
   type WorkOrderAttachmentResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
@@ -79,11 +79,10 @@ export default function ChecklistScreen() {
         valueText: s.value.trim() || undefined, notes: s.note.trim() || undefined,
       });
     }
-    const body: UpdateWorkOrderInput = {
-      id: wo.id, woCode: wo.woCode, assetId: wo.assetId, checklistTemplateId: wo.checklistTemplateId,
-      buildingId: wo.buildingId, status: "PENDING_REVIEW", actualEndAt: new Date().toISOString(),
-      actualHours: actualHours ? Number(actualHours) : undefined,
-    };
+    const body = toWorkOrderUpdate(wo, {
+      status: "PENDING_REVIEW", actualEndAt: new Date().toISOString(),
+      ...(actualHours ? { actualHours: Number(actualHours) } : {}),
+    });
     const res = await workOrders.update(body);
     setSubmitting(false);
     if (res.errorCode === 200) {

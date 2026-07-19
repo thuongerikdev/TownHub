@@ -1,0 +1,55 @@
+@startuml
+' Hình 3.1 – Kiến trúc tổng thể hệ thống TownHub
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam rectangle {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam database {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Người dùng\n(Web / Mobile)" as User
+
+rectangle "Tầng Frontend — Next.js 16 (App Router)" as FE {
+    rectangle "React 19 + TypeScript\nTailwind CSS v4 + Radix UI" as UI
+    rectangle "API Client (lib/api.ts)\nAuthContext + RBAC (lib/rbac.ts)" as APIC
+}
+
+rectangle "Tầng Backend — .NET 8 Web API" as BE {
+    rectangle "Controllers\n(kiểm tra JWT + policy RBAC)" as CTL
+    rectangle "ApplicationService\n(logic nghiệp vụ)" as SVC
+    rectangle "Domain + Infrastructure\n(EF Core 8, Npgsql)" as DOM
+    rectangle "Module **Auth**\n(schema auth)" as MAuth
+    rectangle "Module **Base**\n(schema base)" as MBase
+    rectangle "Module **Asset**\n(schema asset)" as MAsset
+}
+
+database "PostgreSQL\n(auth / base / asset)" as PG
+database "Redis\n(phiên, MFA)" as RD
+rectangle "Cloudinary\n(ảnh / tệp)" as CLD
+rectangle "VietOCR\n(OCR hóa đơn)" as OCR
+rectangle "MailKit\n(email)" as MAIL
+
+User --> UI
+UI --> APIC
+APIC --> CTL : REST API (JSON)\nJWT Bearer
+CTL --> SVC
+SVC --> DOM
+DOM --> MAuth
+DOM --> MBase
+DOM --> MAsset
+MAuth --> PG
+MBase --> PG
+MAsset --> PG
+SVC --> RD
+SVC --> CLD
+SVC --> OCR : OcrJobQueue →\nOcrProcessingWorker
+SVC --> MAIL
+@enduml

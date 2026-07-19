@@ -1,10 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TH.TownHub.Domain.Entities;
+using TH.Base.Domain.Entities; // Building (danh mục toà nhà)
 
 namespace TH.TownHub.Infrastructure.Database
 {
     public class TownHubDbContext : DbContext
     {
+        public DbSet<Building> Buildings { get; set; }
+        public DbSet<Floor> Floors { get; set; }
         public DbSet<Apartment> Apartments { get; set; }
         public DbSet<Resident> Residents { get; set; }
         public DbSet<FaceProfile> FaceProfiles { get; set; }
@@ -34,6 +37,10 @@ namespace TH.TownHub.Infrastructure.Database
                 .HasIndex(x => x.Code).IsUnique();
             modelBuilder.Entity<Apartment>()
                 .HasIndex(x => new { x.Building, x.Floor, x.UnitNumber }).IsUnique();
+
+            // ── Floors (danh mục tầng thuộc toà nhà, Base) ──
+            modelBuilder.Entity<Floor>()
+                .HasIndex(x => new { x.buildingId, x.floorNumber }).IsUnique();
 
             modelBuilder.Entity<Resident>()
                 .HasIndex(x => x.IdCard).IsUnique()

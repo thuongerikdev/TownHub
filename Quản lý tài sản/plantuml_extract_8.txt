@@ -1,0 +1,31 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Hệ thống / IoT" as SYS
+
+package "9. Hệ thống tự động" {
+    usecase "UC62: Kiểm tra lịch PM tự động" as UC62
+    usecase "UC63: Gửi thông báo đa kênh" as UC63
+    usecase "UC64: Leo thang SLA tự động" as UC64
+    usecase "UC65: Tự động đóng Ticket 24h" as UC65
+    usecase "UC66: Tính khấu hao tháng" as UC66
+    usecase "UC67: Snapshot KPI hàng ngày" as UC67
+    usecase "UC68: Đọc & xử lý dữ liệu IoT" as UC68
+}
+
+SYS --> UC62
+SYS --> UC63
+SYS --> UC64
+SYS --> UC65
+SYS --> UC66
+SYS --> UC67
+SYS --> UC68
+@enduml

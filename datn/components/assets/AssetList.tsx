@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Boxes, QrCode, Pencil, Trash2, Download, AlertTriangle,
-  CheckCircle2, Wrench, Copy, ScanLine,
+  CheckCircle2, Wrench, Copy, ScanLine, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  assetApi, assetCategories, assetLocations, assetQrCodes, BUILDING_ID,
+  assetApi, assetCategories, assetLocations, assetQrCodes, buildings, floors, BUILDING_ID,
   type AssetResponse, type CreateAssetInput, type UpdateAssetInput,
+  type BuildingResponse, type FloorResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockAssets, mockAssetCategories, mockAssetLocations } from "@/lib/mock/asset";
@@ -49,13 +50,13 @@ const DEPR_OPTIONS = [
 const toDateInput = (iso?: string | null) => (iso ? iso.slice(0, 10) : "");
 
 interface FormState {
-  assetCode: string; name: string; categoryId: string; buildingId: string;
+  assetCode: string; name: string; categoryId: string; buildingId: string; floorId: string;
   locationId: string; status: string; criticalityLevel: string; serialNumber: string;
   purchasePrice: string; purchaseDate: string; warrantyExpiryDate: string;
   usefulLifeMonths: string; salvageValue: string; depreciationMethod: string; notes: string;
 }
 const emptyForm: FormState = {
-  assetCode: "", name: "", categoryId: "", buildingId: BUILDING_ID, locationId: "",
+  assetCode: "", name: "", categoryId: "", buildingId: BUILDING_ID, floorId: "", locationId: "",
   status: "ACTIVE", criticalityLevel: "MEDIUM", serialNumber: "",
   purchasePrice: "", purchaseDate: "", warrantyExpiryDate: "",
   usefulLifeMonths: "", salvageValue: "0", depreciationMethod: "STRAIGHT_LINE", notes: "",
@@ -79,6 +80,8 @@ export default function AssetList() {
   const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll(), { mock: mockAssets });
   const catsQ = useApiList(() => assetCategories.getAll(), { mock: mockAssetCategories });
   const locsQ = useApiList(() => assetLocations.getAll(), { mock: mockAssetLocations });
+  const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());
+  const floorsQ = useApiList<FloorResponse>(() => floors.getAll());
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -89,7 +92,6 @@ export default function AssetList() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
-  const [detail, setDetail] = useState<AssetResponse | null>(null);
   const [confirmDel, setConfirmDel] = useState<AssetResponse | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -99,9 +101,11 @@ export default function AssetList() {
   const cats = catsQ.items;
   const locs = locsQ.items;
 
-  // Toà nhà là tham chiếu cross-service (không có endpoint riêng) → suy ra từ dữ liệu
-  // đã có (vị trí + tài sản) và luôn kèm toà nhà mặc định để tránh phải gõ GUID tay.
+  // Ưu tiên danh mục toà nhà từ Base (/api/building). Nếu chưa có dữ liệu thì fallback:
+  // suy ra từ vị trí + tài sản sẵn có, luôn kèm toà nhà mặc định để tránh gõ GUID tay.
   const buildingOptions = useMemo(() => {
+    if (buildingsQ.items.length > 0)
+      return buildingsQ.items.map((b) => ({ id: b.id, label: b.name }));
     const ids = new Set<string>([BUILDING_ID]);
     for (const l of locs) if (l.buildingId) ids.add(l.buildingId);
     for (const a of assets) if (a.buildingId) ids.add(a.buildingId);
@@ -109,7 +113,21 @@ export default function AssetList() {
       id,
       label: id === BUILDING_ID ? "Toà nhà chính" : `Toà nhà ${id.slice(0, 8)}…`,
     }));
-  }, [locs, assets]);
+  }, [buildingsQ.items, locs, assets]);
+
+  // Tầng lọc theo toà nhà đang chọn.
+  const floorOptions = useMemo(
+    () => floorsQ.items
+      .filter((f) => f.buildingId === form.buildingId)
+      .sort((a, b) => a.floorNumber - b.floorNumber),
+    [floorsQ.items, form.buildingId],
+  );
+
+  // Vị trí lọc theo toà nhà (và theo tầng nếu đã chọn tầng).
+  const locationOptions = useMemo(
+    () => locs.filter((l) => l.buildingId === form.buildingId && (!form.floorId || l.floorId === form.floorId)),
+    [locs, form.buildingId, form.floorId],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -145,7 +163,7 @@ export default function AssetList() {
     setEditing(a);
     setForm({
       assetCode: a.assetCode, name: a.name, categoryId: a.categoryId, buildingId: a.buildingId,
-      locationId: a.locationId ?? "", status: a.status, criticalityLevel: a.criticalityLevel,
+      floorId: a.floorId ?? "", locationId: a.locationId ?? "", status: a.status, criticalityLevel: a.criticalityLevel,
       serialNumber: a.serialNumber ?? "",
       purchasePrice: a.purchasePrice?.toString() ?? "", purchaseDate: toDateInput(a.purchaseDate),
       warrantyExpiryDate: toDateInput(a.warrantyExpiryDate),
@@ -159,13 +177,24 @@ export default function AssetList() {
   function patch(p: Partial<FormState>) {
     setForm((f) => ({ ...f, ...p }));
   }
+  function onBuildingChange(buildingId: string) {
+    // Đổi toà nhà → bỏ tầng & vị trí cũ nếu không còn thuộc toà nhà mới.
+    const keepFloor = floorsQ.items.find((f) => f.id === form.floorId)?.buildingId === buildingId;
+    const keepLoc = locs.find((l) => l.id === form.locationId)?.buildingId === buildingId;
+    patch({ buildingId, floorId: keepFloor ? form.floorId : "", locationId: keepLoc ? form.locationId : "" });
+  }
+  function onFloorChange(floorId: string) {
+    // Đổi tầng → bỏ vị trí cũ nếu không thuộc tầng mới.
+    const keep = locs.find((l) => l.id === form.locationId)?.floorId === floorId;
+    patch({ floorId, locationId: keep ? form.locationId : "" });
+  }
   function onLocationChange(locationId: string) {
     const loc = locs.find((l) => l.id === locationId);
-    patch({ locationId, buildingId: loc?.buildingId ?? form.buildingId });
+    patch({ locationId, buildingId: loc?.buildingId ?? form.buildingId, floorId: loc?.floorId ?? form.floorId });
   }
 
   async function submitForm() {
-    if (!form.assetCode.trim() || !form.name.trim()) { toast.error("Nhập mã và tên tài sản."); return; }
+    if (!form.name.trim()) { toast.error("Nhập tên tài sản."); return; }
     if (!form.categoryId) { toast.error("Chọn danh mục tài sản."); return; }
     if (!form.buildingId.trim()) { toast.error("Thiếu mã toà nhà (chọn vị trí hoặc nhập thủ công)."); return; }
 
@@ -173,6 +202,7 @@ export default function AssetList() {
     const base: CreateAssetInput = {
       assetCode: form.assetCode.trim(), name: form.name.trim(),
       categoryId: form.categoryId, buildingId: form.buildingId.trim(),
+      floorId: form.floorId || undefined,
       locationId: form.locationId || undefined,
       status: form.status, serialNumber: form.serialNumber || undefined,
       criticalityLevel: form.criticalityLevel,
@@ -230,7 +260,7 @@ export default function AssetList() {
     {
       key: "asset", header: "Tài sản", sortable: true, sortAccessor: (a) => a.assetCode,
       cell: (a) => (
-        <button onClick={() => setDetail(a)} className="flex flex-col text-left">
+        <button onClick={() => router.push(`/assets/${a.id}`)} className="flex flex-col text-left">
           <span className="font-medium text-foreground hover:text-brand">{a.name}</span>
           <span className="font-mono text-[11px] text-muted-foreground">{a.assetCode}</span>
         </button>
@@ -246,6 +276,7 @@ export default function AssetList() {
       key: "actions", header: "", align: "right",
       cell: (a) => (
         <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" title="Xem chi tiết" onClick={() => router.push(`/assets/${a.id}`)}><Eye className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Mã QR" onClick={() => setQrAsset(a)}><QrCode className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(a)}><Pencil className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(a)}><Trash2 className="size-4" /></Button>
@@ -323,8 +354,8 @@ export default function AssetList() {
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thông tin chung</p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Mã tài sản" required>
-                <Input value={form.assetCode} onChange={(e) => patch({ assetCode: e.target.value })} placeholder="AST-2025-0001" />
+              <Field label="Mã tài sản" hint={editing ? undefined : "Hệ thống tự sinh khi lưu (AST-năm-số thứ tự)."}>
+                <Input value={editing ? form.assetCode : ""} disabled readOnly placeholder="Tự động sinh khi lưu" />
               </Field>
               <Field label="Tên tài sản" required>
                 <Input value={form.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Thang máy khách T1" />
@@ -337,11 +368,27 @@ export default function AssetList() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Vị trí">
-                <Select value={form.locationId} onValueChange={onLocationChange}>
+              <Field label="Toà nhà" required>
+                <Select value={form.buildingId} onValueChange={onBuildingChange}>
+                  <SelectTrigger><SelectValue placeholder="Chọn toà nhà" /></SelectTrigger>
+                  <SelectContent>
+                    {buildingOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Tầng" hint={floorOptions.length === 0 ? "Toà nhà này chưa có tầng." : "Chọn tầng để lọc vị trí."}>
+                <Select value={form.floorId} onValueChange={onFloorChange} disabled={!form.buildingId || floorOptions.length === 0}>
+                  <SelectTrigger><SelectValue placeholder="Chọn tầng" /></SelectTrigger>
+                  <SelectContent>
+                    {floorOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.floorName}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Vị trí" hint={locationOptions.length === 0 ? "Chưa có vị trí phù hợp." : "Lọc theo toà nhà & tầng đã chọn."}>
+                <Select value={form.locationId} onValueChange={onLocationChange} disabled={!form.buildingId}>
                   <SelectTrigger><SelectValue placeholder="Chọn vị trí" /></SelectTrigger>
                   <SelectContent>
-                    {locs.map((l) => <SelectItem key={l.id} value={l.id}>{l.areaCode ?? l.id}</SelectItem>)}
+                    {locationOptions.map((l) => <SelectItem key={l.id} value={l.id}>{l.areaCode ?? l.id}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -364,14 +411,6 @@ export default function AssetList() {
               <Field label="Số serial">
                 <Input value={form.serialNumber} onChange={(e) => patch({ serialNumber: e.target.value })} placeholder="SN-..." />
               </Field>
-              <Field label="Toà nhà" required hint="Tự điền theo vị trí đã chọn.">
-                <Select value={form.buildingId} onValueChange={(v) => patch({ buildingId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Chọn toà nhà" /></SelectTrigger>
-                  <SelectContent>
-                    {buildingOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </Field>
             </div>
           </div>
 
@@ -390,7 +429,7 @@ export default function AssetList() {
               <Field label="Vòng đời (tháng)">
                 <Input type="number" value={form.usefulLifeMonths} onChange={(e) => patch({ usefulLifeMonths: e.target.value })} placeholder="120" />
               </Field>
-              <Field label="Giá trị thanh lý (₫)">
+              <Field label="Giá trị thu hồi ước tính (₫)">
                 <Input type="number" value={form.salvageValue} onChange={(e) => patch({ salvageValue: e.target.value })} placeholder="0" />
               </Field>
               <Field label="Phương pháp khấu hao">
@@ -407,41 +446,6 @@ export default function AssetList() {
             </div>
           </div>
         </div>
-      </EntityModal>
-
-      {/* Detail */}
-      <EntityModal
-        open={!!detail}
-        onOpenChange={(o) => !o && setDetail(null)}
-        title={detail?.name ?? ""}
-        description={detail ? `Mã: ${detail.assetCode}` : ""}
-        size="lg"
-        footer={
-          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
-            <Button variant="outline" onClick={() => setDetail(null)}>Đóng</Button>
-            {detail && <Button onClick={() => { const a = detail; setDetail(null); openEdit(a); }}><Pencil className="size-4" /> Sửa</Button>}
-          </div>
-        }
-      >
-        {detail && (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-            <DetailRow label="Trạng thái"><StatusBadge value={detail.status} map={ASSET_STATUS} /></DetailRow>
-            <DetailRow label="Mức độ"><StatusBadge value={detail.criticalityLevel} map={CRITICALITY} dot={false} /></DetailRow>
-            <DetailRow label="Danh mục">{detail.categoryName ?? "—"}</DetailRow>
-            <DetailRow label="Vị trí">{detail.locationAreaCode ?? "—"}</DetailRow>
-            <DetailRow label="Số serial">{detail.serialNumber ?? "—"}</DetailRow>
-            <DetailRow label="Nhà cung cấp">{detail.vendorName ?? "—"}</DetailRow>
-            <DetailRow label="Giá mua">{formatCurrency(detail.purchasePrice)}</DetailRow>
-            <DetailRow label="Giá trị còn lại">{formatCurrency(detail.bookValue)}</DetailRow>
-            <DetailRow label="Khấu hao luỹ kế">{formatCurrency(detail.accumulatedDepreciation)}</DetailRow>
-            <DetailRow label="Giá trị thanh lý">{formatCurrency(detail.salvageValue)}</DetailRow>
-            <DetailRow label="Ngày mua">{formatDate(detail.purchaseDate)}</DetailRow>
-            <DetailRow label="Hết hạn bảo hành">{formatDate(detail.warrantyExpiryDate)}</DetailRow>
-            <DetailRow label="Bảo trì gần nhất">{formatDate(detail.lastMaintenanceDate)}</DetailRow>
-            <DetailRow label="Bảo trì kế tiếp">{formatDate(detail.nextMaintenanceDate)}</DetailRow>
-            {detail.notes && <DetailRow label="Ghi chú" className="col-span-2">{detail.notes}</DetailRow>}
-          </div>
-        )}
       </EntityModal>
 
       {/* QR */}
@@ -467,15 +471,6 @@ export default function AssetList() {
           Hành động này không thể hoàn tác.
         </p>
       </EntityModal>
-    </div>
-  );
-}
-
-function DetailRow({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={className}>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-0.5 text-foreground">{children}</div>
     </div>
   );
 }

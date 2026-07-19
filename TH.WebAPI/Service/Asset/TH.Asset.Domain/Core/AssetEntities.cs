@@ -45,6 +45,13 @@ namespace TH.Asset.Domain.Core
         public decimal salvageValue { get; set; } = 0;
         [MaxLength(20)]
         public string depreciationMethod { get; set; } = "STRAIGHT_LINE"; // STRAIGHT_LINE | DECLINING_BALANCE
+
+        // Kế toán: TK nguyên giá (211 hữu hình / 213 vô hình) + phương thức thanh toán khi mua
+        [MaxLength(20)]
+        public string accountCode { get; set; } = "211";
+        [MaxLength(20)]
+        public string? paymentMethod { get; set; } // CASH | BANK → Có 111|112 khi ghi tăng
+
         public decimal accumulatedDepreciation { get; set; } = 0;
         public decimal? bookValue { get; set; }
         public DateTime? installationDate { get; set; }
@@ -193,9 +200,15 @@ namespace TH.Asset.Domain.Core
         // Cross-service (Auth) — không dùng navigation property
         public Guid? calculatedBy { get; set; }
 
+        // Chứng từ khấu hao gắn với bản ghi này
+        public Guid? documentId { get; set; }
+
         // ── Navigation Properties ──
         [ForeignKey(nameof(assetId))]
         public virtual Asset? asset { get; set; }
+
+        [ForeignKey(nameof(documentId))]
+        public virtual AssetDocument? document { get; set; }
     }
 
     [Table("iot_sensor_readings", Schema = "asset")]

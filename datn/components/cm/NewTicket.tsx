@@ -3,17 +3,16 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Send, LifeBuoy, Zap, Droplet, Wind, ArrowUpDown, Flame, Package, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, LifeBuoy, Zap, Droplet, Wind, ArrowUpDown, Flame, Package } from "lucide-react";
 import { toast } from "sonner";
 import {
   tickets, assetApi, slaConfigs,
-  type CreateTicketInput, type DamageDetectionResponse,
+  type CreateTicketInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockTickets, mockSlaConfigs } from "@/lib/mock/cm";
 import { mockAssets } from "@/lib/mock/asset";
 import { MockBanner, Field } from "@/components/shared";
-import { PhotoCapture, type PhotoItem } from "@/components/shared/photo-capture";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,24 +62,6 @@ export default function NewTicket() {
   const [slaConfigId, setSlaConfigId] = useState(NONE);
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
-  const [aiResult, setAiResult] = useState<DamageDetectionResponse | null>(null);
-  const [aiChecking, setAiChecking] = useState(false);
-
-  async function handleAddPhoto(url: string) {
-    setPhotos((prev) => [...prev, { url }]);
-    setAiChecking(true);
-    try {
-      const res = await tickets.detectDamage(url);
-      if (res.errorCode === 200 && res.data?.available) {
-        setAiResult(res.data);
-      }
-    } catch {
-      // Dịch vụ AI không khả dụng — bỏ qua, không chặn luồng tạo ticket.
-    } finally {
-      setAiChecking(false);
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -97,9 +78,6 @@ export default function NewTicket() {
       slaConfigId: slaConfigId === NONE ? undefined : slaConfigId,
       title: title.trim(), description: desc || undefined,
       category, priority, source,
-      // "#BEFORE" đánh dấu ảnh chụp lúc báo sự cố, theo đúng convention hiển thị
-      // Trước/Sau đã có ở TicketDetail.tsx (mã hoá loại ảnh vào fragment URL).
-      photoUrls: photos.length ? photos.map((p) => `${p.url}#BEFORE`) : undefined,
     };
     const res = await tickets.create(body);
     setSubmitting(false);
@@ -149,32 +127,6 @@ export default function NewTicket() {
               );
             })}
           </div>
-        </Field>
-
-        <Field label="Ảnh hiện trạng" hint="Tuỳ chọn — AI sẽ gợi ý loại sự cố từ ảnh">
-          <PhotoCapture photos={photos} onAdd={handleAddPhoto} emptyHint="Chưa có ảnh." />
-          {aiChecking && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Sparkles className="size-3.5 animate-pulse" /> AI đang phân tích ảnh…
-            </p>
-          )}
-          {!aiChecking && aiResult?.available && aiResult.detections.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-info/30 bg-info/5 p-2.5 text-xs">
-              <Sparkles className="size-4 shrink-0 text-info" />
-              <span className="text-muted-foreground">
-                Gợi ý AI: <strong className="text-foreground">{aiResult.detections[0].labelVi}</strong>
-                {" "}({Math.round(aiResult.detections[0].confidence * 100)}%)
-              </span>
-              {aiResult.suggestedCategory && aiResult.suggestedCategory !== category && (
-                <Button
-                  type="button" variant="secondary" size="sm" className="h-6 px-2 text-xs"
-                  onClick={() => setCategory(aiResult.suggestedCategory!)}
-                >
-                  Áp dụng · {CATEGORY[aiResult.suggestedCategory]?.label ?? aiResult.suggestedCategory}
-                </Button>
-              )}
-            </div>
-          )}
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

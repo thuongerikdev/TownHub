@@ -63,9 +63,9 @@ export default function RegisterPage() {
         return;
       }
 
+      // Backend xác thực email ngay khi đăng ký (không gửi OTP) → vào thẳng màn thành công.
       setRegisteredUserID(result.userID);
-      setStep("verify");
-      setTimeout(() => otpRef.current?.focus(), 300);
+      setStep("done");
     } catch {
       setError("Lỗi kết nối. Vui lòng thử lại.");
     } finally {

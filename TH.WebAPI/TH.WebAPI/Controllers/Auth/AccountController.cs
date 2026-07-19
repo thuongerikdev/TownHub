@@ -29,6 +29,18 @@ namespace TH.WebAPI.Controllers.Auth
 
         // ===== MFA (TOTP) =====
 
+        /// <summary>Trạng thái MFA của user đang đăng nhập (cho màn Cài đặt).</summary>
+        [HttpGet("mfa/status")]
+        [Authorize]
+        public async Task<IActionResult> MfaStatus(CancellationToken ct)
+        {
+            var uid = CurrentUserId();
+            if (uid <= 0) return Unauthorized();
+
+            var res = await _mfa.GetStatusAsync(uid, ct);
+            return StatusCode(res.ErrorCode == 200 ? 200 : 400, res);
+        }
+
         [HttpPost("mfa/totp/start")]
         [Authorize(Policy = "AccountMfaSetup")]
         public async Task<IActionResult> StartTotp(CancellationToken ct)

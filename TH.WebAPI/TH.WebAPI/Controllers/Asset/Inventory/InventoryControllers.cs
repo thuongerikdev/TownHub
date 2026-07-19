@@ -248,6 +248,16 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
+        [Authorize(Policy = "ProcurementRequest")]
+        [HttpPut("submit/{id}")]
+        public async Task<IActionResult> Submit(Guid id)
+        {
+            var result = await _service.SubmitAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+
         [Authorize(Policy = "ProcurementApprove")]
         [HttpPut("approve/{id}")]
         public async Task<IActionResult> Approve(Guid id, [FromBody] ApproveRequestBody body)

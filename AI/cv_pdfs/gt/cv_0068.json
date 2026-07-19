@@ -1,0 +1,42 @@
+{
+ "Name": [
+  "Lý Thu Hà"
+ ],
+ "Designation": [
+  "Full-stack Developer",
+  "Back-end Developer",
+  "QA Engineer"
+ ],
+ "Email Address": [
+  "lythuha@outlook.com"
+ ],
+ "Location": [
+  "Vĩnh Ninh, Huế"
+ ],
+ "College Name": [
+  "Trường Đại học Công nghệ Thông tin - ĐHQG TP.HCM"
+ ],
+ "Degree": [
+  "Information Systems"
+ ],
+ "Graduation Year": [
+  "2014"
+ ],
+ "Companies worked at": [
+  "Applancer Joint Stock Company",
+  "FPT Software"
+ ],
+ "Skills": [
+  "MongoDb",
+  "Git",
+  "Python",
+  "Docker",
+  "Java",
+  "SQL",
+  "PostgreSQL",
+  "C#"
+ ],
+ "Years of Experience": [
+  "8 years"
+ ]
+}

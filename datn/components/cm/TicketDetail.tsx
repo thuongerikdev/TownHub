@@ -10,7 +10,8 @@ import {
 import { toast } from "sonner";
 import {
   tickets, slaConfigs, warehouses, materials, inventoryTransactions, purchaseRequests,
-  displayUser, EMPTY_GUID,
+  users, displayUser,
+  type RoleMember,
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
   type SlaConfigResponse, type UpdateTicketInput, type TicketAttachmentResponse,
   type WarehouseResponse, type MaterialResponse,
@@ -88,8 +89,8 @@ const SHOW_MATERIAL = new Set(["ASSIGNED", "IN_PROGRESS", "PENDING_MATERIAL", "R
 interface MatForm { warehouseId: string; materialId: string; qty: string; notes: string; }
 const emptyMat: MatForm = { warehouseId: "", materialId: "", qty: "1", notes: "" };
 
-interface PrForm { prCode: string; title: string; priority: string; requestedByName: string; justification: string; }
-const emptyPr: PrForm = { prCode: "", title: "", priority: "MEDIUM", requestedByName: "", justification: "" };
+interface PrForm { title: string; priority: string; justification: string; }
+const emptyPr: PrForm = { title: "", priority: "MEDIUM", justification: "" };
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -127,7 +128,8 @@ export default function TicketDetail() {
 
   // ── Assign modal state ────────────────────────────────────────────────────────
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee,   setAssignee]   = useState("");
+  const [techId,     setTechId]     = useState("");
+  const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
 
   // ── Status change modal state ─────────────────────────────────────────────────
   const [statusOpen, setStatusOpen] = useState(false);
@@ -174,19 +176,21 @@ export default function TicketDetail() {
 
   async function doAssign() {
     if (!t) return;
-    if (!assignee.trim()) { toast.error("Nhập tên KTV được phân công."); return; }
+    const tech = techQ.items.find((u) => String(u.userID) === techId);
+    if (!tech) { toast.error("Chọn kỹ thuật viên được phân công."); return; }
+    const techName = tech.fullName?.trim() || tech.userName;
     setWorking(true);
-    const res = await tickets.assign({ ticketId: t.id });
+    const res = await tickets.assign({ ticketId: t.id, assignedToUserId: tech.userID, assignedToName: techName });
     if (res.errorCode === 200) {
       await tickets.changeStatus({
         ticketId: t.id, toStatus: "ASSIGNED", fromStatus: t.status,
-        note: `Phân công cho ${assignee.trim()}`,
+        note: `Phân công cho ${techName}`,
       });
     }
     setWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã phân công KTV.");
-      setAssignOpen(false); setAssignee("");
+      setAssignOpen(false); setTechId("");
       q.refetch(); historyQ.refetch();
     } else toast.error(res.errorMessage || "Phân công thất bại.");
   }
@@ -239,13 +243,11 @@ export default function TicketDetail() {
 
   async function doCreatePr() {
     if (!t) return;
-    if (!prForm.prCode.trim()) { toast.error("Nhập mã phiếu đề xuất."); return; }
+    if (!t.assignedToUserId) { toast.error("Ticket chưa phân công KTV — không thể tạo phiếu đề xuất."); return; }
     setPrWorking(true);
+    // Mã PR do server sinh; người đề xuất server tự suy từ KTV phụ trách ticket (theo ticketId).
     const res = await purchaseRequests.create({
-      prCode:          prForm.prCode.trim(),
       ticketId:        t.id,
-      requestedBy:     EMPTY_GUID,
-      requestedByName: prForm.requestedByName.trim() || t.reportedByName || "KTV",
       title:           prForm.title.trim() || `Vật tư cho ${t.ticketCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
@@ -256,6 +258,12 @@ export default function TicketDetail() {
       setPrForm(emptyPr);
       linkedPrsQ.refetch();
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
+  }
+
+  async function submitPr(prId: string) {
+    const res = await purchaseRequests.submit(prId);
+    if (res.errorCode === 200) { toast.success("Đã gửi phiếu đề xuất chờ duyệt."); linkedPrsQ.refetch(); }
+    else toast.error(res.errorMessage || "Gửi duyệt thất bại.");
   }
 
   // Diagram 1: KTV chụp ảnh kết quả Trước/Sau khi sửa chữa.
@@ -301,6 +309,7 @@ export default function TicketDetail() {
             <span className="flex items-center gap-1"><User className="size-4" /> {t.reportedByName ?? displayUser(t.reportedBy) ?? "—"}</span>
             <span className="flex items-center gap-1"><Clock className="size-4" /> {formatDateTime(t.createdAt)}</span>
             {t.unitId && <span className="flex items-center gap-1"><MapPin className="size-4" /> {t.unitId}</span>}
+            {t.assignedToName && <span className="flex items-center gap-1"><UserPlus className="size-4" /> KTV: {t.assignedToName}</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -434,12 +443,12 @@ export default function TicketDetail() {
                   {!closed ? (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất <span className="text-danger">*</span></label>
-                        <Input value={prForm.prCode} onChange={(e) => setPrForm((f) => ({ ...f, prCode: e.target.value }))} placeholder={`PR-${t.ticketCode}`} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất</label>
+                        <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất</label>
-                        <Input value={prForm.requestedByName} onChange={(e) => setPrForm((f) => ({ ...f, requestedByName: e.target.value }))} placeholder={t.reportedByName ?? "Tên KTV"} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất (KTV phụ trách)</label>
+                        <Input value={t.assignedToName ?? "Chưa phân công KTV"} readOnly disabled />
                       </div>
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Tiêu đề</label>
@@ -482,6 +491,7 @@ export default function TicketDetail() {
                             <th className="px-3 py-2 text-left">Người đề xuất</th>
                             <th className="px-3 py-2 text-left">Trạng thái</th>
                             <th className="px-3 py-2 text-left">Ngày tạo</th>
+                            <th className="px-3 py-2 text-right">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -494,6 +504,11 @@ export default function TicketDetail() {
                                 <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${pr.status === "APPROVED" ? "bg-success/15 text-success" : pr.status === "REJECTED" ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground"}`}>{pr.status}</span>
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{formatDateTime(pr.createdAt)}</td>
+                              <td className="px-3 py-2 text-right">
+                                {(pr.status === "DRAFT" || pr.status === "REJECTED") && (
+                                  <Button size="sm" variant="outline" onClick={() => submitPr(pr.id)}>Gửi duyệt</Button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -665,8 +680,19 @@ export default function TicketDetail() {
         submitting={working}
         submitLabel="Phân công"
       >
-        <Field label="Kỹ thuật viên" required hint="Nhập tên hoặc mã KTV phụ trách">
-          <Input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Nguyễn Văn An" />
+        <Field label="Kỹ thuật viên" required hint="Chọn KTV (người có vai trò Kỹ thuật viên)">
+          <Select value={techId} onValueChange={setTechId}>
+            <SelectTrigger>
+              <SelectValue placeholder={techQ.loading ? "Đang tải..." : techQ.items.length ? "Chọn kỹ thuật viên" : "Chưa có kỹ thuật viên"} />
+            </SelectTrigger>
+            <SelectContent>
+              {techQ.items.map((u) => (
+                <SelectItem key={u.userID} value={String(u.userID)}>
+                  {u.fullName?.trim() || u.userName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </EntityModal>
 

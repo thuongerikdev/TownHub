@@ -188,13 +188,5 @@ namespace TH.WebAPI.Controllers.Asset.Incident
             var result = await _service.GetAttachmentsAsync(ticketId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
-
-        [Authorize(Policy = "TicketCreate")]
-        [HttpPost("detect-damage")]
-        public async Task<IActionResult> DetectDamage([FromBody] DetectDamageRequestDto request)
-        {
-            var result = await _service.DetectDamageAsync(request);
-            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
-        }
     }
 }

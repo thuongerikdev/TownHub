@@ -131,7 +131,7 @@ namespace TH.Base.ApplicationService.StartUp
             builder.Services.AddScoped<IProviderService, ProviderService>();
             builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
             builder.Services.AddScoped<IProviderServiceListingService, ProviderServiceListingService>();
-
+            builder.Services.AddScoped<IDamageDetectionService, DamageDetectionService>();
 
 
         }

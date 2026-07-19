@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import {
-  Plus, CalendarClock, Pencil, Trash2, Pause, Play, AlarmClock, CheckCircle2,
+  Plus, CalendarClock, Pencil, Trash2, Pause, Play, AlarmClock, CheckCircle2, Wrench, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  maintenanceSchedules, assetApi, checklistTemplates,
-  type MaintenanceScheduleResponse, type CreateMaintenanceScheduleInput, type UpdateMaintenanceScheduleInput,
+  maintenanceSchedules, assetApi, checklistTemplates, workOrders, toScheduleUpdate,
+  type MaintenanceScheduleResponse, type CreateMaintenanceScheduleInput,
   type AssetResponse, type ChecklistTemplateResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -65,6 +65,8 @@ export default function PMSchedules() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [confirmDel, setConfirmDel] = useState<MaintenanceScheduleResponse | null>(null);
+  const [woBusyId, setWoBusyId] = useState<string | null>(null);
+  const [woDoneIds, setWoDoneIds] = useState<Set<string>>(new Set());
 
   const stats = useMemo(() => {
     const active = list.filter((s) => s.isActive);
@@ -112,7 +114,7 @@ export default function PMSchedules() {
     };
     setSubmitting(true);
     const res = editing
-      ? await maintenanceSchedules.update({ ...base, id: editing.id } as UpdateMaintenanceScheduleInput)
+      ? await maintenanceSchedules.update(toScheduleUpdate(editing, base))
       : await maintenanceSchedules.create(base);
     setSubmitting(false);
     if (res.errorCode === 200) {
@@ -122,13 +124,38 @@ export default function PMSchedules() {
     } else toast.error(res.errorMessage || "Lưu thất bại.");
   }
 
+  // Tạo WO từ lịch → gắn scheduleId, rồi dời hạn 1 chu kỳ + ghi "lần gần nhất = hôm nay".
+  async function createWO(s: MaintenanceScheduleResponse) {
+    const asset = assetsQ.items.find((a) => a.id === s.assetId);
+    if (!asset?.buildingId) { toast.error("Tài sản chưa gắn toà nhà — không tạo được WO."); return; }
+    setWoBusyId(s.id);
+    const nowIso = new Date().toISOString();
+    const woRes = await workOrders.create({
+      woCode: "", // server tự sinh
+      assetId: s.assetId, checklistTemplateId: s.checklistTemplateId, buildingId: asset.buildingId,
+      scheduleId: s.id, woType: "PM", priority: "MEDIUM",
+      title: `${SCHEDULE_TYPE_LABEL[s.scheduleType] ?? s.scheduleType}: ${s.assetName ?? asset.name ?? asset.assetCode}`,
+      description: s.description || undefined,
+      scheduledDate: s.nextDueDate || nowIso, dueDate: s.nextDueDate || nowIso,
+    });
+    if (woRes.errorCode !== 200) {
+      setWoBusyId(null);
+      toast.error(woRes.errorMessage || "Tạo WO thất bại.");
+      return;
+    }
+    // Dời hạn kế tiếp thêm 1 chu kỳ + ghi lần xử lý.
+    const cycle = s.frequencyDays || 30;
+    const base = s.nextDueDate ? new Date(s.nextDueDate) : new Date();
+    const next = new Date(base.getTime() + cycle * 86400000);
+    await maintenanceSchedules.update(toScheduleUpdate(s, { lastExecutedAt: nowIso, nextDueDate: next.toISOString() }));
+    setWoBusyId(null);
+    setWoDoneIds((prev) => new Set(prev).add(s.id));
+    toast.success("Đã tạo WO và dời hạn lịch sang chu kỳ tiếp theo.");
+    q.refetch();
+  }
+
   async function toggleActive(s: MaintenanceScheduleResponse) {
-    const body: UpdateMaintenanceScheduleInput = {
-      id: s.id, assetId: s.assetId, scheduleType: s.scheduleType, checklistTemplateId: s.checklistTemplateId,
-      frequencyType: s.frequencyType, frequencyDays: s.frequencyDays, startDate: s.startDate, endDate: s.endDate,
-      leadTimeDays: s.leadTimeDays, isActive: !s.isActive, description: s.description,
-    };
-    const res = await maintenanceSchedules.update(body);
+    const res = await maintenanceSchedules.update(toScheduleUpdate(s, { isActive: !s.isActive }));
     if (res.errorCode === 200) { toast.success(s.isActive ? "Đã tạm dừng lịch." : "Đã kích hoạt lịch."); q.refetch(); }
     else toast.error(res.errorMessage || "Thao tác thất bại.");
   }
@@ -170,6 +197,15 @@ export default function PMSchedules() {
       key: "actions", header: "", align: "right",
       cell: (s) => (
         <div className="flex items-center justify-end gap-1">
+          {woDoneIds.has(s.id) ? (
+            <ToneBadge tone="success" dot>Đã tạo WO</ToneBadge>
+          ) : (
+            <Button variant="outline" size="sm" className="h-8 gap-1.5" title="Tạo lệnh công việc từ lịch này"
+              disabled={woBusyId === s.id} onClick={() => createWO(s)}>
+              {woBusyId === s.id ? <Loader2 className="size-3.5 animate-spin" /> : <Wrench className="size-3.5" />}
+              Tạo WO
+            </Button>
+          )}
           <Button variant="ghost" size="icon" title={s.isActive ? "Tạm dừng" : "Kích hoạt"} onClick={() => toggleActive(s)}>
             {s.isActive ? <Pause className="size-4" /> : <Play className="size-4" />}
           </Button>

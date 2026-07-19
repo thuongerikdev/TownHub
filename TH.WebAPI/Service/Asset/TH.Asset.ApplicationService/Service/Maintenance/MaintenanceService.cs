@@ -12,6 +12,52 @@ using TH.Constant;
 
 namespace TH.Asset.ApplicationService.Service.Maintenance
 {
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Work Order:  WO-{yyyyMM}-{NNN}  (sinh phía server, không cho sửa)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class WorkOrderCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"WO-{year}{month:D2}-";
+            var codes = await db.WorkOrders
+                .Where(x => x.woCode.StartsWith(prefix))
+                .Select(x => x.woCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
+    // Ràng buộc chuyển trạng thái Work Order theo quy trình DRAFT→ASSIGNED→IN_PROGRESS
+    // →PENDING_REVIEW→COMPLETED (rẽ nhánh REJECTED / CANCELLED). Cùng trạng thái = sửa
+    // thông tin, luôn cho phép.
+    internal static class WorkOrderState
+    {
+        private static readonly Dictionary<string, HashSet<string>> _allowed = new()
+        {
+            ["DRAFT"]          = new() { "ASSIGNED", "CANCELLED" },
+            ["ASSIGNED"]       = new() { "IN_PROGRESS", "CANCELLED" },
+            ["IN_PROGRESS"]    = new() { "PENDING_REVIEW", "CANCELLED" },
+            ["PENDING_REVIEW"] = new() { "COMPLETED", "REJECTED", "CANCELLED" },
+            ["REJECTED"]       = new() { "ASSIGNED", "IN_PROGRESS", "CANCELLED" },
+            ["COMPLETED"]      = new(),
+            ["CANCELLED"]      = new(),
+        };
+
+        public static bool CanTransition(string from, string to)
+        {
+            if (from == to) return true;
+            return _allowed.TryGetValue(from, out var next) && next.Contains(to);
+        }
+    }
+
     // ============================================================
     // CHECKLIST TEMPLATE SERVICE
     // ============================================================
@@ -290,6 +336,20 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         public MaintenanceScheduleService(ILogger<MaintenanceScheduleService> logger, AssetDbContext dbContext)
             : base(logger, dbContext) { }
 
+        // Ép DateTime về Kind=Utc để Npgsql ghi được vào cột timestamptz (ngày client gửi
+        // thường có Kind=Unspecified). Local → chuyển múi giờ; còn lại giữ nguyên mốc, gắn Utc.
+        private static DateTime? AsUtc(DateTime? value)
+        {
+            if (value is null) return null;
+            var d = value.Value;
+            return d.Kind switch
+            {
+                DateTimeKind.Utc => d,
+                DateTimeKind.Local => d.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(d, DateTimeKind.Utc),
+            };
+        }
+
         public async Task<ResponseDto<bool>> CreateAsync(CreateMaintenanceScheduleDto request)
         {
             try
@@ -302,16 +362,27 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 if (!templateExists)
                     return ResponseConst.Error<bool>(400, "Mẫu checklist không tồn tại.");
 
+                // autoAssignDepartmentId là tham chiếu cross-service (Base) — KHÔNG có FK trong
+                // schema asset; nếu Guid.Empty lọt vào thì coi như null để tránh dữ liệu rác.
+                var autoDept = request.autoAssignDepartmentId == Guid.Empty ? null : request.autoAssignDepartmentId;
+
+                // Ngày từ client (vd "2026-07-16") có Kind=Unspecified → Npgsql từ chối ghi vào cột
+                // timestamptz. Ép về UTC trước khi lưu (coi ngày lịch là mốc UTC).
+                var startDate = AsUtc(request.startDate);
+                var endDate = AsUtc(request.endDate);
+
                 _dbContext.MaintenanceSchedules.Add(new MaintenanceSchedule
                 {
                     assetId                = request.assetId,
                     scheduleType           = request.scheduleType,
                     checklistTemplateId    = request.checklistTemplateId,
-                    autoAssignDepartmentId = request.autoAssignDepartmentId,
+                    autoAssignDepartmentId = autoDept,
                     frequencyType          = request.frequencyType,
                     frequencyDays          = request.frequencyDays,
-                    startDate              = request.startDate,
-                    endDate                = request.endDate,
+                    startDate              = startDate,
+                    endDate                = endDate,
+                    // Lần đến hạn đầu tiên = ngày bắt đầu → lịch mới hiện ngay trong danh sách "đến hạn".
+                    nextDueDate            = startDate,
                     leadTimeDays           = request.leadTimeDays,
                     isActive               = request.isActive,
                     description            = request.description
@@ -322,7 +393,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo lịch bảo trì.");
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                // Với DbUpdateException, nguyên nhân thật nằm ở InnerException (constraint/kiểu dữ liệu).
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -339,10 +411,10 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 entity.autoAssignDepartmentId = request.autoAssignDepartmentId;
                 entity.frequencyType          = request.frequencyType;
                 entity.frequencyDays          = request.frequencyDays;
-                entity.startDate              = request.startDate;
-                entity.endDate                = request.endDate;
-                entity.nextDueDate            = request.nextDueDate;
-                entity.lastExecutedAt         = request.lastExecutedAt;
+                entity.startDate              = AsUtc(request.startDate);
+                entity.endDate                = AsUtc(request.endDate);
+                entity.nextDueDate            = AsUtc(request.nextDueDate);
+                entity.lastExecutedAt         = AsUtc(request.lastExecutedAt);
                 entity.lastWoId               = request.lastWoId;
                 entity.leadTimeDays           = request.leadTimeDays;
                 entity.isActive               = request.isActive;
@@ -354,7 +426,7 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật lịch bảo trì. ID: {Id}", request.id);
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -495,17 +567,17 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         {
             try
             {
-                var codeExists = await _dbContext.WorkOrders.AnyAsync(x => x.woCode == request.woCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã WO '{request.woCode}' đã tồn tại.");
-
                 var assetExists = await _dbContext.Assets.AnyAsync(x => x.id == request.assetId);
                 if (!assetExists)
                     return ResponseConst.Error<bool>(400, "Tài sản không tồn tại.");
 
+                // Mã WO luôn sinh phía server để đảm bảo duy nhất & không cho client tự đặt.
+                var now = DateTime.UtcNow;
+                var woCode = await WorkOrderCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
                 _dbContext.WorkOrders.Add(new WorkOrder
                 {
-                    woCode              = request.woCode,
+                    woCode              = woCode,
                     assetId             = request.assetId,
                     scheduleId          = request.scheduleId,
                     checklistTemplateId = request.checklistTemplateId,
@@ -517,7 +589,9 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                     scheduledDate       = request.scheduledDate,
                     dueDate             = request.dueDate,
                     estimatedHours      = request.estimatedHours,
-                    createdBy           = request.createdBy
+                    createdBy           = request.createdBy,
+                    createdByUserId     = request.createdByUserId,
+                    createdByName       = request.createdByName
                 });
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Tạo lệnh công việc thành công.", true);
@@ -537,14 +611,13 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy Work Order.");
 
-                if (entity.woCode != request.woCode)
-                {
-                    var codeExists = await _dbContext.WorkOrders.AnyAsync(x => x.woCode == request.woCode);
-                    if (codeExists)
-                        return ResponseConst.Error<bool>(400, $"Mã WO '{request.woCode}' đã tồn tại.");
-                }
+                // Ràng buộc quy trình: chỉ cho chuyển trạng thái hợp lệ (chống nhảy/lùi bước
+                // hoặc sửa phiếu đã đóng khi gọi API trực tiếp).
+                if (!WorkOrderState.CanTransition(entity.status, request.status))
+                    return ResponseConst.Error<bool>(400,
+                        $"Không thể chuyển trạng thái từ '{entity.status}' sang '{request.status}'.");
 
-                entity.woCode         = request.woCode;
+                // Mã WO là bất biến (sinh khi tạo) — bỏ qua giá trị client gửi lên.
                 entity.status         = request.status;
                 entity.reviewerId     = request.reviewerId;
                 entity.woType         = request.woType;
@@ -561,6 +634,20 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 entity.actualHours    = request.actualHours;
                 entity.totalCost      = request.totalCost;
                 entity.updatedAt      = DateTime.UtcNow;
+
+                // Đồng bộ trạng thái tài sản theo tiến độ WO: bắt đầu thực hiện → "Đang bảo trì";
+                // đóng phiếu (nghiệm thu) → về "Đang hoạt động". Không đụng tài sản đã thanh lý/loại bỏ.
+                if (entity.status == "IN_PROGRESS" || entity.status == "COMPLETED")
+                {
+                    var asset = await _dbContext.Assets.FirstOrDefaultAsync(x => x.id == entity.assetId);
+                    if (asset != null && asset.status != "DISPOSED" && asset.status != "RETIRED")
+                    {
+                        if (entity.status == "IN_PROGRESS" && asset.status == "ACTIVE")
+                            asset.status = "MAINTENANCE";
+                        else if (entity.status == "COMPLETED" && asset.status == "MAINTENANCE")
+                            asset.status = "ACTIVE";
+                    }
+                }
 
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Cập nhật Work Order thành công.", true);
@@ -647,21 +734,33 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         {
             try
             {
-                var woExists = await _dbContext.WorkOrders.AnyAsync(x => x.id == request.woId);
-                if (!woExists)
+                var wo = await _dbContext.WorkOrders.FirstOrDefaultAsync(x => x.id == request.woId);
+                if (wo == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy Work Order.");
 
-                var alreadyAssigned = await _dbContext.WorkOrderAssignments
-                    .AnyAsync(x => x.woId == request.woId && x.assignedTo == request.assignedTo);
-                if (alreadyAssigned)
-                    return ResponseConst.Error<bool>(400, "Kỹ thuật viên đã được phân công vào Work Order này.");
+                if (request.assignedToUserId.HasValue)
+                {
+                    var already = await _dbContext.WorkOrderAssignments
+                        .AnyAsync(x => x.woId == request.woId && x.assignedToUserId == request.assignedToUserId);
+                    if (already)
+                        return ResponseConst.Error<bool>(400, "Kỹ thuật viên này đã được phân công vào Work Order.");
+                }
 
                 _dbContext.WorkOrderAssignments.Add(new WorkOrderAssignment
                 {
                     woId              = request.woId,
                     assignedTo        = request.assignedTo,
+                    assignedToUserId  = request.assignedToUserId,
+                    assignedToName    = request.assignedToName,
+                    assignedAt        = DateTime.UtcNow,
                     checkinQrAssetId  = request.checkinQrAssetId
                 });
+
+                // Cập nhật KTV phụ trách hiện tại trên WO
+                wo.assignedToUserId = request.assignedToUserId;
+                wo.assignedToName   = request.assignedToName;
+                wo.updatedAt        = DateTime.UtcNow;
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Phân công kỹ thuật viên thành công.", true);
             }
@@ -792,6 +891,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             buildingId            = x.buildingId,
             status                = x.status,
             reviewerId            = x.reviewerId,
+            assignedToUserId      = x.assignedToUserId,
+            assignedToName        = x.assignedToName,
             woType                = x.woType,
             title                 = x.title,
             description           = x.description,
@@ -806,6 +907,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
             actualHours           = x.actualHours,
             totalCost             = x.totalCost,
             createdBy             = x.createdBy,
+            createdByUserId       = x.createdByUserId,
+            createdByName         = x.createdByName,
             createdAt             = x.createdAt,
             updatedAt             = x.updatedAt
         };

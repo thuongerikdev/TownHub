@@ -15,6 +15,52 @@ using VendorEntity = TH.Asset.Domain.Vendor.Vendor;
 
 namespace TH.Asset.ApplicationService.Service.Inventory
 {
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Phiếu đề xuất mua vật tư:  PR-{yyyyMM}-{NNN}  (server sinh)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class PurchaseRequestCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"PR-{year}{month:D2}-";
+            var codes = await db.PurchaseRequests
+                .Where(x => x.prCode.StartsWith(prefix))
+                .Select(x => x.prCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Đơn đặt hàng:  PO-{yyyyMM}-{NNN}  (server sinh)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class PurchaseOrderCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"PO-{year}{month:D2}-";
+            var codes = await db.PurchaseOrders
+                .Where(x => x.poCode.StartsWith(prefix))
+                .Select(x => x.poCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
     // ============================================================
     // WAREHOUSE SERVICE
     // ============================================================
@@ -610,6 +656,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
         Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null);
         Task<ResponseDto<PurchaseRequestResponse>> GetByIdAsync(Guid id);
+        Task<ResponseDto<bool>> SubmitAsync(Guid id);
         Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy);
         Task<ResponseDto<bool>> RejectAsync(Guid id, string reason);
         Task<ResponseDto<bool>> AddItemAsync(CreatePurchaseRequestItemDto request);
@@ -625,18 +672,41 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                var codeExists = await _dbContext.PurchaseRequests.AnyAsync(x => x.prCode == request.prCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã PR '{request.prCode}' đã tồn tại.");
+                // Mã PR luôn sinh phía server, duy nhất, không cho client tự đặt.
+                var now = DateTime.UtcNow;
+                var prCode = await PurchaseRequestCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
+                // Người đề xuất mặc định = KTV chịu trách nhiệm xử lý WO/Ticket (lưu id, không phải chuỗi tự do).
+                var requestedByUserId = request.requestedByUserId;
+                var requestedByName   = request.requestedByName;
+                if (request.woId.HasValue)
+                {
+                    var wo = await _dbContext.WorkOrders
+                        .FirstOrDefaultAsync(x => x.id == request.woId.Value);
+                    if (wo == null)
+                        return ResponseConst.Error<bool>(400, "Work Order không tồn tại.");
+                    requestedByUserId = wo.assignedToUserId;
+                    requestedByName   = wo.assignedToName;
+                }
+                else if (request.ticketId.HasValue)
+                {
+                    var ticket = await _dbContext.Tickets
+                        .FirstOrDefaultAsync(x => x.id == request.ticketId.Value);
+                    if (ticket == null)
+                        return ResponseConst.Error<bool>(400, "Ticket không tồn tại.");
+                    requestedByUserId = ticket.assignedToUserId;
+                    requestedByName   = ticket.assignedToName;
+                }
 
                 _dbContext.PurchaseRequests.Add(new PurchaseRequest
                 {
-                    prCode       = request.prCode,
+                    prCode       = prCode,
                     ticketId     = request.ticketId,
                     woId         = request.woId,
                     departmentId = request.departmentId,
-                    requestedBy  = request.requestedBy,
-                    requestedByName = request.requestedByName,
+                    requestedBy       = request.requestedBy,
+                    requestedByUserId = requestedByUserId,
+                    requestedByName   = requestedByName,
                     title        = request.title,
                     justification = request.justification,
                     priority     = request.priority,
@@ -725,6 +795,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                         woCode         = x.workOrder  != null ? x.workOrder.woCode  : null,
                         departmentId   = x.departmentId,
                         requestedBy    = x.requestedBy,
+                        requestedByUserId = x.requestedByUserId,
                         requestedByName = x.requestedByName,
                         status         = x.status,
                         title          = x.title,
@@ -765,6 +836,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                         woCode         = x.workOrder != null ? x.workOrder.woCode  : null,
                         departmentId   = x.departmentId,
                         requestedBy    = x.requestedBy,
+                        requestedByUserId = x.requestedByUserId,
                         requestedByName = x.requestedByName,
                         status         = x.status,
                         title          = x.title,
@@ -790,6 +862,31 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
+        public async Task<ResponseDto<bool>> SubmitAsync(Guid id)
+        {
+            try
+            {
+                var entity = await _dbContext.PurchaseRequests.FirstOrDefaultAsync(x => x.id == id);
+                if (entity == null)
+                    return ResponseConst.Error<bool>(404, "Không tìm thấy phiếu đề xuất.");
+
+                // Chỉ gửi duyệt được phiếu nháp; REJECTED có thể gửi lại.
+                if (entity.status != "DRAFT" && entity.status != "REJECTED")
+                    return ResponseConst.Error<bool>(400, "Chỉ có thể gửi duyệt phiếu đề xuất ở trạng thái nháp.");
+
+                entity.status         = "SUBMITTED";
+                entity.rejectedReason = null;
+
+                await _dbContext.SaveChangesAsync();
+                return ResponseConst.Success("Đã gửi phiếu đề xuất chờ duyệt.", true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi duyệt Purchase Request. ID: {Id}", id);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
         public async Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy)
         {
             try
@@ -798,8 +895,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy phiếu đề xuất.");
 
-                if (entity.status != "DRAFT" && entity.status != "PENDING")
-                    return ResponseConst.Error<bool>(400, "Phiếu đề xuất không ở trạng thái có thể duyệt.");
+                // Chỉ duyệt được phiếu đã gửi duyệt (SUBMITTED); "PENDING" giữ cho dữ liệu cũ.
+                if (entity.status != "SUBMITTED" && entity.status != "PENDING")
+                    return ResponseConst.Error<bool>(400, "Chỉ có thể duyệt phiếu đề xuất đã gửi duyệt.");
 
                 entity.status     = "APPROVED";
                 entity.approvedBy = approvedBy;
@@ -822,6 +920,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 var entity = await _dbContext.PurchaseRequests.FirstOrDefaultAsync(x => x.id == id);
                 if (entity == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy phiếu đề xuất.");
+
+                if (entity.status != "SUBMITTED" && entity.status != "PENDING")
+                    return ResponseConst.Error<bool>(400, "Chỉ có thể từ chối phiếu đề xuất đã gửi duyệt.");
 
                 entity.status         = "REJECTED";
                 entity.rejectedReason = reason;
@@ -919,17 +1020,17 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                var codeExists = await _dbContext.PurchaseOrders.AnyAsync(x => x.poCode == request.poCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã PO '{request.poCode}' đã tồn tại.");
-
                 var vendorExists = await _dbContext.Vendors.AnyAsync(x => x.id == request.vendorId);
                 if (!vendorExists)
                     return ResponseConst.Error<bool>(400, "Nhà cung cấp không tồn tại.");
 
+                // Mã PO luôn sinh phía server, duy nhất, không cho client tự đặt.
+                var now = DateTime.UtcNow;
+                var poCode = await PurchaseOrderCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
                 _dbContext.PurchaseOrders.Add(new PurchaseOrder
                 {
-                    poCode           = request.poCode,
+                    poCode           = poCode,
                     prId             = request.prId,
                     vendorId         = request.vendorId,
                     issueDate        = request.issueDate,
@@ -946,7 +1047,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo Purchase Order.");
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -972,7 +1073,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật Purchase Order. ID: {Id}", request.id);
-                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + ex.Message);
+                return ResponseConst.Error<bool>(500, "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
@@ -1167,7 +1268,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 if (codeExists)
                     return ResponseConst.Error<bool>(400, $"Mã hóa đơn '{request.invoiceCode}' đã tồn tại.");
 
-                _dbContext.Invoices.Add(new Invoice
+                var invoice = new Invoice
                 {
                     invoiceCode    = request.invoiceCode,
                     vendorId       = request.vendorId,
@@ -1181,7 +1282,25 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     currency       = request.currency,
                     paymentDueDate = request.paymentDueDate,
                     notes          = request.notes
-                });
+                };
+
+                // Lưu kèm hạng mục đã đối chiếu (materialId). EF gán invoiceId qua navigation.
+                if (request.items != null && request.items.Count > 0)
+                {
+                    invoice.items = request.items
+                        .Where(it => it.materialId != Guid.Empty)
+                        .Select(it => new InvoiceItem
+                        {
+                            materialId  = it.materialId,
+                            description = it.description,
+                            quantity    = it.quantity,
+                            unitPrice   = it.unitPrice,
+                            totalPrice  = it.totalPrice ?? (it.quantity * it.unitPrice)
+                        })
+                        .ToList();
+                }
+
+                _dbContext.Invoices.Add(invoice);
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Thêm hóa đơn thành công.", true);
             }
@@ -1423,9 +1542,14 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
+                // Hợp lệ: "pdf" (đọc lớp text hóa đơn điện tử) hoặc 3 engine OCR; lạ → "gemini".
+                var engine = (request.ocrEngine ?? "").Trim().ToLowerInvariant();
+                if (engine != "vietocr" && engine != "paddleocr" && engine != "pdf") engine = "gemini";
+
                 var job = new OcrJob
                 {
                     documentType  = request.documentType,
+                    ocrEngine     = engine,
                     fileUrl       = request.fileUrl,
                     fileName      = request.fileName,
                     fileSizeBytes   = request.fileSizeBytes,
@@ -1511,6 +1635,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             id              = x.id,
             documentType    = x.documentType,
+            ocrEngine       = x.ocrEngine,
             status          = x.status,
             reviewedBy      = x.reviewedBy,
             reviewedByName  = x.reviewedByName,

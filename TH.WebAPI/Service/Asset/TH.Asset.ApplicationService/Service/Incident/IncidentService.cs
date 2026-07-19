@@ -3,9 +3,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using TH.Asset.ApplicationService.Common;
 using TH.Asset.Domain.Incident;
@@ -206,49 +203,46 @@ namespace TH.Asset.ApplicationService.Service.Incident
         Task<ResponseDto<bool>> RateAsync(CreateTicketRatingDto request);
         Task<ResponseDto<List<TicketStatusHistoryResponse>>> GetStatusHistoryAsync(Guid ticketId);
         Task<ResponseDto<List<SlaEscalationLogResponse>>> GetEscalationLogsAsync(Guid ticketId);
-        Task<ResponseDto<DamageDetectionResponse>> DetectDamageAsync(DetectDamageRequestDto request);
     }
 
     public class TicketService : AssetServiceBase, ITicketService
     {
         public TicketService(ILogger<TicketService> logger, AssetDbContext dbContext)
-            : base(logger, dbContext)
+            : base(logger, dbContext) { }
+
+        // Sinh mã ticket dạng TK-{năm}{tháng}-{số thứ tự 4 chữ số}, tự tăng theo dữ liệu hiện có.
+        private async Task<string> NextTicketCodeAsync(int year, int month)
         {
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-            _damageAiBaseUrl = Environment.GetEnvironmentVariable("DAMAGE_AI_URL") ?? "http://localhost:8002";
+            var prefix = $"TK-{year}{month:D2}-";
+            var codes = await _dbContext.Tickets
+                .Where(x => x.ticketCode.StartsWith(prefix))
+                .Select(x => x.ticketCode)
+                .ToListAsync();
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D4}";
         }
-
-        private readonly HttpClient _httpClient;
-        private readonly string _damageAiBaseUrl;
-
-        // Nhãn YOLO (apartment_damage_detection.ipynb) → category có sẵn của Ticket.
-        // Chỉ electrical_damage khớp trực tiếp với ELECTRICAL; các lỗi kết cấu/vật liệu
-        // còn lại chưa có nhóm riêng trong category nên gom vào OTHER.
-        private static readonly Dictionary<string, string> DamageLabelToCategory = new()
-        {
-            ["wall_crack"] = "OTHER",
-            ["floor_crack"] = "OTHER",
-            ["tile_defect"] = "OTHER",
-            ["electrical_damage"] = "ELECTRICAL",
-            ["building_damage"] = "OTHER",
-        };
-
-        private static readonly Dictionary<string, string> DamageLabelToVi = new()
-        {
-            ["wall_crack"] = "Nứt tường",
-            ["floor_crack"] = "Nứt sàn",
-            ["tile_defect"] = "Lỗi gạch",
-            ["electrical_damage"] = "Hỏng hóc điện",
-            ["building_damage"] = "Hư hỏng công trình",
-        };
 
         public async Task<ResponseDto<bool>> CreateAsync(CreateTicketDto request)
         {
             try
             {
-                var codeExists = await _dbContext.Tickets.AnyAsync(x => x.ticketCode == request.ticketCode);
-                if (codeExists)
-                    return ResponseConst.Error<bool>(400, $"Mã ticket '{request.ticketCode}' đã tồn tại.");
+                // Mã ticket: client có thể để trống → server tự sinh.
+                if (string.IsNullOrWhiteSpace(request.ticketCode))
+                {
+                    var now = DateTime.UtcNow;
+                    request.ticketCode = await NextTicketCodeAsync(now.Year, now.Month);
+                }
+                else
+                {
+                    var codeExists = await _dbContext.Tickets.AnyAsync(x => x.ticketCode == request.ticketCode);
+                    if (codeExists)
+                        return ResponseConst.Error<bool>(400, $"Mã ticket '{request.ticketCode}' đã tồn tại.");
+                }
 
                 var ticket = new Ticket
                 {
@@ -280,20 +274,6 @@ namespace TH.Asset.ApplicationService.Service.Incident
                     changedBy  = request.reportedBy,
                     note       = "Ticket được tạo mới."
                 });
-
-                // Ảnh đính kèm ngay lúc báo sự cố (nếu có)
-                if (request.photoUrls != null)
-                {
-                    foreach (var url in request.photoUrls.Where(u => !string.IsNullOrWhiteSpace(u)))
-                    {
-                        _dbContext.TicketAttachments.Add(new TicketAttachment
-                        {
-                            ticketId = ticket.id,
-                            fileUrl  = url
-                        });
-                    }
-                }
-
                 await _dbContext.SaveChangesAsync();
 
                 return ResponseConst.Success("Tạo ticket thành công.", true);
@@ -448,20 +428,33 @@ namespace TH.Asset.ApplicationService.Service.Incident
         {
             try
             {
-                var ticketExists = await _dbContext.Tickets.AnyAsync(x => x.id == request.ticketId);
-                if (!ticketExists)
+                var ticket = await _dbContext.Tickets.FirstOrDefaultAsync(x => x.id == request.ticketId);
+                if (ticket == null)
                     return ResponseConst.Error<bool>(404, "Không tìm thấy ticket.");
 
-                var alreadyAssigned = await _dbContext.TicketAssignments
-                    .AnyAsync(x => x.ticketId == request.ticketId && x.assignedTo == request.assignedTo);
-                if (alreadyAssigned)
-                    return ResponseConst.Error<bool>(400, "Người dùng đã được phân công vào ticket này.");
+                // Ưu tiên định danh theo user (int) nếu FE gửi; fallback về Guid cũ.
+                if (request.assignedToUserId.HasValue)
+                {
+                    var already = await _dbContext.TicketAssignments
+                        .AnyAsync(x => x.ticketId == request.ticketId && x.assignedToUserId == request.assignedToUserId);
+                    if (already)
+                        return ResponseConst.Error<bool>(400, "Kỹ thuật viên này đã được phân công vào ticket.");
+                }
 
                 _dbContext.TicketAssignments.Add(new TicketAssignment
                 {
-                    ticketId   = request.ticketId,
-                    assignedTo = request.assignedTo
+                    ticketId         = request.ticketId,
+                    assignedTo       = request.assignedTo,
+                    assignedToUserId = request.assignedToUserId,
+                    assignedToName   = request.assignedToName,
+                    assignedAt       = DateTime.UtcNow
                 });
+
+                // Cập nhật người phụ trách hiện tại trên ticket (để hiển thị ở danh sách/chi tiết)
+                ticket.assignedToUserId = request.assignedToUserId;
+                ticket.assignedToName   = request.assignedToName;
+                ticket.updatedAt        = DateTime.UtcNow;
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Phân công ticket thành công.", true);
             }
@@ -613,64 +606,6 @@ namespace TH.Asset.ApplicationService.Service.Incident
             }
         }
 
-        public async Task<ResponseDto<DamageDetectionResponse>> DetectDamageAsync(DetectDamageRequestDto request)
-        {
-            // Service AI (YOLOv8 damage-detection) chạy độc lập, có thể chưa bật lúc dev/demo.
-            // Lỗi gọi service KHÔNG phải lỗi cứng — trả available=false để form tạo ticket
-            // vẫn hoạt động bình thường, chỉ là không có gợi ý.
-            try
-            {
-                using var req = new HttpRequestMessage(HttpMethod.Post, _damageAiBaseUrl.TrimEnd('/') + "/detect")
-                {
-                    Content = JsonContent.Create(new { imageDataUrl = request.imageDataUrl })
-                };
-                using var resp = await _httpClient.SendAsync(req);
-                if (!resp.IsSuccessStatusCode)
-                    return ResponseConst.Success("Dịch vụ AI không khả dụng.", new DamageDetectionResponse { available = false });
-
-                var dto = await resp.Content.ReadFromJsonAsync<DamageDetectResponse>();
-                var items = (dto?.Detections ?? new List<DamageDetectItem>())
-                    .Select(d => new DamageDetectionItem
-                    {
-                        label      = d.Label,
-                        labelVi    = DamageLabelToVi.TryGetValue(d.Label, out var vi) ? vi : d.Label,
-                        confidence = d.Confidence
-                    })
-                    .ToList();
-
-                string? suggestedCategory = dto?.TopLabel != null && DamageLabelToCategory.TryGetValue(dto.TopLabel, out var cat)
-                    ? cat
-                    : null;
-
-                return ResponseConst.Success("Nhận diện hư hỏng thành công.", new DamageDetectionResponse
-                {
-                    available         = true,
-                    detections        = items,
-                    suggestedCategory = suggestedCategory,
-                    topConfidence     = dto?.TopConfidence
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[DAMAGE-AI] Không gọi được service nhận diện hư hỏng tại {Url}", _damageAiBaseUrl);
-                return ResponseConst.Success("Dịch vụ AI không khả dụng.", new DamageDetectionResponse { available = false });
-            }
-        }
-
-        // ── DTO khớp JSON trả về từ damage-service (FastAPI, camelCase) ──
-        private sealed class DamageDetectResponse
-        {
-            [JsonPropertyName("detections")]    public List<DamageDetectItem>? Detections { get; set; }
-            [JsonPropertyName("topLabel")]      public string? TopLabel { get; set; }
-            [JsonPropertyName("topConfidence")] public double? TopConfidence { get; set; }
-        }
-
-        private sealed class DamageDetectItem
-        {
-            [JsonPropertyName("label")]      public string Label { get; set; } = null!;
-            [JsonPropertyName("confidence")] public double Confidence { get; set; }
-        }
-
         private static TicketResponse MapToResponse(Ticket x) => new()
         {
             id                = x.id,
@@ -683,6 +618,8 @@ namespace TH.Asset.ApplicationService.Service.Incident
             assetCode         = x.asset?.assetCode,
             reportedBy        = x.reportedBy,
             reportedByName    = x.reportedByName,
+            assignedToUserId  = x.assignedToUserId,
+            assignedToName    = x.assignedToName,
             slaConfigId       = x.slaConfigId,
             slaConfigName     = x.slaConfig?.name,
             purchaseRequestId = x.purchaseRequestId,

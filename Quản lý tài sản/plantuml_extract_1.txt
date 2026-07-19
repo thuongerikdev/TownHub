@@ -1,0 +1,54 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Kỹ thuật viên" as KTV
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Kế toán" as KT
+
+' Tư duy kế thừa phân quyền:
+' KST làm được mọi việc của KTV
+' BQL làm được mọi việc của KST
+KST --|> KTV
+BQL --|> KST
+
+package "2. Quản lý tài sản" {
+    ' Nhóm Use Case của KTV (cơ bản)
+    usecase "UC07: Xem danh sách tài sản" as UC07
+    usecase "UC11: Sinh và in mã QR" as UC11
+    usecase "UC12: Xem thông số IoT realtime" as UC12
+    
+    ' Nhóm Use Case bổ sung của KST
+    usecase "UC08: Thêm/sửa thông tin tài sản" as UC08
+    usecase "UC09: Thanh lý/vô hiệu hoá" as UC09
+    usecase "UC10: Quản lý cây thành phần" as UC10
+    usecase "UC13: Xem lịch sử bảo trì" as UC13
+    
+    ' Nhóm Use Case của cấp Quản lý / Kế toán
+    usecase "UC14: Theo dõi vòng đời/khấu hao" as UC14
+}
+
+' 1. KTV chỉ cần nối 3 quyền cơ bản (KST và BQL tự động được thừa hưởng)
+KTV --> UC07
+KTV --> UC11
+KTV --> UC12
+
+' 2. KST nối thêm các quyền quản lý cấp trung (BQL tự động được thừa hưởng)
+KST --> UC08
+KST --> UC09
+KST --> UC10
+KST --> UC13
+
+' 3. BQL và Kế toán nối vào quyền cấp cao
+BQL --> UC14
+KT --> UC14
+
+@enduml

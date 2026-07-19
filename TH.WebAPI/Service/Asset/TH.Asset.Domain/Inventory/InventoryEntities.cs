@@ -175,7 +175,9 @@ namespace TH.Asset.Domain.Inventory
 
         // Cross-service (Auth) — không dùng navigation property
         public Guid requestedBy { get; set; }
-        // Tên người đề xuất do FE nhập tự do (Auth dùng int id, Asset dùng Guid — không có FK)
+        // Người đề xuất = KTV chịu trách nhiệm xử lý WO. Auth userID là int → lưu id + tên
+        // hiển thị (giống WorkOrder.assignedToUserId/assignedToName), không nhập tay.
+        public int? requestedByUserId { get; set; }
         [MaxLength(150)]
         public string? requestedByName { get; set; }
 
@@ -415,6 +417,11 @@ namespace TH.Asset.Domain.Inventory
 
         [MaxLength(20)]
         public string status { get; set; } = "QUEUED";
+
+        // Engine OCR người dùng chọn: "gemini" | "vietocr" | "paddleocr".
+        // Worker gửi giá trị này xuống service Python qua field "model".
+        [MaxLength(20)]
+        public string ocrEngine { get; set; } = "gemini";
 
         // Cross-service (Auth) — không dùng navigation property
         public Guid? reviewedBy { get; set; }

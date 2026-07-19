@@ -1,0 +1,39 @@
+{
+ "Name": [
+  "Lý Thành Đạt"
+ ],
+ "Designation": [
+  "Senior Software Engineer"
+ ],
+ "Email Address": [
+  "lythanhdat@outlook.com"
+ ],
+ "Location": [
+  "Lê Chân, Hải Phòng"
+ ],
+ "College Name": [
+  "Trường Đại học Xây dựng Hà Nội"
+ ],
+ "Degree": [
+  "Information Technology"
+ ],
+ "Graduation Year": [
+  "2016"
+ ],
+ "Companies worked at": [
+  "TopDev",
+  "VNG Corporation"
+ ],
+ "Skills": [
+  "PostgreSQL",
+  "Spring Boot",
+  "NodeJS",
+  "Docker",
+  "Python",
+  "MongoDb",
+  "SQL"
+ ],
+ "Years of Experience": [
+  "4 years"
+ ]
+}

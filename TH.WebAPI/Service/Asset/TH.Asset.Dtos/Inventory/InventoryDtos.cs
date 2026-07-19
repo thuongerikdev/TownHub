@@ -157,13 +157,15 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreatePurchaseRequestDto
     {
-        public required string prCode { get; set; }
+        // Mã PR do server sinh — client không cần gửi.
+        public string? prCode { get; set; }
         public Guid? ticketId { get; set; }
         public Guid? woId { get; set; }
         // Cross-service (Base)
         public Guid? departmentId { get; set; }
-        // Cross-service (Auth)
+        // Cross-service (Auth) — người đề xuất tự suy ra từ KTV phụ trách WO ở server.
         public Guid requestedBy { get; set; }
+        public int? requestedByUserId { get; set; }
         public string? requestedByName { get; set; }
 
         public string? title { get; set; }
@@ -192,6 +194,7 @@ namespace TH.Asset.Dtos
         public string? woCode { get; set; }
         public Guid? departmentId { get; set; }
         public Guid requestedBy { get; set; }
+        public int? requestedByUserId { get; set; }
         public string? requestedByName { get; set; }
         public string status { get; set; } = null!;
         public string? title { get; set; }
@@ -231,7 +234,8 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreatePurchaseOrderDto
     {
-        public required string poCode { get; set; }
+        // Mã PO do server sinh — client không cần gửi.
+        public string? poCode { get; set; }
         public Guid? prId { get; set; }
         public Guid vendorId { get; set; }
         public DateTime? issueDate { get; set; }
@@ -336,6 +340,18 @@ namespace TH.Asset.Dtos
         public string currency { get; set; } = "VND";
         public DateTime? paymentDueDate { get; set; }
         public string? notes { get; set; }
+        // Hạng mục kèm theo (đối chiếu OCR → materialId). Lưu cùng lúc với hóa đơn.
+        public List<CreateInvoiceItemLine>? items { get; set; }
+    }
+
+    /// <summary>Một dòng hàng gửi kèm khi tạo hóa đơn (đã đối chiếu ra materialId).</summary>
+    public class CreateInvoiceItemLine
+    {
+        public Guid materialId { get; set; }
+        public string? description { get; set; }
+        public decimal? quantity { get; set; }
+        public decimal? unitPrice { get; set; }
+        public decimal? totalPrice { get; set; }
     }
 
     public class UpdateInvoiceDto : CreateInvoiceDto
@@ -409,6 +425,8 @@ namespace TH.Asset.Dtos
     public class CreateOcrJobDto
     {
         public required string documentType { get; set; }
+        // Engine OCR: "gemini" (API) | "vietocr" | "paddleocr". Mặc định "gemini" nếu bỏ trống.
+        public string? ocrEngine { get; set; }
         public string? fileUrl { get; set; }
         public string? fileName { get; set; }
         public int? fileSizeBytes { get; set; }
@@ -421,6 +439,7 @@ namespace TH.Asset.Dtos
     {
         public Guid id { get; set; }
         public string documentType { get; set; } = null!;
+        public string ocrEngine { get; set; } = "gemini";  // gemini | vietocr | paddleocr
         public string status { get; set; } = null!;  // QUEUED | PROCESSING | DONE | FAILED
         public Guid? reviewedBy { get; set; }
         public string? reviewedByName { get; set; }

@@ -22,7 +22,13 @@ namespace TH.TownHub.Domain.Entities
         public required string Code { get; set; }           // VD: A1201
 
         [Required]
-        public required string Building { get; set; }       // Tòa A, Tòa B, Villa
+        public required string Building { get; set; }       // Tên toà nhà (đồng bộ theo master để hiển thị)
+
+        // Tham chiếu master Toà nhà ở Base (Guid, KHÔNG nối FK — cross-service style).
+        public Guid? BuildingId { get; set; }
+
+        // Tham chiếu master Tầng ở Base (Guid). 1 tầng có nhiều căn hộ.
+        public Guid? FloorId { get; set; }
 
         public int Floor { get; set; }
 

@@ -1,0 +1,40 @@
+{
+ "Name": [
+  "Bùi Thảo Nguyên"
+ ],
+ "Designation": [
+  "Software Engineer"
+ ],
+ "Email Address": [
+  "buithaonguyen@gmail.com"
+ ],
+ "Location": [
+  "Lộc Thọ, Nha Trang"
+ ],
+ "College Name": [
+  "Trường Đại học Kinh tế Quốc dân"
+ ],
+ "Degree": [
+  "Information Technology"
+ ],
+ "Graduation Year": [
+  "2013"
+ ],
+ "Companies worked at": [
+  "Applancer Joint Stock Company",
+  "Viettel Solutions"
+ ],
+ "Skills": [
+  "ReactJS",
+  ".NET Core",
+  "SQL",
+  "Spring Boot",
+  "JavaScript",
+  "Docker",
+  "Python",
+  "NodeJS"
+ ],
+ "Years of Experience": [
+  "8 years"
+ ]
+}

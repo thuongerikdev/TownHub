@@ -158,6 +158,150 @@ namespace TH.Auth.Infrastructure
             }
             Console.WriteLine($"[SEED] Vai trò 'admin' (id={adminRole.roleID}) + quyền công khai cho mọi vai trò: đã thêm {linksToAdd.Count} liên kết mới. Tổng số quyền trong hệ thống: {allPerms.Count}.");
             Console.WriteLine("[SEED] ✅ Đồng bộ phân quyền hoàn tất.");
+
+            await SeedBusinessRolesAsync(context);
+        }
+
+        // =========================================================
+        // QUY HOẠCH VAI TRÒ NGHIỆP VỤ (RBAC) theo Use Case TownHub.
+        //   Actor: Quản trị viên (admin) · Ban quản lý · Kỹ sư trưởng ·
+        //          Kỹ thuật viên · Kế toán · Cư dân.
+        //   - Tạo các vai trò còn thiếu + gán quyền theo ma trận (idempotent).
+        //   - Xoá 5 vai trò rác kế thừa từ project cũ (FilmZone) + gán lại user.
+        //   Quyền "công khai" (auth/account/hồ sơ) đã được gán cho MỌI vai trò ở STEP 3.
+        // =========================================================
+        private static async Task SeedBusinessRolesAsync(AuthDbContext context)
+        {
+            // Ma trận: vai trò → danh sách permission code nghiệp vụ.
+            var matrix = new Dictionary<string, string[]>
+            {
+                ["Ban quản lý"] = new[]
+                {
+                    "apartment.view","apartment.create","apartment.update","apartment.delete",
+                    "resident.view","resident.create","resident.update","resident.delete",
+                    "asset.view","asset.update",
+                    "workorder.view","workorder.create","workorder.assign","workorder.review","workorder.close",
+                    "ticket.view","ticket.assign","ticket.close",
+                    "inventory.view",
+                    "procurement.view","procurement.request","procurement.order","procurement.approve",
+                    "vendor.view","vendor.create","vendor.update","vendor.evaluate",
+                    "report.cost","report.kpi",
+                    "notification.view","notification.send","notification.manage",
+                    "user.read_details","user.create_bql","role.read",
+                },
+                ["Kỹ sư trưởng"] = new[]
+                {
+                    "asset.view","asset.create","asset.update","asset.delete",
+                    "workorder.view","workorder.create","workorder.assign","workorder.execute","workorder.review","workorder.close",
+                    "ticket.view","ticket.create","ticket.assign","ticket.resolve","ticket.close",
+                    "inventory.view","inventory.transaction","inventory.audit",
+                    "procurement.view","procurement.request",
+                    "vendor.view","vendor.evaluate",
+                    "report.kpi",
+                    "notification.view",
+                },
+                ["Kỹ thuật viên"] = new[]
+                {
+                    "asset.view",
+                    "workorder.view","workorder.execute",
+                    "ticket.view","ticket.resolve",
+                    "inventory.view","inventory.transaction",
+                    "notification.view",
+                },
+                ["Kế toán"] = new[]
+                {
+                    "asset.view","asset.update",
+                    "procurement.view","procurement.order","procurement.invoice",
+                    "vendor.view",
+                    "report.cost","report.kpi",
+                    "notification.view",
+                },
+                ["Cư dân"] = new[]
+                {
+                    "ticket.create","ticket.view",
+                    "notification.view",
+                },
+            };
+            var staffRoles = new HashSet<string> { "Ban quản lý", "Kỹ sư trưởng", "Kỹ thuật viên", "Kế toán" };
+
+            // 1) Đảm bảo vai trò tồn tại
+            var roles = await context.authRoles.ToListAsync();
+            foreach (var roleName in matrix.Keys)
+            {
+                if (roles.Any(r => r.roleName == roleName)) continue;
+                var newRole = new AuthRole
+                {
+                    roleName = roleName,
+                    roleDescription = roleName,
+                    scope = staffRoles.Contains(roleName) ? "staff" : "user",
+                    isDefault = false,
+                };
+                context.authRoles.Add(newRole);
+                roles.Add(newRole);
+                Console.WriteLine($"[SEED] Tạo vai trò '{roleName}'.");
+            }
+            await context.SaveChangesAsync();
+
+            // 2) Gán quyền theo ma trận (idempotent)
+            var perms = await context.authPermissions.ToListAsync();
+            var permByCode = perms.ToDictionary(p => p.code, p => p.permissionID);
+            var links = await context.authRolePermissions.ToListAsync();
+            var toAdd = new List<AuthRolePermission>();
+            foreach (var (roleName, codes) in matrix)
+            {
+                var role = roles.First(r => r.roleName == roleName);
+                foreach (var code in codes)
+                {
+                    if (!permByCode.TryGetValue(code, out var permId)) continue;
+                    if (links.Any(l => l.roleID == role.roleID && l.permissionID == permId)) continue;
+                    if (toAdd.Any(l => l.roleID == role.roleID && l.permissionID == permId)) continue;
+                    toAdd.Add(new AuthRolePermission { roleID = role.roleID, permissionID = permId });
+                }
+            }
+            if (toAdd.Count > 0)
+            {
+                await context.authRolePermissions.AddRangeAsync(toAdd);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[SEED] Gán {toAdd.Count} quyền cho các vai trò nghiệp vụ.");
+            }
+
+            // 3) Gán lại user staff (theo userName) sang vai trò đúng
+            var reassign = new Dictionary<string, string>
+            {
+                ["tkbql"]         = "Ban quản lý",
+                ["nguyen.van.a"]  = "Kỹ thuật viên",
+                ["nguyen.xuan.k"] = "Kỹ thuật viên",
+            };
+            foreach (var (userName, roleName) in reassign)
+            {
+                var user = await context.authUsers.FirstOrDefaultAsync(u => u.userName == userName);
+                var role = roles.FirstOrDefault(r => r.roleName == roleName);
+                if (user == null || role == null) continue;
+                bool has = await context.authUserRoles.AnyAsync(ur => ur.userID == user.userID && ur.roleID == role.roleID);
+                if (!has)
+                {
+                    context.authUserRoles.Add(new AuthUserRole { userID = user.userID, roleID = role.roleID });
+                    Console.WriteLine($"[SEED] Gán user '{userName}' → vai trò '{roleName}'.");
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // 4) Xoá 5 vai trò rác (FilmZone) + gỡ mọi liên kết trước
+            var junkNames = new[] { "content_manager", "user_manager", "finance_manager", "customer", "customer-vip" };
+            var junkRoles = await context.authRoles.Where(r => junkNames.Contains(r.roleName)).ToListAsync();
+            if (junkRoles.Count > 0)
+            {
+                var junkIds = junkRoles.Select(r => r.roleID).ToList();
+                var junkRolePerms = await context.authRolePermissions.Where(rp => junkIds.Contains(rp.roleID)).ToListAsync();
+                var junkUserRoles = await context.authUserRoles.Where(ur => junkIds.Contains(ur.roleID)).ToListAsync();
+                context.authRolePermissions.RemoveRange(junkRolePerms);
+                context.authUserRoles.RemoveRange(junkUserRoles);
+                context.authRoles.RemoveRange(junkRoles);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[SEED] Đã xoá {junkRoles.Count} vai trò rác + {junkRolePerms.Count} link quyền + {junkUserRoles.Count} link user.");
+            }
+
+            Console.WriteLine("[SEED] ✅ Quy hoạch vai trò nghiệp vụ hoàn tất.");
         }
 
         public static async Task SeedAdminUserAsync(AuthDbContext context, IServiceProvider serviceProvider)

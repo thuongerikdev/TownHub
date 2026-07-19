@@ -28,6 +28,11 @@ namespace TH.WebAPI.Migrations.AssetDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("accountCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<decimal>("accumulatedDepreciation")
                         .HasColumnType("numeric(18,2)");
 
@@ -80,6 +85,10 @@ namespace TH.WebAPI.Migrations.AssetDb
 
                     b.Property<Guid?>("parentAssetId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("paymentMethod")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime?>("purchaseDate")
                         .HasColumnType("timestamp with time zone");
@@ -190,6 +199,9 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<decimal>("depreciationAmount")
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<Guid?>("documentId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("periodMonth")
                         .HasColumnType("integer");
 
@@ -198,9 +210,151 @@ namespace TH.WebAPI.Migrations.AssetDb
 
                     b.HasKey("id");
 
-                    b.HasIndex("assetId");
+                    b.HasIndex("documentId");
+
+                    b.HasIndex("assetId", "periodYear", "periodMonth")
+                        .IsUnique();
 
                     b.ToTable("asset_depreciation_log", "asset");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Core.AssetDisposal", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("accumulatedDepreciation")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("assetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("bookValue")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("createdAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("createdBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("disposalDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("disposalType")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("disposalValue")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("documentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("gainLoss")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("note")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("originalCost")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("reason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("assetId");
+
+                    b.HasIndex("documentId");
+
+                    b.ToTable("asset_disposal", "asset");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Core.AssetDocument", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("createdAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("createdBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("documentCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("documentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("documentType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("totalAmount")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("documentCode")
+                        .IsUnique();
+
+                    b.ToTable("asset_document", "asset");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Core.AssetDocumentLine", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("amount")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("assetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("creditAccount")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("debitAccount")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("documentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("assetId");
+
+                    b.HasIndex("documentId");
+
+                    b.ToTable("asset_document_line", "asset");
                 });
 
             modelBuilder.Entity("TH.Asset.Domain.Core.AssetLocation", b =>
@@ -409,6 +563,13 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<Guid?>("assetId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("assignedToName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("assignedToUserId")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("autoClosed")
                         .HasColumnType("boolean");
 
@@ -500,8 +661,18 @@ namespace TH.WebAPI.Migrations.AssetDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("assignedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("assignedTo")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("assignedToName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("assignedToUserId")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("ticketId")
                         .HasColumnType("uuid");
@@ -915,6 +1086,11 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<string>("fileUrl")
                         .HasColumnType("text");
 
+                    b.Property<string>("ocrEngine")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("rawExtractedText")
                         .HasColumnType("text");
 
@@ -1123,6 +1299,9 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<string>("requestedByName")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("requestedByUserId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("status")
                         .IsRequired()
@@ -1366,6 +1545,13 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<Guid>("assetId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("assignedToName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("assignedToUserId")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("buildingId")
                         .HasColumnType("uuid");
 
@@ -1377,6 +1563,13 @@ namespace TH.WebAPI.Migrations.AssetDb
 
                     b.Property<Guid?>("createdBy")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("createdByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("createdByUserId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("description")
                         .HasColumnType("text");
@@ -1449,8 +1642,18 @@ namespace TH.WebAPI.Migrations.AssetDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("assignedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("assignedTo")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("assignedToName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("assignedToUserId")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("checkinQrAssetId")
                         .HasColumnType("uuid");
@@ -1920,7 +2123,50 @@ namespace TH.WebAPI.Migrations.AssetDb
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("TH.Asset.Domain.Core.AssetDocument", "document")
+                        .WithMany()
+                        .HasForeignKey("documentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("asset");
+
+                    b.Navigation("document");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Core.AssetDisposal", b =>
+                {
+                    b.HasOne("TH.Asset.Domain.Core.Asset", "asset")
+                        .WithMany()
+                        .HasForeignKey("assetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TH.Asset.Domain.Core.AssetDocument", "document")
+                        .WithMany()
+                        .HasForeignKey("documentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("asset");
+
+                    b.Navigation("document");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Core.AssetDocumentLine", b =>
+                {
+                    b.HasOne("TH.Asset.Domain.Core.Asset", "asset")
+                        .WithMany()
+                        .HasForeignKey("assetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TH.Asset.Domain.Core.AssetDocument", "document")
+                        .WithMany("lines")
+                        .HasForeignKey("documentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("asset");
+
+                    b.Navigation("document");
                 });
 
             modelBuilder.Entity("TH.Asset.Domain.Core.AssetQrCode", b =>
@@ -2469,6 +2715,11 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Navigation("assets");
 
                     b.Navigation("childCategories");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Core.AssetDocument", b =>
+                {
+                    b.Navigation("lines");
                 });
 
             modelBuilder.Entity("TH.Asset.Domain.Core.AssetLocation", b =>

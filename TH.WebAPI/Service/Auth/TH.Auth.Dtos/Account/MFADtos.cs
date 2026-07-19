@@ -22,4 +22,15 @@ namespace TH.Auth.Dtos.Account
     {
         public string? confirmCode { get; set; } // tuỳ chọn: yêu cầu nhập code để tắt
     }
+
+    /// <summary>Trạng thái MFA của user hiện tại (dùng cho màn Cài đặt).</summary>
+    public class MfaStatusResponse
+    {
+        public bool enabled { get; set; }
+        public string status { get; set; } = "Disabled"; // Pending | Enabled | Disabled
+        public string type { get; set; } = "TOTP";
+        public string? label { get; set; }
+        public DateTime? enabledAt { get; set; }
+        public DateTime? lastVerifiedAt { get; set; }
+    }
 }

@@ -1,0 +1,39 @@
+@startuml
+left to right direction
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+actor "Kỹ sư trưởng" as KST
+actor "Ban quản lý" as BQL
+actor "Kế toán" as KT
+
+BQL --|> KST
+
+package "8. Báo cáo & BI" {
+    usecase "UC56: Xem Dashboard vận hành" as UC56
+    usecase "UC57: Xem KPI MTTR/MTBF" as UC57
+    usecase "UC58: Xem Cost Tracking" as UC58
+    usecase "UC59: Xuất báo cáo PDF/Excel" as UC59
+    usecase "UC60: Xem KPI theo tài sản" as UC60
+    
+    usecase "UC61: Theo dõi ngân sách bảo trì" as UC61
+}
+
+KST --> UC56
+KST --> UC57
+KST --> UC58
+KST --> UC59
+KST --> UC60
+
+BQL --> UC61
+
+KT --> UC58
+KT --> UC59
+KT --> UC61
+@enduml

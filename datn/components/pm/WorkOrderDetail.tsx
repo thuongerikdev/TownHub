@@ -9,8 +9,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, EMPTY_GUID,
-  type WorkOrderResponse, type UpdateWorkOrderInput,
+  workOrders, warehouses, materials, inventoryTransactions, purchaseRequests, users,
+  toWorkOrderUpdate,
+  type RoleMember,
+  type WorkOrderResponse,
   type WarehouseResponse, type MaterialResponse,
   type InventoryTransactionResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
@@ -42,8 +44,8 @@ const SHOW_MATERIAL = new Set(["IN_PROGRESS", "PENDING_REVIEW", "COMPLETED"]);
 interface MatForm { warehouseId: string; materialId: string; qty: string; notes: string; }
 const emptyMat: MatForm = { warehouseId: "", materialId: "", qty: "1", notes: "" };
 
-interface PrForm { prCode: string; title: string; priority: string; requestedByName: string; justification: string; }
-const emptyPr: PrForm = { prCode: "", title: "", priority: "MEDIUM", requestedByName: "", justification: "" };
+interface PrForm { title: string; priority: string; justification: string; }
+const emptyPr: PrForm = { title: "", priority: "MEDIUM", justification: "" };
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -87,7 +89,8 @@ export default function WorkOrderDetail() {
   );
 
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee,   setAssignee]   = useState("");
+  const [techId,     setTechId]     = useState("");
+  const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
   const [assigning,  setAssigning]  = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -98,36 +101,28 @@ export default function WorkOrderDetail() {
 
   // Full payload: WorkOrder UpdateAsync overwrites every mapped field, so a partial
   // PUT would wipe woType/title/priority/dates. Preserve all current values here.
-  function woBase(w: WorkOrderResponse): UpdateWorkOrderInput {
-    return {
-      id: w.id, woCode: w.woCode, assetId: w.assetId, checklistTemplateId: w.checklistTemplateId,
-      buildingId: w.buildingId, scheduleId: w.scheduleId, createdBy: w.createdBy,
-      woType: w.woType, priority: w.priority, title: w.title, description: w.description,
-      scheduledDate: w.scheduledDate, dueDate: w.dueDate, estimatedHours: w.estimatedHours,
-      reviewerId: w.reviewerId, actualStartAt: w.actualStartAt, actualEndAt: w.actualEndAt,
-      approvedAt: w.approvedAt, rejectedReason: w.rejectedReason,
-      actualHours: w.actualHours, totalCost: w.totalCost, status: w.status,
-    };
-  }
+  const woBase = toWorkOrderUpdate;
 
   async function doAssign() {
     if (!wo) return;
-    if (!assignee.trim()) { toast.error("Nhập tên KTV được phân công."); return; }
+    const tech = techQ.items.find((u) => String(u.userID) === techId);
+    if (!tech) { toast.error("Chọn kỹ thuật viên được phân công."); return; }
+    const techName = tech.fullName?.trim() || tech.userName;
     setAssigning(true);
-    const a = await workOrders.assignTechnician({ woId: wo.id });
+    const a = await workOrders.assignTechnician({ woId: wo.id, assignedToUserId: tech.userID, assignedToName: techName });
     if (a.errorCode !== 200) {
       setAssigning(false);
       toast.error(a.errorMessage || "Phân công thất bại.");
       return;
     }
-    const note = `KTV phụ trách: ${assignee.trim()}`;
+    const note = `KTV phụ trách: ${techName}`;
     const res = await workOrders.update({
       ...woBase(wo),
       description: wo.description ? `${wo.description}\n${note}` : note,
       status: "ASSIGNED",
     });
     setAssigning(false);
-    if (res.errorCode === 200) { toast.success("Đã phân công KTV."); setAssignOpen(false); q.refetch(); }
+    if (res.errorCode === 200) { toast.success("Đã phân công KTV."); setAssignOpen(false); setTechId(""); q.refetch(); }
     else toast.error(res.errorMessage || "Phân công thất bại.");
   }
 
@@ -177,13 +172,11 @@ export default function WorkOrderDetail() {
 
   async function doCreatePr() {
     if (!wo) return;
-    if (!prForm.prCode.trim()) { toast.error("Nhập mã phiếu đề xuất."); return; }
+    if (!wo.assignedToUserId) { toast.error("WO chưa phân công KTV — không thể tạo phiếu đề xuất."); return; }
     setPrWorking(true);
+    // Mã PR do server sinh; người đề xuất server tự suy từ KTV phụ trách WO (theo woId).
     const res = await purchaseRequests.create({
-      prCode:          prForm.prCode.trim(),
       woId:            wo.id,
-      requestedBy:     EMPTY_GUID,
-      requestedByName: prForm.requestedByName.trim() || wo.createdBy || "KTV",
       title:           prForm.title.trim() || `Vật tư cho ${wo.woCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
@@ -194,6 +187,12 @@ export default function WorkOrderDetail() {
       setPrForm(emptyPr);
       linkedPrsQ.refetch();
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
+  }
+
+  async function submitPr(prId: string) {
+    const res = await purchaseRequests.submit(prId);
+    if (res.errorCode === 200) { toast.success("Đã gửi phiếu đề xuất chờ duyệt."); linkedPrsQ.refetch(); }
+    else toast.error(res.errorMessage || "Gửi duyệt thất bại.");
   }
 
   if (q.loading) return <div className="py-10"><LoadingState /></div>;
@@ -248,6 +247,7 @@ export default function WorkOrderDetail() {
               <Row label="Mã tài sản"><span className="font-mono text-xs">{wo.assetCode ?? "—"}</span></Row>
               <Row label="Loại công việc">{isPM ? "Bảo trì định kỳ (PM)" : "Sửa chữa (CM)"}</Row>
               <Row label="Checklist áp dụng">{wo.checklistTemplateName ?? "—"}</Row>
+              <Row label="KTV phụ trách">{wo.assignedToName ?? "—"}</Row>
             </div>
           </Section>
 
@@ -342,12 +342,12 @@ export default function WorkOrderDetail() {
                   {!closed ? (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất <span className="text-danger">*</span></label>
-                        <Input value={prForm.prCode} onChange={(e) => setPrForm((f) => ({ ...f, prCode: e.target.value }))} placeholder={`PR-${wo.woCode}`} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất</label>
+                        <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất</label>
-                        <Input value={prForm.requestedByName} onChange={(e) => setPrForm((f) => ({ ...f, requestedByName: e.target.value }))} placeholder={wo.createdBy ?? "KTV"} />
+                        <label className="mb-1 block text-xs text-muted-foreground">Người đề xuất (KTV phụ trách)</label>
+                        <Input value={wo.assignedToName ?? "Chưa phân công KTV"} readOnly disabled />
                       </div>
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Tiêu đề</label>
@@ -388,6 +388,7 @@ export default function WorkOrderDetail() {
                             <th className="px-3 py-2 text-left">Tiêu đề</th>
                             <th className="px-3 py-2 text-left">Trạng thái</th>
                             <th className="px-3 py-2 text-left">Ngày tạo</th>
+                            <th className="px-3 py-2 text-right">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -399,6 +400,11 @@ export default function WorkOrderDetail() {
                                 <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${pr.status === "APPROVED" ? "bg-success/15 text-success" : pr.status === "REJECTED" ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground"}`}>{pr.status}</span>
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{formatDateTime(pr.createdAt)}</td>
+                              <td className="px-3 py-2 text-right">
+                                {(pr.status === "DRAFT" || pr.status === "REJECTED") && (
+                                  <Button size="sm" variant="outline" onClick={() => submitPr(pr.id)}>Gửi duyệt</Button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -440,7 +446,8 @@ export default function WorkOrderDetail() {
         <div className="space-y-6">
           <Section title="Phân công" action={canAssign ? <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công</Button> : undefined}>
             <div className="space-y-3 text-sm">
-              <Row label="Người tạo">{wo.createdBy ?? "—"}</Row>
+              <Row label="KTV phụ trách">{wo.assignedToName ?? "Chưa phân công"}</Row>
+              <Row label="Người tạo">{wo.createdByName ?? wo.createdBy ?? "—"}</Row>
               <Row label="Bắt đầu thực tế">{formatDateTime(wo.actualStartAt)}</Row>
               <Row label="Kết thúc thực tế">{formatDateTime(wo.actualEndAt)}</Row>
               {wo.rejectedReason && <Row label="Lý do từ chối"><span className="text-danger">{wo.rejectedReason}</span></Row>}
@@ -499,8 +506,19 @@ export default function WorkOrderDetail() {
         submitting={assigning}
         submitLabel="Phân công"
       >
-        <Field label="Kỹ thuật viên" required hint="Nhập tên hoặc mã KTV phụ trách">
-          <Input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Nguyễn Văn An" />
+        <Field label="Kỹ thuật viên" required hint="Chọn KTV (người có vai trò Kỹ thuật viên)">
+          <Select value={techId} onValueChange={setTechId}>
+            <SelectTrigger>
+              <SelectValue placeholder={techQ.loading ? "Đang tải..." : techQ.items.length ? "Chọn kỹ thuật viên" : "Chưa có kỹ thuật viên"} />
+            </SelectTrigger>
+            <SelectContent>
+              {techQ.items.map((u) => (
+                <SelectItem key={u.userID} value={String(u.userID)}>
+                  {u.fullName?.trim() || u.userName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </EntityModal>
 

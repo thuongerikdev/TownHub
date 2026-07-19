@@ -1,0 +1,21 @@
+# Service OCR 3 engine + fine-tune
+fastapi
+uvicorn
+pydantic
+requests
+numpy
+pillow
+pdf2image
+pdfplumber
+opencv-python-headless
+google-generativeai
+
+# VietOCR (recognition) + detector easyocr
+torch
+easyocr
+vietocr
+
+# PaddleOCR (detect + recognize) — bản 2.7.x ổn định cho fine-tune
+# Colab GPU: dùng paddlepaddle-gpu==2.6.1 ; máy CPU: paddlepaddle==2.6.1
+paddlepaddle-gpu==2.6.1
+paddleocr>=2.7,<3.0

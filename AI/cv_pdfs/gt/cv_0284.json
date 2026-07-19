@@ -1,0 +1,39 @@
+{
+ "Name": [
+  "Ngô Hoàng Nam"
+ ],
+ "Designation": [
+  "Software Engineer"
+ ],
+ "Email Address": [
+  "ngohoangnam@gmail.com"
+ ],
+ "Location": [
+  "Vĩnh Hải, Nha Trang"
+ ],
+ "College Name": [
+  "Trường Đại học Xây dựng Hà Nội"
+ ],
+ "Degree": [
+  "Computer Science"
+ ],
+ "Graduation Year": [
+  "2016"
+ ],
+ "Companies worked at": [
+  "FPT Software",
+  "Viettel Solutions"
+ ],
+ "Skills": [
+  "Selenium",
+  "PostgreSQL",
+  ".NET Core",
+  "Docker",
+  "Spring Boot",
+  "JavaScript",
+  "Java"
+ ],
+ "Years of Experience": [
+  "6 years"
+ ]
+}

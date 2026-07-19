@@ -1,0 +1,42 @@
+{
+ "Name": [
+  "Lý Hoàng Nam"
+ ],
+ "Designation": [
+  "Senior Software Engineer",
+  "Back-end Developer",
+  "Software Engineer"
+ ],
+ "Email Address": [
+  "lyhoangnam5@gmail.com"
+ ],
+ "Location": [
+  "Phú Hội, Huế"
+ ],
+ "College Name": [
+  "Trường Đại học Ngoại thương"
+ ],
+ "Degree": [
+  "Computer Science"
+ ],
+ "Graduation Year": [
+  "2013"
+ ],
+ "Companies worked at": [
+  "Viettel Solutions",
+  "FPT Software"
+ ],
+ "Skills": [
+  "C#",
+  "Selenium",
+  "Python",
+  ".NET Core",
+  "ReactJS",
+  "Git",
+  "PostgreSQL",
+  "NodeJS"
+ ],
+ "Years of Experience": [
+  "5 years"
+ ]
+}

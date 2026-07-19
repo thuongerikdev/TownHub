@@ -19,6 +19,7 @@ namespace TH.Auth.ApplicationService.Service.MFA
         Task<ResponseDto<bool>> ConfirmTotpEnrollmentAsync(int userId, string code, CancellationToken ct);
         Task<ResponseDto<bool>> DisableTotpAsync(int userId, string? confirmCode, CancellationToken ct);
         Task<bool> VerifyTotpAsync(int userId, string code, CancellationToken ct);
+        Task<ResponseDto<MfaStatusResponse>> GetStatusAsync(int userId, CancellationToken ct);
 
         Task<ResponseDto<AuthMfaSecret>> GetByUserAsync(int userId, CancellationToken ct);
         Task<ResponseDto<AuthMfaSecret>> GetByIdAsync(int id, CancellationToken ct);
@@ -46,7 +47,7 @@ namespace TH.Auth.ApplicationService.Service.MFA
                 var base32 = Base32Encoding.ToString(key);
 
                 // issuer/label hiển thị trên app
-                var issuer = "FZ Movies";
+                var issuer = "TownHub";
                 var account = label ?? $"user:{userId}";
                 var otpauth = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(account)}?secret={base32}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30&algorithm=SHA1";
 
@@ -150,6 +151,21 @@ namespace TH.Auth.ApplicationService.Service.MFA
                 await _uow.SaveChangesAsync(ct);
             }
             return ok;
+        }
+
+        public async Task<ResponseDto<MfaStatusResponse>> GetStatusAsync(int userId, CancellationToken ct)
+        {
+            var entity = await _repo.GetByUserAsync(userId, ct);
+            var dto = new MfaStatusResponse
+            {
+                enabled        = entity is { status: "Enabled", isEnabled: true },
+                status         = entity?.status ?? "Disabled",
+                type           = entity?.type ?? "TOTP",
+                label          = entity?.label,
+                enabledAt      = entity?.enabledAt,
+                lastVerifiedAt = entity?.lastVerifiedAt,
+            };
+            return ResponseConst.Success("Trạng thái MFA.", dto);
         }
 
         private static bool VerifyCode(string base32Secret, string code)

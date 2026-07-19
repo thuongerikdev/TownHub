@@ -49,11 +49,11 @@ function todayISO(): string {
 }
 
 interface FormState {
-  poCode: string; vendorId: string; prId: string; issueDate: string;
+  vendorId: string; prId: string; issueDate: string;
   expectedDelivery: string; totalAmount: string; paymentTerms: string; notes: string;
 }
 const emptyForm: FormState = {
-  poCode: "", vendorId: "", prId: "", issueDate: "", expectedDelivery: "",
+  vendorId: "", prId: "", issueDate: "", expectedDelivery: "",
   totalAmount: "", paymentTerms: "", notes: "",
 };
 
@@ -108,17 +108,13 @@ export default function PurchaseOrders() {
     });
   }, [list, search, statusF]);
 
-  function newPoCode() {
-    return `PO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-  }
   function openCreate() {
-    setForm({ ...emptyForm, poCode: newPoCode() });
+    setForm(emptyForm); // Mã PO do server sinh khi lưu.
     setOpen(true);
   }
   function openCreateFromPr(pr: PurchaseRequestResponse) {
     setForm({
       ...emptyForm,
-      poCode: newPoCode(),
       prId: pr.id,
       notes: pr.title ? `Theo đề xuất ${pr.prCode}: ${pr.title}` : `Theo đề xuất ${pr.prCode}`,
     });
@@ -152,7 +148,7 @@ export default function PurchaseOrders() {
   async function submit() {
     if (!form.vendorId) { toast.error("Chọn nhà cung cấp."); return; }
     const body: CreatePurchaseOrderInput = {
-      poCode: form.poCode.trim(), vendorId: form.vendorId,
+      vendorId: form.vendorId,
       prId: form.prId || undefined, issueDate: form.issueDate || undefined,
       expectedDelivery: form.expectedDelivery || undefined,
       totalAmount: form.totalAmount ? Number(form.totalAmount) : undefined,
@@ -273,8 +269,9 @@ export default function PurchaseOrders() {
         submitLabel="Tạo"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã PO" required>
-            <Input value={form.poCode} onChange={(e) => setForm((f) => ({ ...f, poCode: e.target.value }))} />
+          <Field label="Mã PO">
+            {/* Mã do server sinh, không cho sửa. */}
+            <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Nhà cung cấp" required>
             <Select value={form.vendorId} onValueChange={(v) => setForm((f) => ({ ...f, vendorId: v }))}>

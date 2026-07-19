@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { providers as providersApi, type Provider } from "@/lib/api";
+import { providers as providersApi, damageDetection, type Provider, type DamageDetectionResponse } from "@/lib/api";
 import {
   Store, Search, X, Star, Phone, MapPin, ChevronRight,
-  Loader2, Briefcase, Zap, Droplets, Wrench, Camera, Layers,
+  Loader2, Briefcase, Zap, Droplets, Wrench, Camera, Layers, Sparkles,
 } from "lucide-react";
 
 // ─── Category config ───────────────────────────────────────────────────────────
@@ -36,6 +36,37 @@ function parseCategories(json: string): string[] {
 function primaryMeta(p: Provider) {
   const cats = parseCategories(p.serviceCategories ?? "[]");
   return CAT_META[cats[0] ?? "other"] ?? CAT_META.other;
+}
+
+// Thu nhỏ ảnh phía client → data URL JPEG gọn nhẹ trước khi gửi cho AI nhận diện
+// (theo đúng pattern PhotoCapture — hệ thống chưa có endpoint upload file riêng).
+async function fileToDataUrl(file: File, maxDim = 1280, quality = 0.7): Promise<string> {
+  const raw = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("read-failed"));
+    reader.readAsDataURL(file);
+  });
+  try {
+    const img = document.createElement("img");
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("decode-failed"));
+      img.src = raw;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return raw;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return raw; // fallback: dùng ảnh gốc
+  }
 }
 
 // ─── Provider card ─────────────────────────────────────────────────────────────
@@ -109,12 +140,38 @@ export default function PortalPage() {
   const [search, setSearch]   = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
 
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [aiChecking, setAiChecking] = useState(false);
+  const [aiResult, setAiResult] = useState<DamageDetectionResponse | null>(null);
+
   useEffect(() => {
     providersApi.getAll("approved").then((res) => {
       if (res.errorCode === 200 && res.data) setList(res.data);
       setLoading(false);
     });
   }, []);
+
+  async function handleDamagePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAiChecking(true);
+    setAiResult(null);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const res = await damageDetection.detect(dataUrl);
+      if (res.errorCode === 200 && res.data?.available && res.data.detections.length > 0) {
+        setAiResult(res.data);
+        if (res.data.suggestedCategory && CAT_META[res.data.suggestedCategory]) {
+          setActiveCat(res.data.suggestedCategory);
+        }
+      }
+    } catch {
+      // Dịch vụ AI không khả dụng — bỏ qua, người dùng vẫn tìm kiếm/lọc thủ công được.
+    } finally {
+      setAiChecking(false);
+    }
+  }
 
   const filtered = list.filter((p) => {
     if (activeCat) {
@@ -141,6 +198,32 @@ export default function PortalPage() {
         <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
           {loading ? "Đang tải..." : `${list.length} nhà cung cấp đã được Ban quản lý phê duyệt`}
         </p>
+      </div>
+
+      {/* AI: chụp ảnh sự cố để gợi ý nhà cung cấp phù hợp */}
+      <div className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2.5">
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleDamagePhoto} />
+        <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+          {aiChecking ? <Loader2 className="w-4 h-4 text-amber-400 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-400" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-white">Chụp ảnh sự cố — AI gợi ý nhà cung cấp phù hợp</p>
+          <p className="text-[11px] text-zinc-500 truncate">
+            {aiChecking
+              ? "Đang phân tích ảnh…"
+              : aiResult?.available && aiResult.detections.length > 0
+                ? `Gợi ý: ${aiResult.detections[0].labelVi} (${Math.round(aiResult.detections[0].confidence * 100)}%)`
+                : "Ví dụ: nứt tường, hỏng điện, vỡ gạch..."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={aiChecking}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors disabled:opacity-50"
+        >
+          <Camera className="w-3.5 h-3.5" /> Chụp / Chọn ảnh
+        </button>
       </div>
 
       {/* Search */}
