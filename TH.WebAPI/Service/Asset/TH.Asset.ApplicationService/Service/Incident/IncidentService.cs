@@ -455,6 +455,24 @@ namespace TH.Asset.ApplicationService.Service.Incident
                 ticket.assignedToName   = request.assignedToName;
                 ticket.updatedAt        = DateTime.UtcNow;
 
+                // Phân công cũng chuyển trạng thái sang ASSIGNED để mở bước xử lý tiếp theo.
+                // Chỉ tự chuyển khi ticket còn ở đầu luồng (NEW/OPEN) và ghi lịch sử trạng thái.
+                if (ticket.status == "NEW" || ticket.status == "OPEN")
+                {
+                    var oldStatus = ticket.status;
+                    ticket.status = "ASSIGNED";
+                    _dbContext.TicketStatusHistories.Add(new TicketStatusHistory
+                    {
+                        ticketId   = ticket.id,
+                        fromStatus = oldStatus,
+                        toStatus   = "ASSIGNED",
+                        changedBy  = request.assignedTo == Guid.Empty ? (Guid?)null : request.assignedTo,
+                        note       = request.assignedToName != null
+                            ? $"Phân công cho {request.assignedToName}"
+                            : "Phân công kỹ thuật viên."
+                    });
+                }
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Phân công ticket thành công.", true);
             }

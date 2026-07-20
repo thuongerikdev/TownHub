@@ -107,14 +107,22 @@ namespace TH.Asset.ApplicationService.Service.Core
         {
             try
             {
-                var used = await _dbContext.AssetDocumentLines
-                    .SelectMany(l => new[] { l.debitAccount, l.creditAccount })
-                    .Where(a => a != null && a != "")
+                // Lấy riêng TK Nợ và TK Có rồi hợp nhất — tránh SelectMany(new[]{…})
+                // vốn không dịch được sang SQL (gây lỗi 500 → danh mục trống).
+                var debit = await _dbContext.AssetDocumentLines
+                    .Where(l => l.debitAccount != null && l.debitAccount != "")
+                    .Select(l => l.debitAccount!)
+                    .Distinct()
+                    .ToListAsync();
+                var credit = await _dbContext.AssetDocumentLines
+                    .Where(l => l.creditAccount != null && l.creditAccount != "")
+                    .Select(l => l.creditAccount!)
                     .Distinct()
                     .ToListAsync();
 
                 var codes = new SortedSet<string>(AccountNames.Keys, StringComparer.Ordinal);
-                foreach (var a in used) codes.Add(a!);
+                foreach (var a in debit) codes.Add(a);
+                foreach (var a in credit) codes.Add(a);
 
                 var result = codes
                     .Select(a => new AccountInfoDto { account = a, accountName = NameOf(a) })

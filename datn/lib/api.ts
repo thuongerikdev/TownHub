@@ -1300,7 +1300,7 @@ export interface CreateSlaConfigInput {
 }
 export interface UpdateSlaConfigInput extends CreateSlaConfigInput { id: string; }
 export interface CreateTicketInput {
-  ticketCode: string; buildingId: string; floorId?: string; unitId?: string;
+  ticketCode?: string; buildingId: string; floorId?: string; unitId?: string;
   assetId?: string; reportedBy?: string; reportedByName?: string; slaConfigId?: string; purchaseRequestId?: string;
   title?: string; description?: string; category?: string; priority?: string; source?: string;
 }

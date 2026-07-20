@@ -1,0 +1,39 @@
+% ==== INJECTED: model deep-dive (mục 4.2.7.b) ====
+\medskip
+\noindent\textbf{Chi tiết kiến trúc và công thức các mô hình.} Phần dưới đi sâu vào cơ chế toán học của từng thành phần để làm rõ vì sao mỗi mô hình phù hợp với một khâu của bài toán đọc hóa đơn (phát hiện vùng chữ, nhận dạng chuỗi, và huấn luyện đầu–cuối).
+
+\noindent\textit{(1) VietOCR — trích đặc trưng VGG19 và bộ giải mã Transformer.}
+Ảnh dòng chữ $I \in \mathbb{R}^{H\times W\times 3}$ được đưa qua CNN VGG19 (kèm batch-norm). Các tầng gộp (pooling) nén chiều cao về $1$ nhưng giữ chiều rộng, tạo chuỗi đặc trưng thị giác
+\[
+  X = (x_1, x_2, \dots, x_T), \qquad x_t \in \mathbb{R}^{d},
+\]
+với $T$ tỉ lệ theo bề rộng ảnh (mỗi $x_t$ ứng với một "lát" dọc của dòng chữ). Chuỗi này được bộ mã hóa Transformer tinh chỉnh bằng \emph{tự chú ý đa đầu} (multi-head self-attention):
+\[
+  \mathrm{Attention}(Q,K,V) = \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V,
+\]
+trong đó $Q,K,V$ là các phép chiếu tuyến tính của $X$ (kèm mã vị trí — positional encoding — để giữ thứ tự trái–phải của ký tự). Bộ giải mã sinh lần lượt từng ký tự $y_1,\dots,y_L$ theo cơ chế tự hồi quy, tối thiểu hóa hàm mất mát entropy chéo:
+\[
+  \mathcal{L}_{\text{seq2seq}} = -\sum_{t=1}^{L} \log P\!\left(y_t \mid y_{<t}, X\right).
+\]
+Khi suy luận, dịch vụ dùng giải mã tham lam (greedy): mỗi bước chọn $y_t=\arg\max_{y} P(y\mid y_{<t},X)$. Nhờ mô hình hóa phụ thuộc dài giữa các ký tự và có từ điển tiếng Việt riêng, VietOCR đọc dấu thanh (huyền, sắc, ngã, hỏi, nặng) rất chính xác; nhược điểm là mô hình \emph{chỉ nhận dạng}, buộc phải ghép một bộ phát hiện dòng bên ngoài.
+
+\noindent\textit{(2) PaddleOCR (PP-OCRv4) — phát hiện DBNet, phân loại góc, nhận dạng SVTR\_LCNet.}
+Tầng phát hiện dùng \emph{DBNet} với cơ chế nhị phân hóa khả vi (Differentiable Binarization). Thay cho phép nhị phân hóa cứng (không khả vi) trên bản đồ xác suất $P$, DBNet học đồng thời một bản đồ ngưỡng $T$ và xấp xỉ hàm bậc thang bằng một sigmoid dốc:
+\[
+  \hat{B}_{i,j} = \frac{1}{1 + e^{-k\,(P_{i,j} - T_{i,j})}},
+\]
+với $k$ là hệ số khuếch đại (thường $k=50$). Vì $\hat{B}$ khả vi nên biên vùng chữ được huấn luyện trực tiếp bằng lan truyền ngược; tổng mất mát gồm ba thành phần
+\[
+  \mathcal{L}_{\text{det}} = \mathcal{L}_{s} + \alpha\,\mathcal{L}_{b} + \beta\,\mathcal{L}_{t},
+\]
+lần lượt cho bản đồ xác suất, bản đồ nhị phân xấp xỉ và bản đồ ngưỡng. Sau phát hiện, một bộ phân loại góc (cls) xoay mỗi dòng về đúng chiều $0^{\circ}/180^{\circ}$. Tầng nhận dạng \emph{SVTR\_LCNet} kết hợp trộn đặc trưng cục bộ và toàn cục (local/global mixing) trên một xương sống nhẹ (LCNet), phù hợp chạy CPU. PP-OCRv4 huấn luyện recognizer theo cơ chế \emph{GTC} (Guided Training of CTC): nhánh chính dùng mất mát CTC
+\[
+  \mathcal{L}_{\text{CTC}} = -\log \!\!\sum_{\pi \in \mathcal{B}^{-1}(y)} \! P(\pi \mid X),
+\]
+trong đó $\mathcal{B}$ là toán tử gộp khung–bỏ ký tự trống (blank) ánh xạ đường căn chỉnh $\pi$ về chuỗi nhãn $y$; CTC cho phép huấn luyện không cần căn chỉnh ký tự–khung thủ công. Một nhánh chú ý phụ (NRTR) "dẫn dắt" nhánh CTC trong lúc huấn luyện (ghi nhận qua \texttt{CTCLoss}/\texttt{NRTRLoss} trong \texttt{train.log}) rồi được lược bỏ khi suy luận để giữ tốc độ. Ưu điểm nổi bật: một bộ công cụ hợp nhất, \emph{fine-tune được cả hai tầng} det+rec trên cùng dữ liệu tự gán nhãn, nhẹ và chạy offline.
+
+\noindent\textit{(3) EasyOCR/CRAFT và Gemini.}
+Pipeline \texttt{vietocr} chỉ mượn bộ phát hiện \emph{CRAFT} của EasyOCR để định vị và cắt dòng (CRAFT dự đoán bản đồ vùng ký tự và bản đồ liên kết giữa các ký tự để gom thành từ/dòng), phần nhận dạng giao cho VietOCR. Vì CRAFT \emph{không được fine-tune} trên dữ liệu hóa đơn nên trở thành nút cổ chai của pipeline này. Gemini~2.0 Flash là mô hình thị giác–ngôn ngữ (VLM): nhận thẳng ảnh và một chỉ dẫn (prompt) yêu cầu trả về JSON các trường; độ chính xác cao với bố cục lạ nhưng phụ thuộc API bên ngoài và chi phí, nên được giữ làm phương án dự phòng.
+
+\noindent\textbf{So sánh vai trò.} Tổng hợp lại: DBNet/CRAFT giải bài toán \emph{định vị} (đâu là dòng chữ), còn VietOCR/SVTR\_LCNet giải bài toán \emph{đọc} (dòng chữ đó là gì); CTC và seq2seq là hai họ hàm mất mát khác nhau cho khâu đọc — CTC căn chỉnh ngầm và suy luận nhanh (một lượt), seq2seq+attention chính xác dấu thanh nhưng suy luận tuần tự nên chậm hơn. Chính sự khác biệt này dẫn tới các đánh đổi định lượng ở mục d) và lý do chọn engine ở mục e).
+% ==== END INJECTED ====

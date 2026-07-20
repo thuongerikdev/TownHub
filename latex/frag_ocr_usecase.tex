@@ -1,0 +1,73 @@
+% ==== INJECTED: OCR use case + business flow + sequence (mục 4.2.5.d) ====
+\medskip
+\noindent\textbf{Đặc tả use case.} Nghiệp vụ OCR hóa đơn được đặc tả chi tiết ở bảng dưới đây. Đây là use case trung tâm của quy trình mua sắm: nó chuyển thao tác nhập liệu thủ công từng dòng hàng thành thao tác tải ảnh và xác nhận, đồng thời gắn kết quả trích xuất với Đơn mua (PO) để đối chiếu.
+
+\begin{table}[H]
+\centering
+\caption*{\textbf{Bảng.} Đặc tả use case \emph{Trích xuất hóa đơn tự động (UC-OCR)}}
+\label{tab:uc-ocr}
+\renewcommand{\arraystretch}{1.3}
+\small
+\begin{tabularx}{\linewidth}{|>{\bfseries\raggedright\arraybackslash}p{0.22\linewidth}|X|}
+\hline
+Mã use case & UC-OCR — Trích xuất hóa đơn tự động \\ \hline
+Tác nhân chính & Nhân viên kho / Nhân viên mua sắm (\emph{Người dùng}) \\ \hline
+Tác nhân phụ & Dịch vụ OCR (FastAPI), tiến trình nền \texttt{OcrProcessingWorker} \\ \hline
+Mục tiêu & Số hóa hóa đơn giấy/PDF thành các trường có cấu trúc (số hóa đơn, ngày, MST, tiền hàng, thuế, tổng) và bảng chi tiết hàng hóa, giảm nhập liệu thủ công và sai sót. \\ \hline
+Tiền điều kiện & Người dùng đã đăng nhập, có quyền trên phân hệ Kho–Mua sắm; đã tồn tại PO cần đối chiếu (tùy chọn); dịch vụ OCR đang chạy. \\ \hline
+Kích hoạt & Người dùng chọn chức năng \emph{Upload hóa đơn} và tải lên tệp ảnh/PDF. \\ \hline
+Luồng chính &
+1. Người dùng chọn engine OCR (mặc định \texttt{paddleocr}) và tải tệp hóa đơn lên.\newline
+2. Backend .NET tạo bản ghi \texttt{ocr\_jobs} (trạng thái \emph{pending}) và đẩy vào hàng đợi \texttt{OcrJobQueue}, trả về ngay \texttt{jobId} (không chặn giao diện).\newline
+3. \texttt{OcrProcessingWorker} lấy job khỏi hàng đợi, gọi \texttt{IInvoiceOcrEngine} $\rightarrow$ HTTP \texttt{POST /extract} sang dịch vụ OCR.\newline
+4. Dịch vụ OCR tiền xử lý ảnh, chạy phát hiện + nhận dạng theo engine đã chọn, hậu xử lý (khử nghiêng, gom hàng, trích trường/bảng) và trả về JSON \{fields, lineItems, confidence\}.\newline
+5. Worker chuẩn hóa kết quả, tạo bản ghi \texttt{Invoice}/\texttt{InvoiceItem} (trạng thái \emph{chờ xác nhận}) và cập nhật \texttt{ocr\_jobs} = \emph{done}.\newline
+6. Người dùng mở màn hình xác nhận, đối chiếu với ảnh gốc và với PO, chỉnh sửa nếu cần rồi lưu chính thức. \\ \hline
+Luồng thay thế / ngoại lệ &
+3a. Tệp là PDF có lớp văn bản: hệ thống đọc thẳng text-layer, bỏ qua OCR ảnh.\newline
+4a. Bố cục lạ hoặc chất lượng ảnh kém: người dùng chọn lại engine \texttt{gemini} để trích bằng mô hình thị giác–ngôn ngữ.\newline
+4b. Dịch vụ OCR lỗi/timeout: job chuyển \emph{failed}, ghi log lỗi; người dùng có thể thử lại hoặc nhập tay.\newline
+6a. Độ tin cậy (confidence) thấp hơn ngưỡng: hệ thống tô cảnh báo các trường nghi ngờ để người dùng kiểm tra kỹ. \\ \hline
+Hậu điều kiện & Có bản ghi \texttt{Invoice} đã xác nhận, liên kết PO; số liệu sẵn sàng cho đối chiếu công nợ và báo cáo. \\ \hline
+Yêu cầu phi chức năng & Xử lý bất đồng bộ (không chặn UI); truy vết trạng thái job; thay đổi engine không ảnh hưởng phần bóc tách trường. \\ \hline
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Luồng xử lý theo thời gian.} Biểu đồ tuần tự dưới đây mô tả luồng của use case, làm rõ tính \emph{bất đồng bộ}: backend trả \texttt{jobId} cho người dùng ngay khi nhận tệp, còn việc gọi dịch vụ OCR và tạo \texttt{Invoice} diễn ra ở tiến trình nền; giao diện hỏi trạng thái theo chu kỳ (polling) cho tới khi job hoàn tất.
+
+\begin{figure}[H]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\scriptsize\sffamily,>={Stealth[length=2mm]},
+    msg/.style={->,thick},
+    rmsg/.style={->,thick,dashed},
+    lbl/.style={midway,above,font=\scriptsize,inner sep=1pt}]
+  % --- lifelines (x coordinates fixed) ---
+  \foreach \x/\name in {0/{Người dùng}, 2.8/{FE (Next.js)}, 5.6/{API (.NET)},
+                        8.4/{Queue+Worker}, 11.2/{OCR svc}, 14/{CSDL}} {
+     \node[draw,fill=blue!8,rounded corners,align=center,
+           text width=1.9cm,minimum height=0.7cm] at (\x,0) {\name};
+     \draw[dashed,gray] (\x,-0.6) -- (\x,-11.4);
+  }
+  % --- messages ---
+  \draw[msg] (0,-1.3)   -- (2.8,-1.3)  node[lbl]{tải hóa đơn + chọn engine};
+  \draw[msg] (2.8,-2.1) -- (5.6,-2.1)  node[lbl]{POST /invoices/ocr (file)};
+  \draw[msg] (5.6,-2.9) -- (14,-2.9)   node[lbl]{tạo ocr\_jobs = pending};
+  \draw[msg] (5.6,-3.7) -- (8.4,-3.7)  node[lbl]{enqueue(job)};
+  \draw[rmsg] (5.6,-4.5) -- (2.8,-4.5) node[lbl]{trả jobId (202)};
+  \draw[rmsg] (2.8,-5.1) -- (0,-5.1)   node[lbl]{hiển thị ``đang xử lý''};
+  \draw[msg] (8.4,-6.1) -- (11.2,-6.1) node[lbl]{POST /extract (image, engine)};
+  % self-processing activation on OCR lifeline
+  \draw[fill=orange!15] (11.05,-6.5) rectangle (11.35,-7.5);
+  \node[right,font=\scriptsize,text width=3cm] at (11.45,-7.0)
+       {tiền xử lý $\rightarrow$ detect $\rightarrow$ recognize $\rightarrow$ parse};
+  \draw[rmsg] (11.2,-7.9) -- (8.4,-7.9) node[lbl]{JSON \{fields, lineItems, conf\}};
+  \draw[msg] (8.4,-8.7) -- (14,-8.7)   node[lbl]{lưu Invoice/InvoiceItem, job=done};
+  \draw[msg] (0,-9.7) -- (5.6,-9.7)    node[lbl]{poll GET /ocr-jobs/\{id\}};
+  \draw[rmsg] (5.6,-10.5) -- (0,-10.5) node[lbl]{done + dữ liệu để xác nhận};
+\end{tikzpicture}}
+\caption*{\small \textbf{Hình.} Biểu đồ tuần tự use case Trích xuất hóa đơn tự động (luồng bất đồng bộ hàng đợi–worker).}
+\addcontentsline{lof}{figure}{Biểu đồ tuần tự use case Trích xuất hóa đơn tự động}
+\label{fig:ocr-seq}
+\end{figure}
+% ==== END INJECTED ====

@@ -94,7 +94,7 @@ export default function TicketList(_props: { userRole?: string }) {
   }, [list, search, statusF, priorityF]);
 
   function openCreate() {
-    setForm({ ...emptyForm, ticketCode: `TKT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}` });
+    setForm({ ...emptyForm });
     setOpen(true);
   }
 
@@ -102,7 +102,8 @@ export default function TicketList(_props: { userRole?: string }) {
     if (!form.title.trim()) { toast.error("Nhập tiêu đề sự cố."); return; }
     const buildingId = assetsQ.items.find((a) => a.id === form.assetId)?.buildingId ?? BUILDING;
     const body: CreateTicketInput = {
-      ticketCode: form.ticketCode.trim(), buildingId, reportedByName: "Hệ thống nội bộ",
+      // Bỏ trống → server tự sinh mã.
+      buildingId, reportedByName: "Hệ thống nội bộ",
       assetId: form.assetId || undefined, slaConfigId: form.slaConfigId || undefined,
       title: form.title.trim(), description: form.description.trim() || undefined,
       category: form.category, priority: form.priority, source: form.source,
@@ -201,8 +202,8 @@ export default function TicketList(_props: { userRole?: string }) {
         submitLabel="Tạo"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã ticket" required>
-            <Input value={form.ticketCode} onChange={(e) => setForm((f) => ({ ...f, ticketCode: e.target.value }))} />
+          <Field label="Mã ticket" hint="Tự sinh khi lưu">
+            <Input value="" placeholder="TK-…" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Nguồn">
             <Select value={form.source} onValueChange={(v) => setForm((f) => ({ ...f, source: v }))}>

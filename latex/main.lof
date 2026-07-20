@@ -1,0 +1,45 @@
+\contentsline {figure}{Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}{4}{figure.caption.30}%
+\contentsline {figure}{Hình 0.2. Bảng công việc Kanban của nhóm}{4}{figure.caption.31}%
+\contentsline {figure}{Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}{5}{figure.caption.32}%
+\contentsline {figure}{Hình 0.4. Trao đổi công việc trên nhóm chat}{5}{figure.caption.33}%
+\contentsline {figure}{Hình 0.5. Biên bản họp nhóm (bản mẫu)}{6}{figure.caption.34}%
+\contentsline {figure}{Hình 3.1. Kiến trúc tổng thể hệ thống TownHub}{19}{figure.caption.83}%
+\contentsline {figure}{Hình 3.2. Biểu đồ Use Case tổng quát module Base}{20}{figure.caption.86}%
+\contentsline {figure}{Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}{21}{figure.caption.89}%
+\contentsline {figure}{Hình 3.4. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}{22}{figure.caption.94}%
+\contentsline {figure}{Hình 3.5. Giao diện màn hình đăng nhập}{23}{figure.caption.95}%
+\contentsline {figure}{Hình 3.6. Giao diện Bảng điều khiển (Dashboard) tổng quan}{24}{figure.caption.104}%
+\contentsline {figure}{Hình 4.1. Biểu đồ Use Case – Quản lý tài sản \& bảo trì}{30}{figure.caption.132}%
+\contentsline {figure}{Hình 4.2. Biểu đồ tuần tự: Ghi tăng tài sản}{31}{figure.caption.134}%
+\contentsline {figure}{Hình 4.3. Lưu đồ nghiệp vụ kế toán tài sản: ghi tăng – khấu hao – thanh lý}{32}{figure.caption.135}%
+\contentsline {figure}{Hình 4.4. Lưu đồ nghiệp vụ: Bảo trì định kỳ (PM/Work Order)}{33}{figure.caption.136}%
+\contentsline {figure}{Hình 4.5. Sơ đồ thực thể – liên kết (ERD) schema asset}{34}{figure.caption.138}%
+\contentsline {figure}{Hình 4.6. Giao diện Danh sách tài sản}{37}{figure.caption.142}%
+\contentsline {figure}{Hình 4.7. Giao diện Chi tiết tài sản (thông số, khấu hao, lịch sử)}{37}{figure.caption.143}%
+\contentsline {figure}{Hình 4.8. Giao diện Lệnh công việc bảo trì (Work Order)}{38}{figure.caption.144}%
+\contentsline {figure}{Hình 4.9. Lưu đồ nghiệp vụ: Kiểm kê kho định kỳ}{40}{figure.caption.156}%
+\contentsline {figure}{Hình 4.10. Lưu đồ nghiệp vụ: Quy trình mua sắm PR $\rightarrow $ PO và OCR hóa đơn}{41}{figure.caption.158}%
+\contentsline {figure}{Biểu đồ tuần tự use case Trích xuất hóa đơn tự động}{44}{figure.caption.162}%
+\contentsline {figure}{Hình 4.11. Biểu đồ Use Case – Kho, Mua sắm và Nhà cung cấp}{45}{figure.caption.168}%
+\contentsline {figure}{Hình 4.12. Sơ đồ thực thể – liên kết (ERD) phân hệ Kho, Mua sắm và Nhà cung cấp}{46}{figure.caption.169}%
+\contentsline {figure}{Hình 4.13. Giao diện Tồn kho vật tư (cảnh báo tồn thấp)}{48}{figure.caption.174}%
+\contentsline {figure}{Hình 4.14. Giao diện Upload OCR hóa đơn}{48}{figure.caption.175}%
+\contentsline {figure}{Hình 4.15. Giao diện Danh sách nhà cung cấp}{49}{figure.caption.176}%
+\contentsline {figure}{Hình 4.16. Kiến trúc pipeline trích xuất hóa đơn (dịch vụ OCR bốn engine)}{50}{figure.caption.180}%
+\contentsline {figure}{Hình 4.17. Luồng AI hai tầng (EasyOCR + VietOCR) so với PaddleOCR hợp nhất}{53}{figure.caption.182}%
+\contentsline {figure}{Hình 4.18. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}{55}{figure.caption.184}%
+\contentsline {figure}{Hình 4.19. Tác động của fine-tune (Sequence và Character accuracy)}{57}{figure.caption.186}%
+\contentsline {figure}{Hình 4.20. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}{57}{figure.caption.187}%
+\contentsline {figure}{Hình 4.21. Độ trễ suy luận (ms/ảnh) và thông lượng (ảnh/giây) trên CPU}{58}{figure.caption.188}%
+\contentsline {figure}{Hình 4.22. Tính bổ trợ giữa các engine (mẫu nào engine nào đọc đúng)}{58}{figure.caption.189}%
+\contentsline {figure}{Hình 4.23. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew).}{60}{figure.caption.192}%
+\contentsline {figure}{Hình 4.24. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng.}{62}{figure.caption.194}%
+\contentsline {figure}{Hình 4.25. Lưu đồ nghiệp vụ: Xử lý sự cố và giám sát SLA}{65}{figure.caption.207}%
+\contentsline {figure}{Hình 4.26. Biểu đồ Use Case – Quản lý sự cố và SLA}{66}{figure.caption.215}%
+\contentsline {figure}{Hình 4.27. Sơ đồ trạng thái vòng đời ticket sự cố}{67}{figure.caption.217}%
+\contentsline {figure}{Hình 4.28. Sơ đồ thực thể – liên kết (ERD) phân hệ Quản lý sự cố \& SLA}{67}{figure.caption.218}%
+\contentsline {figure}{Hình 4.29. Giao diện Danh sách phiếu sự cố (CM)}{69}{figure.caption.223}%
+\contentsline {figure}{Hình 4.30. Giao diện Bảng theo dõi SLA}{69}{figure.caption.224}%
+\contentsline {figure}{Hình 5.1. Giao diện Quản trị Tài khoản người dùng}{72}{figure.caption.233}%
+\contentsline {figure}{Hình 5.2. Giao diện Vai trò \& phân quyền (RBAC)}{73}{figure.caption.234}%
+\contentsline {figure}{Hình 5.3. Nhật ký lỗi \& kiểm thử trên Excel (sheet Lỗi Base)}{75}{figure.caption.239}%

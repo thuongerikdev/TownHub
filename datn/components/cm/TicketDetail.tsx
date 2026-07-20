@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  ArrowLeft, MapPin, User, Clock, AlertTriangle, CheckCircle2,
+  ArrowLeft, ArrowRight, MapPin, User, Clock, AlertTriangle, CheckCircle2,
   UserPlus, TrendingUp, RefreshCw, Inbox, Package, ShoppingCart, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -82,6 +82,14 @@ const NEXT_STATUS: Record<string, string[]> = {
   IN_PROGRESS:      ["PENDING_MATERIAL", "RESOLVED"],
   PENDING_MATERIAL: ["IN_PROGRESS", "RESOLVED"],
   RESOLVED:         ["CLOSED"],
+};
+
+// Bước tiến chính (forward) của từng trạng thái — dùng làm nút "nhảy sang bước tiếp theo".
+const PRIMARY_NEXT: Record<string, { to: string; label: string }> = {
+  ASSIGNED:         { to: "IN_PROGRESS", label: "Bắt đầu xử lý" },
+  IN_PROGRESS:      { to: "RESOLVED",    label: "Hoàn tất xử lý" },
+  PENDING_MATERIAL: { to: "IN_PROGRESS", label: "Tiếp tục xử lý" },
+  RESOLVED:         { to: "CLOSED",      label: "Đóng ticket" },
 };
 
 const SHOW_MATERIAL = new Set(["ASSIGNED", "IN_PROGRESS", "PENDING_MATERIAL", "RESOLVED"]);
@@ -180,13 +188,8 @@ export default function TicketDetail() {
     if (!tech) { toast.error("Chọn kỹ thuật viên được phân công."); return; }
     const techName = tech.fullName?.trim() || tech.userName;
     setWorking(true);
+    // Backend tự chuyển trạng thái sang ASSIGNED và ghi lịch sử khi phân công.
     const res = await tickets.assign({ ticketId: t.id, assignedToUserId: tech.userID, assignedToName: techName });
-    if (res.errorCode === 200) {
-      await tickets.changeStatus({
-        ticketId: t.id, toStatus: "ASSIGNED", fromStatus: t.status,
-        note: `Phân công cho ${techName}`,
-      });
-    }
     setWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã phân công KTV.");
@@ -283,6 +286,8 @@ export default function TicketDetail() {
   const nexts  = NEXT_STATUS[t.status] ?? [];
   const closed = isClosed(t);
   const canAssign = t.status === "NEW" || t.status === "OPEN";
+  const primary = PRIMARY_NEXT[t.status];               // bước tiến chính (nếu có)
+  const otherNexts = nexts.filter((s) => s !== primary?.to);
   const showMaterial = SHOW_MATERIAL.has(t.status);
 
   const beforePhotos = photosQ.items.filter((a) => photoKind(a.fileUrl) === "BEFORE").map((a) => ({ url: stripPhotoKind(a.fileUrl) }));
@@ -619,22 +624,24 @@ export default function TicketDetail() {
               {canAssign && (
                 <Button className="w-full" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công KTV</Button>
               )}
-              {nexts.length > 0 && !canAssign && (
+              {/* Bước tiến chính: nút rõ ràng để nhảy sang bước tiếp theo của luồng. */}
+              {primary && !closed && (
                 <Button
                   className="w-full"
                   variant="default"
-                  onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}
+                  onClick={() => { setToStatus(primary.to); setStatusOpen(true); }}
                 >
-                  <RefreshCw className="size-4" /> Cập nhật trạng thái
+                  <ArrowRight className="size-4" /> {primary.label}
                 </Button>
               )}
-              {nexts.length > 0 && canAssign && (
+              {/* Chuyển sang trạng thái khác (rẽ nhánh, vd. chờ vật tư). */}
+              {otherNexts.length > 0 && !closed && (
                 <Button
                   className="w-full"
                   variant="outline"
-                  onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}
+                  onClick={() => { setToStatus(otherNexts[0]); setStatusOpen(true); }}
                 >
-                  <RefreshCw className="size-4" /> Cập nhật trạng thái
+                  <RefreshCw className="size-4" /> Trạng thái khác
                 </Button>
               )}
               <Button variant="outline" className="w-full" asChild>

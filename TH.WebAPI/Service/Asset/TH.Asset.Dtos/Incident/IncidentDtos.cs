@@ -49,7 +49,8 @@ namespace TH.Asset.Dtos
     // ============================================================
     public class CreateTicketDto
     {
-        public required string ticketCode { get; set; }
+        // Bỏ trống → server tự sinh mã dạng TK-{yyyyMM}-{####}.
+        public string? ticketCode { get; set; }
         // Cross-service (Base)
         public Guid buildingId { get; set; }
         public Guid? floorId { get; set; }
