@@ -1542,9 +1542,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                // Hợp lệ: "pdf" (đọc lớp text hóa đơn điện tử) hoặc 3 engine OCR; lạ → "gemini".
+                // Hợp lệ: "pdf" (đọc lớp text hóa đơn điện tử) hoặc 2 engine OCR tự chủ; lạ → "paddleocr".
                 var engine = (request.ocrEngine ?? "").Trim().ToLowerInvariant();
-                if (engine != "vietocr" && engine != "paddleocr" && engine != "pdf") engine = "gemini";
+                if (engine != "vietocr" && engine != "paddleocr" && engine != "pdf") engine = "paddleocr";
 
                 var job = new OcrJob
                 {

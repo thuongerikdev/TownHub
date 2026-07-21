@@ -1,13 +1,13 @@
-# OCR Service — 3 engine + fine-tune (TownHub)
+# OCR Service — engine tự chủ (PaddleOCR + VietOCR) + fine-tune (TownHub)
 
-Service bóc tách hóa đơn với **3 lựa chọn** engine, backend .NET gọi qua `POST /extract`
-với field `model`:
+Service bóc tách hóa đơn với các engine **tự chủ, chạy offline, fine-tune được**,
+backend .NET gọi qua `POST /extract` với field `model`:
 
 | `model`       | Detect          | Recognize        | Fine-tune?          |
 |---------------|-----------------|------------------|---------------------|
-| `gemini`      | (API lo)        | (API lo)         | ❌ không (API đóng) |
-| `vietocr`     | easyocr         | VietOCR          | ✅ recognition       |
 | `paddleocr`   | PaddleOCR det   | PaddleOCR rec    | ✅ detect + recognize|
+| `vietocr`     | easyocr         | VietOCR          | ✅ recognition       |
+| `paddledet_viet` | PaddleOCR det | VietOCR         | ✅ (hybrid)          |
 
 ## Cấu trúc
 ```
@@ -75,7 +75,6 @@ export VIETOCR_WEIGHTS=./weights/vietocr_invoice.pth
 export PADDLE_DET_DIR=./PaddleOCR/inference/det_vi
 export PADDLE_REC_DIR=./PaddleOCR/inference/rec_vi
 export PADDLE_REC_DICT=./dataset/dict_vi.txt
-export GEMINIKEY=<key gemini>
 export OCRKEY=doan-ocr-2026
 python app.py
 ```
@@ -90,7 +89,7 @@ curl -X POST http://localhost:7860/extract \
 ## Phía backend .NET + Frontend (ĐÃ NỐI SẴN chọn engine)
 Người dùng chọn engine ngay trên màn "Số hóa chứng từ (AI OCR)":
 - **FE** [OCRUpload.tsx](../datn/components/procurement/OCRUpload.tsx): dropdown "Engine AI"
-  (gemini / vietocr / paddleocr) → gửi field `ocrEngine` khi submit job.
+  (paddleocr / vietocr) → gửi field `ocrEngine` khi submit job.
 - **.NET**: `ocrEngine` lưu vào cột `ocr_jobs.ocrEngine` (migration `AddOcrEngine`), worker
   [OcrProcessingWorker.cs](../TH.WebAPI/Service/Asset/TH.Asset.ApplicationService/Service/Inventory/Ocr/OcrProcessingWorker.cs)
   đọc ra và truyền xuống service qua field `model` (`{ fileUrl, model }`).
@@ -101,5 +100,5 @@ Chỉ cần cấu hình `.env` phía .NET: `OCR_SERVICE_URL` = URL cloudflared c
 ## Gợi ý số liệu cho báo cáo ĐATN
 So sánh 3 engine trên cùng tập test theo độ chính xác từng trường
 (số hóa đơn, ngày, MST, cộng tiền hàng, tiền thuế, tổng thanh toán) → bảng kết quả +
-nhận xét trade-off (Gemini: chính xác cao nhưng phụ thuộc API/chi phí; VietOCR/Paddle:
-tự chủ, fine-tune được, chạy offline).
+nhận xét trade-off (VietOCR: chính xác nhận dạng cao nhất; PaddleOCR: hợp nhất det+rec,
+nhẹ, nhanh nhất; cả hai tự chủ, fine-tune được, chạy offline).

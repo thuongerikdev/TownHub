@@ -418,10 +418,10 @@ namespace TH.Asset.Domain.Inventory
         [MaxLength(20)]
         public string status { get; set; } = "QUEUED";
 
-        // Engine OCR người dùng chọn: "gemini" | "vietocr" | "paddleocr".
+        // Engine OCR người dùng chọn: "paddleocr" | "vietocr" | "pdf".
         // Worker gửi giá trị này xuống service Python qua field "model".
         [MaxLength(20)]
-        public string ocrEngine { get; set; } = "gemini";
+        public string ocrEngine { get; set; } = "paddleocr";
 
         // Cross-service (Auth) — không dùng navigation property
         public Guid? reviewedBy { get; set; }

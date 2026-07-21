@@ -240,7 +240,8 @@
       "Bash(unzip -l ocr-service.zip)",
       "Bash(cd /tmp/ocr_x && sed -n '1,90p' app.py)",
       "Bash(unzip -l townhub_ocr-20260714T161102Z-1-001.zip)",
-      "Bash(awk '{print $4}')"
+      "Bash(awk '{print $4}')",
+      "Bash(python -c \"import json,sys; nb=json.load\\(open\\('run_service_colab.ipynb',encoding='utf-8'\\)\\); print\\('cells:', len\\(nb['cells']\\)\\); print\\('OK valid ipynb'\\)\")"
     ]
   }
 }

@@ -32,8 +32,8 @@ lần lượt cho bản đồ xác suất, bản đồ nhị phân xấp xỉ v�
 \]
 trong đó $\mathcal{B}$ là toán tử gộp khung–bỏ ký tự trống (blank) ánh xạ đường căn chỉnh $\pi$ về chuỗi nhãn $y$; CTC cho phép huấn luyện không cần căn chỉnh ký tự–khung thủ công. Một nhánh chú ý phụ (NRTR) "dẫn dắt" nhánh CTC trong lúc huấn luyện (ghi nhận qua \texttt{CTCLoss}/\texttt{NRTRLoss} trong \texttt{train.log}) rồi được lược bỏ khi suy luận để giữ tốc độ. Ưu điểm nổi bật: một bộ công cụ hợp nhất, \emph{fine-tune được cả hai tầng} det+rec trên cùng dữ liệu tự gán nhãn, nhẹ và chạy offline.
 
-\noindent\textit{(3) EasyOCR/CRAFT và Gemini.}
-Pipeline \texttt{vietocr} chỉ mượn bộ phát hiện \emph{CRAFT} của EasyOCR để định vị và cắt dòng (CRAFT dự đoán bản đồ vùng ký tự và bản đồ liên kết giữa các ký tự để gom thành từ/dòng), phần nhận dạng giao cho VietOCR. Vì CRAFT \emph{không được fine-tune} trên dữ liệu hóa đơn nên trở thành nút cổ chai của pipeline này. Gemini~2.0 Flash là mô hình thị giác–ngôn ngữ (VLM): nhận thẳng ảnh và một chỉ dẫn (prompt) yêu cầu trả về JSON các trường; độ chính xác cao với bố cục lạ nhưng phụ thuộc API bên ngoài và chi phí, nên được giữ làm phương án dự phòng.
+\noindent\textit{(3) EasyOCR/CRAFT.}
+Pipeline \texttt{vietocr} chỉ mượn bộ phát hiện \emph{CRAFT} của EasyOCR để định vị và cắt dòng (CRAFT dự đoán bản đồ vùng ký tự và bản đồ liên kết giữa các ký tự để gom thành từ/dòng), phần nhận dạng giao cho VietOCR. Vì CRAFT \emph{không được fine-tune} trên dữ liệu hóa đơn nên trở thành nút cổ chai của pipeline này — động lực dẫn tới biến thể hybrid \texttt{paddledet\_viet} (thay CRAFT bằng DBNet đã fine-tune, giữ recognizer VietOCR).
 
 \noindent\textbf{So sánh vai trò.} Tổng hợp lại: DBNet/CRAFT giải bài toán \emph{định vị} (đâu là dòng chữ), còn VietOCR/SVTR\_LCNet giải bài toán \emph{đọc} (dòng chữ đó là gì); CTC và seq2seq là hai họ hàm mất mát khác nhau cho khâu đọc — CTC căn chỉnh ngầm và suy luận nhanh (một lượt), seq2seq+attention chính xác dấu thanh nhưng suy luận tuần tự nên chậm hơn. Chính sự khác biệt này dẫn tới các đánh đổi định lượng ở mục d) và lý do chọn engine ở mục e).
 % ==== END INJECTED ====

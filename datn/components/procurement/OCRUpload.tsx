@@ -27,9 +27,8 @@ const DOC_LABEL: Record<string, string> = Object.fromEntries(DOC_TYPES.map((d) =
 
 // Engine OCR — khớp với service Python (field "model") và backend .NET.
 const OCR_ENGINES = [
-  { value: "gemini", label: "Gemini (API · chính xác cao)" },
-  { value: "vietocr", label: "VietOCR (tự train)" },
   { value: "paddleocr", label: "PaddleOCR (tự train)" },
+  { value: "vietocr", label: "VietOCR (tự train)" },
 ];
 const ENGINE_LABEL: Record<string, string> = {
   ...Object.fromEntries(OCR_ENGINES.map((e) => [e.value, e.label])),
@@ -95,7 +94,7 @@ export default function OCRUpload() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"ocr" | "pdf">("ocr");
   const [docType, setDocType] = useState("INVOICE");
-  const [engine, setEngine] = useState("gemini");
+  const [engine, setEngine] = useState("paddleocr");
   const [file, setFile] = useState<File | null>(null);
 
   function switchMode(m: "ocr" | "pdf") {

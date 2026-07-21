@@ -1,4 +1,4 @@
-# Service OCR 3 engine + fine-tune
+# Service OCR (PaddleOCR + VietOCR) + fine-tune
 fastapi
 uvicorn
 pydantic
@@ -8,7 +8,6 @@ pillow
 pdf2image
 pdfplumber
 opencv-python-headless
-google-generativeai
 
 # VietOCR (recognition) + detector easyocr
 torch

@@ -2,7 +2,6 @@ import re, io, requests, json, unicodedata, statistics, os
 import numpy as np
 from PIL import Image
 from pdf2image import convert_from_bytes
-import google.generativeai as genai
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import uvicorn
@@ -11,9 +10,7 @@ import uvicorn
 
 
 # ── Cấu hình ──
-GEMINI_API_KEY = os.environ.get("GEMINIKEY", "")
 API_KEY        = os.environ.get("OCRKEY", "doan-ocr-2026")
-genai.configure(api_key=GEMINI_API_KEY)
 
 # ── Tự nhận GPU ──
 # OCR_USE_GPU=1/0 để ép; mặc định 'auto' -> dùng GPU nếu torch thấy CUDA.
@@ -487,74 +484,11 @@ def extract_paddledet_viet(url):
     return raw, fields, line_items, round(float(statistics.mean(probs)), 4)
 
 # ════════════════════════════════════════
-# PIPELINE GEMINI VISION
-# ════════════════════════════════════════
-INVOICE_PROMPT = """Bạn là chuyên gia đọc hóa đơn Việt Nam và quốc tế.
-Phân tích hình ảnh hóa đơn và trả về JSON với cấu trúc sau (null nếu không tìm thấy):
-{
-  "invoiceNumber": "số hóa đơn",
-  "invoiceDate": "yyyy-MM-dd",
-  "sellerName": "tên đơn vị bán hàng",
-  "sellerTaxCode": "mã số thuế người bán",
-  "buyerName": "tên người/đơn vị mua",
-  "buyerTaxCode": "mã số thuế người mua",
-  "subtotal": <số nguyên>,
-  "taxRate": <tỷ lệ % VAT>,
-  "taxAmount": <số nguyên>,
-  "totalAmount": <số nguyên>,
-  "currency": "VND",
-  "paymentMethod": "hình thức thanh toán",
-  "lineItems": [{"description":"","unit":"","quantity":0,"unitPrice":0,"totalPrice":0}]
-}
-Chỉ trả JSON thuần, KHÔNG markdown, KHÔNG giải thích."""
-
-def _resize_for_gemini(img, max_dim=1200):
-    if max(img.width, img.height) <= max_dim: return img
-    scale = max_dim / max(img.width, img.height)
-    img = img.resize((int(img.width*scale), int(img.height*scale)), Image.LANCZOS)
-    buf = io.BytesIO()
-    img.save(buf, format='JPEG', quality=85)
-    buf.seek(0)
-    return Image.open(buf)
-
-def extract_gemini(url):
-    content = _download(url)
-    images  = _to_images(content)
-    if len(images) == 1:
-        img = _resize_for_gemini(images[0])
-    else:
-        total_h = sum(p.height for p in images)
-        max_w   = max(p.width  for p in images)
-        combined = Image.new('RGB', (max_w, total_h), (255, 255, 255))
-        y = 0
-        for p in images:
-            combined.paste(p, (0, y)); y += p.height
-        img = _resize_for_gemini(combined)
-
-    model = genai.GenerativeModel("gemini-2.0-flash")
-    response = model.generate_content([INVOICE_PROMPT, img],
-                                       generation_config={"temperature": 0})
-    text = re.sub(r'^```(?:json)?\s*|\s*```$', '', response.text.strip(), flags=re.MULTILINE).strip()
-    data = json.loads(text)
-    fields = {
-        "invoiceNumber": data.get("invoiceNumber"),
-        "invoiceDate":   data.get("invoiceDate"),
-        "sellerName":    data.get("sellerName"),
-        "sellerTaxCode": data.get("sellerTaxCode"),
-        "subtotal":      data.get("subtotal"),
-        "taxAmount":     data.get("taxAmount"),
-        "totalAmount":   data.get("totalAmount"),
-        "currency":      data.get("currency") or "VND",
-    }
-    return json.dumps(data, ensure_ascii=False, indent=2), fields, data.get("lineItems") or [], 0.95
-
-# ════════════════════════════════════════
 # FASTAPI
 # ════════════════════════════════════════
 app = FastAPI(title="Invoice OCR Service")
 
 ENGINES = {
-    "gemini":         extract_gemini,
     "vietocr":        extract_vietocr,
     "paddleocr":      extract_paddle,
     "paddledet_viet": extract_paddledet_viet,   # hybrid: Paddle DBNet detect + VietOCR rec
@@ -562,7 +496,7 @@ ENGINES = {
 
 class ExtractReq(BaseModel):
     fileUrl: str
-    model: str = "gemini"
+    model: str = "paddleocr"
 
 @app.get("/health")
 def health():
@@ -572,7 +506,7 @@ def health():
 def extract(req: ExtractReq, x_api_key: str = Header(default="")):
     if API_KEY and x_api_key != API_KEY:
         raise HTTPException(401, "Sai X-API-Key")
-    runner = ENGINES.get(req.model, extract_gemini)
+    runner = ENGINES.get(req.model, extract_paddle)
     try:
         raw, fields, line_items, confidence = runner(req.fileUrl)
         return {"status": "DONE", "confidence": confidence,

@@ -19,9 +19,6 @@
         <mxCell id="pre" value="Tiền xử lý (_to_images):&#10;PDF → ảnh 200 dpi  •  ảnh → RGB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="620" y="105" width="260" height="45" as="geometry"/></mxCell>
         <mxCell id="sel" value="Chọn engine (ocrEngine từ .NET)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="640" y="175" width="220" height="70" as="geometry"/></mxCell>
 
-        <!-- Cột GEMINI -->
-        <mxCell id="g1" value="ENGINE GEMINI&#10;Gemini 2.0 Flash (Vision)&#10;→ trả JSON trực tiếp (API lo)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="180" y="285" width="240" height="80" as="geometry"/></mxCell>
-
         <!-- Cột VIETOCR -->
         <mxCell id="v1" value="Phát hiện dòng: EasyOCR / CRAFT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="285" width="300" height="45" as="geometry"/></mxCell>
         <mxCell id="v2" value="Cắt dòng (crop từng ô chữ)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="360" width="300" height="40" as="geometry"/></mxCell>
@@ -49,7 +46,6 @@
         <!-- Cạnh -->
         <mxCell id="ea" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="inp" target="pre"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="eb" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="pre" target="sel"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="eg" value="gemini" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="sel" target="g1"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="ev" value="vietocr" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="sel" target="v1"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="ep" value="paddleocr" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="sel" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="ev1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="v1" target="v2"><mxGeometry relative="1" as="geometry"/></mxCell>
@@ -64,7 +60,6 @@
         <mxCell id="ed3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r2" target="r3"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="ed4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r3" target="r4"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="edo" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r4" target="out"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="egout" value="bỏ qua parse" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;fontStyle=2;exitX=0.5;exitY=1;entryX=0;entryY=0.5;" edge="1" parent="1" source="g1" target="out"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="eout" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="out" target="net"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="ehy" value="HYBRID (paddledet_viet):&#10;DBNet → VietOCR" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;strokeColor=#9673a6;strokeWidth=2;fontColor=#9673a6;fontStyle=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="p1" target="v3"><mxGeometry relative="1" as="geometry"/></mxCell>
       </root>
