@@ -1399,6 +1399,7 @@ export const materials = {
     apiFetch<MaterialResponse[]>(`/api/asset/material/get-low-stock${qs({ warehouseId })}`, {}),
   getInventoryLevels: (params?: { warehouseId?: string; materialId?: string }) =>
     apiFetch<InventoryLevelResponse[]>(`/api/asset/material/get-inventory-levels${qs(params)}`, {}),
+  getCategories: () => apiFetch<MaterialCategoryResponse[]>(`/api/asset/material/get-categories`, {}),
   create: (body: CreateMaterialInput) =>
     apiFetch<boolean>(`/api/asset/material/create`, { method: "POST", body: JSON.stringify(body) }),
   update: (body: UpdateMaterialInput) =>
@@ -1542,8 +1543,13 @@ export const invoices = {
   update: (body: UpdateInvoiceInput) =>
     apiFetch<boolean>(`/api/asset/invoice/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/invoice/delete/${id}`, { method: "DELETE" }),
-  markPaid: (id: string, paymentMethod: string, confirmedBy: string) =>
-    apiFetch<boolean>(`/api/asset/invoice/mark-paid/${id}`, { method: "PUT", body: JSON.stringify({ paymentMethod, confirmedBy }) }),
+  // confirmedBy ở backend là Guid? — KHÔNG gửi tên người (chuỗi) vào đó (tránh 400).
+  // Ngày thanh toán, mã giao dịch, người xác nhận & ghi chú gửi qua paidDate/notes.
+  markPaid: (id: string, paymentMethod: string, opts?: { paidDate?: string; notes?: string }) =>
+    apiFetch<boolean>(`/api/asset/invoice/mark-paid/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ paymentMethod, paidDate: opts?.paidDate, notes: opts?.notes }),
+    }),
   getItems: (invoiceId: string) => apiFetch<InvoiceItemResponse[]>(`/api/asset/invoice/get-items/${invoiceId}`, {}),
   addItem: (body: { invoiceId: string; materialId: string; description?: string; quantity?: number; unitPrice?: number; totalPrice?: number; poItemId?: string }) =>
     apiFetch<boolean>(`/api/asset/invoice/add-item`, { method: "POST", body: JSON.stringify(body) }),

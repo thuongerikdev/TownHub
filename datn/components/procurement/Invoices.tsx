@@ -108,7 +108,13 @@ export default function Invoices() {
     if (!target) return;
     if (!confirmedBy.trim()) { toast.error("Nhập người xác nhận thanh toán."); return; }
     setSubmitting(true);
-    const res = await invoices.markPaid(target.id, method, confirmedBy.trim());
+    // Gộp người xác nhận + mã giao dịch + ghi chú vào notes (backend chỉ có cột notes).
+    const notes = [
+      `Người xác nhận: ${confirmedBy.trim()}`,
+      payRef.trim() ? `Mã GD: ${payRef.trim()}` : "",
+      payNote.trim() || "",
+    ].filter(Boolean).join(" · ");
+    const res = await invoices.markPaid(target.id, method, { paidDate: payDate || undefined, notes });
     setSubmitting(false);
     if (res.errorCode === 200) {
       toast.success(`Đã ghi nhận thanh toán ${target.invoiceCode}.`);

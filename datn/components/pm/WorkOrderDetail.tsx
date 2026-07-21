@@ -17,6 +17,7 @@ import {
   type InventoryTransactionResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockWorkOrders } from "@/lib/mock/pm";
 import { mockWarehouses, mockMaterials } from "@/lib/mock/inventory";
 import {
@@ -88,7 +89,15 @@ export default function WorkOrderDetail() {
     { deps: [id], enabled: !!wo },
   );
 
+  // RBAC ở tầng giao diện (admin được bỏ qua trong hasPermission).
+  const { hasPermission } = useAuth();
+  const mayAssign  = hasPermission("workorder.assign");
+  const mayExecute = hasPermission("workorder.execute");
+  const mayReview  = hasPermission("workorder.review");
+  const mayClose   = hasPermission("workorder.close");
+
   const [assignOpen, setAssignOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [techId,     setTechId]     = useState("");
   const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
   const [assigning,  setAssigning]  = useState(false);
@@ -127,8 +136,10 @@ export default function WorkOrderDetail() {
   }
 
   async function doCancel() {
-    if (!wo) return;
+    if (!wo || cancelling) return;
+    setCancelling(true);
     const res = await workOrders.update({ ...woBase(wo), status: "CANCELLED" });
+    setCancelling(false);
     if (res.errorCode === 200) { toast.success("Đã huỷ phiếu công việc."); setCancelOpen(false); q.refetch(); }
     else toast.error(res.errorMessage || "Huỷ thất bại.");
   }
@@ -199,7 +210,7 @@ export default function WorkOrderDetail() {
   if (!wo) return <div className="py-10"><ErrorState message={q.error ?? "Không tìm thấy phiếu công việc."} onRetry={q.refetch} /></div>;
 
   const isPM        = wo.woType === "PM";
-  const canAssign   = wo.status === "DRAFT";
+  const canAssign   = wo.status === "DRAFT" && mayAssign;
   const closed      = wo.status === "COMPLETED" || wo.status === "CANCELLED";
   const showMaterial = SHOW_MATERIAL.has(wo.status);
 
@@ -266,7 +277,7 @@ export default function WorkOrderDetail() {
                   <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-foreground">
                     <Package className="size-4 text-brand" /> Xuất vật tư từ kho
                   </h3>
-                  {!closed ? (
+                  {!closed && mayExecute ? (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Kho</label>
@@ -339,7 +350,7 @@ export default function WorkOrderDetail() {
                   <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-foreground">
                     <Wrench className="size-4 text-brand" /> Đề xuất mua vật tư (PR)
                   </h3>
-                  {!closed ? (
+                  {!closed && mayExecute ? (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Mã phiếu đề xuất</label>
@@ -456,22 +467,22 @@ export default function WorkOrderDetail() {
 
           <Section title="Thao tác">
             <div className="space-y-2">
-              {wo.status === "DRAFT" && (
+              {wo.status === "DRAFT" && mayAssign && (
                 <Button className="w-full" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công KTV</Button>
               )}
-              {wo.status === "ASSIGNED" && (
+              {wo.status === "ASSIGNED" && mayExecute && (
                 <Button className="w-full" asChild><Link href={`/pm/work-orders/${wo.id}/checkin`}><QrCode className="size-4" /> Check-in hiện trường</Link></Button>
               )}
-              {wo.status === "IN_PROGRESS" && (
+              {wo.status === "IN_PROGRESS" && mayExecute && (
                 <Button className="w-full" asChild><Link href={`/pm/work-orders/${wo.id}/checklist`}><ClipboardCheck className="size-4" /> Mở checklist</Link></Button>
               )}
-              {wo.status === "PENDING_REVIEW" && (
+              {wo.status === "PENDING_REVIEW" && mayReview && (
                 <Button className="w-full" asChild><Link href={`/pm/work-orders/${wo.id}/review`}><CheckCircle2 className="size-4" /> Nghiệm thu</Link></Button>
               )}
               <Button variant="outline" className="w-full" onClick={() => router.push("/pm/work-orders")}>
                 <Pencil className="size-4" /> Về danh sách
               </Button>
-              {!closed && (
+              {!closed && mayClose && (
                 <Button variant="ghost" className="w-full text-danger hover:text-danger" onClick={() => setCancelOpen(true)}>
                   <XCircle className="size-4" /> Huỷ phiếu công việc
                 </Button>
@@ -529,8 +540,8 @@ export default function WorkOrderDetail() {
         size="sm"
         footer={
           <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
-            <Button variant="outline" onClick={() => setCancelOpen(false)}>Không</Button>
-            <Button variant="destructive" onClick={doCancel}>Huỷ phiếu</Button>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelling}>Không</Button>
+            <Button variant="destructive" onClick={doCancel} disabled={cancelling}>{cancelling ? "Đang huỷ…" : "Huỷ phiếu"}</Button>
           </div>
         }
       >

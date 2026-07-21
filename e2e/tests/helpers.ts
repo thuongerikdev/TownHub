@@ -25,10 +25,20 @@ fs.mkdirSync(SHOTS, { recursive: true });
 export async function shot(page: Page, name: string) {
   await page.waitForTimeout(1500);
   try {
-    await page.waitForLoadState("networkidle", { timeout: 8000 });
+    await page.waitForLoadState("networkidle", { timeout: 6000 });
   } catch {
-    /* live-feed/polling — bỏ qua */
+    /* live-feed/polling khiến không bao giờ idle — bỏ qua */
   }
+  // Chờ spinner tải dữ liệu biến mất (Neon free-tier truy vấn chậm, tới ~12s).
+  try {
+    await page.waitForFunction(
+      () => !document.querySelector(".animate-spin, [data-loading='true']"),
+      { timeout: 22000 },
+    );
+  } catch {
+    /* vẫn còn spinner — chụp trạng thái hiện có */
+  }
+  await page.waitForTimeout(800);
   const file = path.join(SHOTS, `${name}.png`);
   await page.screenshot({ path: file, fullPage: true });
   return file;

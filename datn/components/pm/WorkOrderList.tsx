@@ -62,7 +62,8 @@ function DueCell({ value, done }: { value?: string; done?: boolean }) {
 
 export default function WorkOrderList(_props: { userRole?: string }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const mayCreate = hasPermission("workorder.create");
   const q = useApiList<WorkOrderResponse>(() => workOrders.getAll(), { mock: mockWorkOrders });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const tplQ = useApiList(() => checklistTemplates.getAll(), { mock: mockChecklistTemplates });
@@ -185,7 +186,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
         title="Work Order — Bảo trì định kỳ"
         description="Quản lý lệnh công việc PM/CM theo vòng đời"
         icon={ClipboardList}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo Work Order</Button>}
+        actions={mayCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo Work Order</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}
@@ -268,7 +269,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
             </Select>
           </Field>
           <Field label="Ước tính (giờ)">
-            <Input type="number" value={form.estimatedHours} onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" />
+            <Input type="number" min="0" value={form.estimatedHours} onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" />
           </Field>
           <Field label="Ngày thực hiện">
             <Input type="date" value={form.scheduledDate} onChange={(e) => setForm((f) => ({ ...f, scheduledDate: e.target.value }))} />

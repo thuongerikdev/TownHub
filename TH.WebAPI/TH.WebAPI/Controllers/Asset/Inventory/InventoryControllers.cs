@@ -10,7 +10,9 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
     // ── Request bodies cho action endpoints ──────────────────────────────────
     public record ApproveRequestBody(Guid ApprovedBy);
     public record RejectRequestBody(string Reason);
-    public record MarkPaidRequestBody(string PaymentMethod, Guid ConfirmedBy);
+    // ConfirmedBy là Guid? người dùng thực (để null khi FE chưa có lookup user-Guid);
+    // thông tin người xác nhận / mã giao dịch / ghi chú đưa vào Notes.
+    public record MarkPaidRequestBody(string PaymentMethod, DateTime? PaidDate = null, string? Notes = null, Guid? ConfirmedBy = null);
     public record MarkReviewedRequestBody(Guid ReviewedBy, string? ReviewedByName = null);
 
     // ════════════════════════════════════════════════════════════════════════
@@ -143,6 +145,14 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             [FromQuery] Guid? materialId)
         {
             var result = await _service.GetInventoryLevelsAsync(warehouseId, materialId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "InventoryView")]
+        [HttpGet("get-categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var result = await _service.GetCategoriesAsync();
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
     }
@@ -432,7 +442,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         [HttpPut("mark-paid/{id}")]
         public async Task<IActionResult> MarkPaid(Guid id, [FromBody] MarkPaidRequestBody body)
         {
-            var result = await _service.MarkPaidAsync(id, body.PaymentMethod, body.ConfirmedBy);
+            var result = await _service.MarkPaidAsync(id, body.PaymentMethod, body.PaidDate, body.Notes, body.ConfirmedBy);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);

@@ -229,6 +229,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<MaterialResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<List<MaterialResponse>>> GetLowStockAsync(Guid? warehouseId = null);
         Task<ResponseDto<List<InventoryLevelResponse>>> GetInventoryLevelsAsync(Guid? warehouseId = null, Guid? materialId = null);
+        Task<ResponseDto<List<MaterialCategoryResponse>>> GetCategoriesAsync();
     }
 
     public class MaterialService : AssetServiceBase, IMaterialService
@@ -448,6 +449,34 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             {
                 _logger.LogError(ex, "Lỗi khi lấy tồn kho.");
                 return ResponseConst.Error<List<InventoryLevelResponse>>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        public async Task<ResponseDto<List<MaterialCategoryResponse>>> GetCategoriesAsync()
+        {
+            try
+            {
+                // Danh mục vật tư được seed sẵn nhưng trước đây không có endpoint đọc,
+                // khiến màn Danh mục vật tư bế tắc khi chưa có vật tư nào (BUG-13).
+                var result = await _dbContext.MaterialCategories
+                    .Include(x => x.parentCategory)
+                    .OrderBy(x => x.code)
+                    .Select(x => new MaterialCategoryResponse
+                    {
+                        id         = x.id,
+                        code       = x.code,
+                        name       = x.name,
+                        parentId   = x.parentId,
+                        parentName = x.parentCategory != null ? x.parentCategory.name : null,
+                    })
+                    .ToListAsync();
+
+                return ResponseConst.Success($"Tìm thấy {result.Count} danh mục vật tư.", result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh mục vật tư.");
+                return ResponseConst.Error<List<MaterialCategoryResponse>>(500, "Lỗi hệ thống: " + ex.Message);
             }
         }
 
@@ -1250,7 +1279,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
         Task<ResponseDto<List<InvoiceResponse>>> GetAllAsync(Guid? vendorId = null, string? paymentStatus = null);
         Task<ResponseDto<InvoiceResponse>> GetByIdAsync(Guid id);
-        Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, Guid confirmedBy);
+        Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null);
         Task<ResponseDto<bool>> AddItemAsync(CreateInvoiceItemDto request);
         Task<ResponseDto<List<InvoiceItemResponse>>> GetItemsAsync(Guid invoiceId);
     }
@@ -1412,7 +1441,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, Guid confirmedBy)
+        public async Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null)
         {
             try
             {
@@ -1424,10 +1453,13 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     return ResponseConst.Error<bool>(400, "Hóa đơn đã được thanh toán.");
 
                 entity.paymentStatus = "PAID";
-                entity.paidDate      = DateTime.UtcNow;
+                // Nhận ngày thanh toán do người dùng chọn (mặc định hôm nay); DbContext ép UTC.
+                entity.paidDate      = paidDate ?? DateTime.UtcNow;
                 entity.paymentMethod = paymentMethod;
-                entity.confirmedBy   = confirmedBy;
+                entity.confirmedBy   = confirmedBy;   // Guid? — để null khi chưa có lookup user thật
                 entity.confirmedAt   = DateTime.UtcNow;
+                // Người xác nhận (dạng chữ) + mã giao dịch + ghi chú lưu vào notes.
+                if (!string.IsNullOrWhiteSpace(notes)) entity.notes = notes;
                 entity.status        = "PAID";
 
                 await _dbContext.SaveChangesAsync();

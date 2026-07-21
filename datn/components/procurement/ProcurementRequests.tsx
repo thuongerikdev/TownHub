@@ -8,6 +8,7 @@ import {
   type PurchaseRequestResponse, type CreatePurchaseRequestInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockPurchaseRequests } from "@/lib/mock/procurement";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
@@ -39,6 +40,11 @@ const emptyForm: FormState = { title: "", justification: "", priority: "MEDIUM",
 export default function ProcurementRequests() {
   const q = useApiList<PurchaseRequestResponse>(() => purchaseRequests.getAll(), { mock: mockPurchaseRequests });
   const list = q.items;
+  // RBAC ở tầng giao diện: chỉ hiện nút theo quyền (admin được bỏ qua).
+  const { hasPermission } = useAuth();
+  const canRequest = hasPermission("procurement.request");
+  const canApprove = hasPermission("procurement.approve");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState("all");
@@ -90,18 +96,26 @@ export default function ProcurementRequests() {
   }
 
   async function submitForApproval(p: PurchaseRequestResponse) {
+    if (busyId) return;
+    setBusyId(p.id);
     const res = await purchaseRequests.submit(p.id);
+    setBusyId(null);
     if (res.errorCode === 200) { toast.success(`Đã gửi duyệt ${p.prCode}.`); q.refetch(); }
     else toast.error(res.errorMessage || "Gửi duyệt thất bại.");
   }
   async function approve(p: PurchaseRequestResponse) {
+    if (busyId) return;
+    setBusyId(p.id);
     const res = await purchaseRequests.approve(p.id, EMPTY_GUID);
+    setBusyId(null);
     if (res.errorCode === 200) { toast.success(`Đã duyệt ${p.prCode}.`); q.refetch(); }
     else toast.error(res.errorMessage || "Duyệt thất bại.");
   }
   async function doReject() {
-    if (!rejecting) return;
+    if (!rejecting || busyId) return;
+    setBusyId(rejecting.id);
     const res = await purchaseRequests.reject(rejecting.id, rejectReason.trim() || "Không đạt yêu cầu");
+    setBusyId(null);
     if (res.errorCode === 200) {
       toast.success(`Đã từ chối ${rejecting.prCode}.`);
       setRejecting(null); setRejectReason("");
@@ -109,8 +123,10 @@ export default function ProcurementRequests() {
     } else toast.error(res.errorMessage || "Từ chối thất bại.");
   }
   async function doDelete() {
-    if (!confirmDel) return;
+    if (!confirmDel || busyId) return;
+    setBusyId(confirmDel.id);
     const res = await purchaseRequests.delete(confirmDel.id);
+    setBusyId(null);
     if (res.errorCode === 200) { toast.success("Đã xoá đề xuất."); setConfirmDel(null); q.refetch(); }
     else toast.error(res.errorMessage || "Xoá thất bại.");
   }
@@ -129,17 +145,17 @@ export default function ProcurementRequests() {
       key: "actions", header: "", align: "right",
       cell: (p) => (
         <div className="flex items-center justify-end gap-1">
-          {(p.status === "DRAFT" || p.status === "REJECTED") && (
-            <Button variant="ghost" size="icon" title="Gửi duyệt" className="text-brand hover:text-brand" onClick={() => submitForApproval(p)}><Send className="size-4" /></Button>
+          {canRequest && (p.status === "DRAFT" || p.status === "REJECTED") && (
+            <Button variant="ghost" size="icon" title="Gửi duyệt" className="text-brand hover:text-brand" disabled={busyId === p.id} onClick={() => submitForApproval(p)}><Send className="size-4" /></Button>
           )}
-          {p.status === "SUBMITTED" && (
+          {canApprove && p.status === "SUBMITTED" && (
             <>
-              <Button variant="ghost" size="icon" title="Duyệt" className="text-success hover:text-success" onClick={() => approve(p)}><Check className="size-4" /></Button>
+              <Button variant="ghost" size="icon" title="Duyệt" className="text-success hover:text-success" disabled={busyId === p.id} onClick={() => approve(p)}><Check className="size-4" /></Button>
               <Button variant="ghost" size="icon" title="Từ chối" className="text-danger hover:text-danger" onClick={() => setRejecting(p)}><X className="size-4" /></Button>
             </>
           )}
           <Button variant="ghost" size="icon" title="Chi tiết" onClick={() => setDetail(p)}><Eye className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(p)}><Trash2 className="size-4" /></Button>
+          {canRequest && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(p)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
     },
@@ -151,7 +167,7 @@ export default function ProcurementRequests() {
         title="Đề xuất mua hàng (PR)"
         description="Tạo và phê duyệt yêu cầu mua sắm vật tư"
         icon={ShoppingCart}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo PR</Button>}
+        actions={canRequest ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo PR</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}

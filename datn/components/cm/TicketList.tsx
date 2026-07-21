@@ -9,6 +9,7 @@ import {
   type TicketResponse, type CreateTicketInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockTickets } from "@/lib/mock/cm";
 import { mockAssets } from "@/lib/mock/asset";
 import { mockSlaConfigs } from "@/lib/mock/cm";
@@ -62,6 +63,9 @@ const emptyForm: FormState = {
 
 export default function TicketList(_props: { userRole?: string }) {
   const router = useRouter();
+  // RBAC ở tầng giao diện: chỉ hiện nút Tạo/Xoá theo quyền (admin được bỏ qua trong hasPermission).
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("ticket.create");
   const q = useApiList<TicketResponse>(() => tickets.getAll(), { mock: mockTickets });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const slaQ = useApiList(() => slaConfigs.getAll(), { mock: mockSlaConfigs });
@@ -149,7 +153,7 @@ export default function TicketList(_props: { userRole?: string }) {
       cell: (t) => (
         <div className="flex items-center justify-end gap-1">
           <Button variant="ghost" size="icon" title="Chi tiết" onClick={() => setDetail(t)}><Eye className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(t)}><Trash2 className="size-4" /></Button>
+          {canCreate && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(t)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
     },
@@ -161,7 +165,7 @@ export default function TicketList(_props: { userRole?: string }) {
         title="Xử lý sự cố (CM)"
         description="Tiếp nhận, phân công và theo dõi SLA các ticket sự cố"
         icon={LifeBuoy}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo ticket</Button>}
+        actions={canCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo ticket</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}

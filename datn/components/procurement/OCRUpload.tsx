@@ -119,6 +119,18 @@ export default function OCRUpload() {
 
   async function submit() {
     if (!file) { toast.error("Hãy chọn tệp chứng từ để xử lý."); return; }
+    const MAX_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      toast.error(`Tệp vượt quá 10MB (hiện ${(file.size / 1024 / 1024).toFixed(1)}MB). Vui lòng chọn tệp nhỏ hơn.`);
+      return;
+    }
+    const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isImageFile = file.type.startsWith("image/");
+    const okType = mode === "pdf" ? isPdfFile : isImageFile;
+    if (!okType) {
+      toast.error(mode === "pdf" ? "Vui lòng chọn tệp PDF." : "Vui lòng chọn tệp ảnh (JPG/PNG).");
+      return;
+    }
     setSubmitting(true);
     try {
       const fileUrl = await fileToDataUrl(file);

@@ -52,6 +52,7 @@ export default function DisposalList() {
 
   async function handleSubmit() {
     if (!assetId) { toast.error("Vui lòng chọn tài sản."); return; }
+    if (disposalValue.trim() !== "" && Number(disposalValue) < 0) { toast.error("Giá trị thanh lý không được âm."); return; }
     setSubmitting(true);
     try {
       const res = await assetDisposals.create({
@@ -156,7 +157,7 @@ export default function DisposalList() {
           )}
 
           <Field label="Giá trị thu về khi thanh lý (₫)">
-            <Input type="number" inputMode="numeric" value={disposalValue} onChange={(e) => setDisposalValue(e.target.value)} placeholder="0" />
+            <Input type="number" min="0" inputMode="numeric" value={disposalValue} onChange={(e) => setDisposalValue(e.target.value)} placeholder="0" />
           </Field>
 
           <Field label="Hình thức">

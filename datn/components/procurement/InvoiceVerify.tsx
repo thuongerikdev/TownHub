@@ -66,8 +66,8 @@ function bestMaterialId(name: string, mats: MaterialResponse[]): string {
 
 function genInvoiceCode(): string {
   const y = new Date().getFullYear();
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `INV-${y}-${rand}`;
+  // Mốc thời gian (base36) bảo đảm duy nhất, tránh trùng như random 4 số cũ.
+  return `INV-${y}-${Date.now().toString(36).slice(-6).toUpperCase()}`;
 }
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -543,7 +543,7 @@ export default function InvoiceVerify() {
                           type="number"
                           min={0}
                           value={it.quantity}
-                          onChange={(e) => updateItem(i, { quantity: Number(e.target.value) || 0 })}
+                          onChange={(e) => updateItem(i, { quantity: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                       <div className="w-28 shrink-0">
@@ -552,7 +552,7 @@ export default function InvoiceVerify() {
                           type="number"
                           min={0}
                           value={it.unitPrice}
-                          onChange={(e) => updateItem(i, { unitPrice: Number(e.target.value) || 0 })}
+                          onChange={(e) => updateItem(i, { unitPrice: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                     </div>

@@ -1,0 +1,62 @@
+% ======================================================================
+%  PHỤ LỤC: THEO DÕI LỖI & KIỂM THỬ CHI TIẾT (BUG TRACKING)
+% ======================================================================
+\clearpage
+\phantomsection
+\addcontentsline{toc}{section}{Phụ lục. Theo dõi lỗi \& kiểm thử chi tiết}
+\markboth{Phụ lục — Theo dõi lỗi}{Phụ lục — Theo dõi lỗi}
+
+\begin{center}\textbf{\large PHỤ LỤC. THEO DÕI LỖI \& KIỂM THỬ CHI TIẾT}\end{center}
+\smallskip
+
+Ngoài kiểm thử theo vai trò ở trên, tác giả thực hiện thêm một đợt \textbf{rà soát tỉ mỉ (nitpick) từng biểu mẫu và màn hình} với góc nhìn của kiểm thử viên: trường nào nên bắt buộc, trường nào phải chỉ đọc (mã tự sinh, giá trị tính toán), nút nào được phép bấm theo vai trò, trang nào bị khoá chỉnh sửa, cùng các kiểm tra hợp lệ dữ liệu (số âm, ngày tháng, kích thước tệp). Mỗi lỗi được đối chiếu với ràng buộc thật ở backend và \textbf{xác minh trực tiếp trên hệ thống đang chạy} để loại các báo động sai (ví dụ: một số ``lệch enum trạng thái'' thực chất do chú thích mã cũ, khi kiểm tra runtime thì FE đã đúng).
+
+Toàn bộ được quản lý trong bảng theo dõi lỗi (đính kèm tệp \texttt{TheoDoi\_Loi\_KiemThu\_TownHub.xlsx} — có thể mở bằng Excel/Google Sheets), gồm các cột: mã lỗi, nhóm, vị trí, mô tả, mức độ, đánh giá ảnh hưởng, hướng xử lý, người phụ trách, deadline, kết quả test lần 1/2/3 và trạng thái. Bảng PL.5 tóm tắt, Bảng PL.6 liệt kê chi tiết.
+
+\medskip
+\textbf{Bảng PL.4. Tổng hợp lỗi phát hiện}
+
+\begin{center}{\small\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.30\linewidth}|c||>{\raggedright\arraybackslash}p{0.30\linewidth}|c|}
+\hline
+\rowcolor{gray!15}\textbf{Theo mức độ} & \textbf{SL} & \textbf{Theo trạng thái} & \textbf{SL} \\ \hline
+Cao & 3 & Đã sửa & 20 \\ \hline
+Trung bình & 11 & Đang xử lý (chờ retest) & 2 \\ \hline
+Thấp & 8 & Đang mở & 0 \\ \hline
+\rowcolor{gray!15}\textbf{Tổng} & \textbf{22} & \textbf{Tổng} & \textbf{22} \\ \hline
+\end{tabular}}\end{center}
+
+\smallskip
+\noindent Ba lỗi mức Cao đã được xử lý ngay: (1) form Sửa tài sản gửi đủ payload để tránh ghi đè null; (2) phiếu xuất/nhập kho không còn gửi chuỗi tự do vào trường kiểu Guid; (3) áp kiểm soát hiển thị nút theo quyền (\texttt{hasPermission}). Sau đó tác giả hoàn tất cả nhóm Trung bình \& Thấp: nhân rộng \texttt{hasPermission} ra toàn bộ trang nghiệp vụ (Tài sản, Mua sắm, Sự cố, Bảo trì, Kho, Nhà thầu); bổ sung kiểm tra hợp lệ dữ liệu (chặn số âm, thứ tự ngày, leo thang SLA tăng dần, chặn xuất vượt tồn, chặn kích thước/định dạng tệp); thêm cờ chống double-submit; và xử lý các thiếu sót chức năng (endpoint đọc danh mục vật tư, mở rộng tham số xác nhận thanh toán, hợp nhất màn Tồn kho về chỉ-đọc, bổ sung màn quản lý Kho). Hai lỗi \texttt{BUG-13} và \texttt{BUG-15} đã sửa xong ở mã nguồn nhưng đòi khởi động lại backend nên còn ở trạng thái \emph{chờ retest}.
+
+% --------------------------------------------------------------
+\begin{landscape}{\scriptsize\singlespacing\renewcommand{\arraystretch}{1.2}\setlength{\LTleft}{0pt}\setlength{\LTright}{0pt}
+\textbf{Bảng PL.5. Chi tiết theo dõi lỗi (trích từ tệp Excel đính kèm)}\par\smallskip
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.045\linewidth}|>{\raggedright\arraybackslash}p{0.10\linewidth}|>{\raggedright\arraybackslash}p{0.31\linewidth}|>{\raggedright\arraybackslash}p{0.055\linewidth}|>{\raggedright\arraybackslash}p{0.22\linewidth}|>{\raggedright\arraybackslash}p{0.06\linewidth}|c|>{\raggedright\arraybackslash}p{0.075\linewidth}|>{\raggedright\arraybackslash}p{0.06\linewidth}|}
+\hline
+\rowcolor{gray!20}\textbf{Mã} & \textbf{Nhóm} & \textbf{Mô tả \& vị trí} & \textbf{Mức} & \textbf{Hướng xử lý} & \textbf{Hạn} & \textbf{T1} & \textbf{T2} & \textbf{T.thái} \\ \hline
+\endhead
+BUG-01 & Hệ thống (RBAC UI) & Nút Tạo/Sửa/Xoá/Duyệt hiển thị cho mọi vai trò, không ẩn theo quyền (chỉ 403 khi bấm). \textit{components/*} & Cao & Bọc nút bằng hasPermission; nhân rộng ra mọi trang nghiệp vụ & 22/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-02 & Tài sản & Form Sửa không gửi đủ field (vendor, định khoản, ngày lắp đặt) $\Rightarrow$ UpdateAsync ghi đè null. \textit{AssetList.tsx:202} & Cao & Gửi full-payload khi update & 22/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-03 & Kho vật tư & Gửi tên người / mã ``WO-2026-0098'' vào field kiểu Guid? $\Rightarrow$ 400. \textit{InventoryTransactions.tsx:109} & Cao & Ghi thông tin dạng chữ vào notes, không gửi vào Guid & 22/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-04 & Tài sản & Giá mua / vòng đời / giá trị thu hồi nhập được số âm. \textit{AssetList.tsx:421} & TB & Thêm min=0, validate $\geq$ 0 & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-05 & Tài sản & Không validate ngày mua (tương lai) / hết hạn bảo hành trước ngày mua. \textit{AssetList.tsx:423} & TB & Ràng buộc thứ tự ngày & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-06 & Thanh lý & Giá trị thanh lý nhập âm. \textit{DisposalList.tsx:159} & TB & Thêm min=0 + validate & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-07 & Sự cố / SLA & Không validate leo thang L1 < L2 < L3, phản hồi < giải quyết. \textit{SLAConfig.tsx:255} & TB & Validate tăng dần trước khi lưu & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-08 & Bảo trì / WO & Nút ``Huỷ phiếu'' không disable khi đang gọi API (double-submit). \textit{WorkOrderDetail.tsx:533} & Thấp & Thêm cờ busy & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-09 & Bảo trì / WO & Ô ``Ước tính (giờ)'' nhập âm. \textit{AssetDetail.tsx:370; WorkOrderList.tsx:271} & Thấp & Thêm min=0 & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-10 & Kho vật tư & txnCode sinh random ở client (nên để server sinh) $\Rightarrow$ rủi ro trùng. \textit{InventoryTransactions.tsx:33} & TB & Đổi sang mã theo mốc thời gian (base36) để giảm trùng & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-11 & Kho vật tư & Ghi nhiều dòng tuần tự, lỗi giữa chừng không rollback. \textit{InventoryTransactions.tsx:99} & TB & Báo rõ số dòng đã ghi khi lỗi để đối soát (giảm nhẹ) & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-12 & Kho vật tư & Xuất vượt tồn chỉ cảnh báo, nút Xác nhận vẫn bật. \textit{InventoryTransactions.tsx:245} & Thấp & Chặn submit khi vượt tồn & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-13 & Kho vật tư & Bế tắc tạo vật tư đầu tiên (danh mục chỉ suy từ vật tư đã có). \textit{ItemCatalog.tsx:40} & TB & Thêm endpoint \texttt{material/get-categories}; FE nạp danh mục seed & 25/07 & Lỗi & Chờ & Đang xử lý \\ \hline
+BUG-14 & Mua sắm (PR) & Nút Duyệt/Từ chối/Gửi/Xoá không có busy-state (double-submit). \textit{ProcurementRequests.tsx:92} & TB & Thêm busyId như màn PO & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-15 & Mua sắm (HĐ) & Ngày thanh toán/mã GD/ghi chú nhập nhưng không gửi; confirmedBy gửi chuỗi vào field Guid $\Rightarrow$ 400. \textit{Invoices.tsx:111} & TB & markPaid nhận paidDate + notes; bỏ chuỗi khỏi field Guid & 25/07 & Lỗi & Chờ & Đang xử lý \\ \hline
+BUG-16 & OCR (Verify) & invoiceCode sinh random ở client (nên để server sinh). \textit{InvoiceVerify.tsx:67} & TB & Đổi sang mã theo mốc thời gian (base36) để giảm trùng & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-17 & OCR (Verify) & Số lượng / đơn giá nhập âm. \textit{InvoiceVerify.tsx:546} & Thấp & Kẹp $\geq$ 0 khi nhập & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-18 & OCR (Upload) & Ghi ``tối đa 10MB'' nhưng không chặn kích thước tệp. \textit{OCRUpload.tsx:120} & TB & Chặn file $>$ 10MB & 25/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-19 & OCR (Upload) & Không kiểm định dạng tệp thực tế sau khi chọn. \textit{OCRUpload.tsx:207} & Thấp & Kiểm tra type/đuôi tệp & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-20 & Kho vật tư & Ngưỡng tồn/đơn giá nhập âm lọt qua khi submit. \textit{ItemCatalog.tsx:226} & Thấp & Validate $\geq$ 0 khi submit & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-21 & Mã nguồn & Component trùng lặp/legacy Inventory.tsx (thiếu min) vs ItemCatalog.tsx. & Thấp & Gộp: Tồn kho về chỉ-đọc, CRUD vật tư dồn về Danh mục vật tư & 28/07 & Lỗi & Đạt & Đã sửa \\ \hline
+BUG-22 & Kho vật tư & Có DTO tạo/sửa Kho nhưng thiếu UI (kho chỉ đọc trong dropdown). & Thấp & Thêm màn Danh sách kho (CRUD, dùng endpoint sẵn có) & 28/07 & Chưa test & Đạt & Đã sửa \\ \hline
+\end{longtable}}\end{landscape}
+\noindent\textit{Ghi chú: T1 = kết quả phát hiện ban đầu; T2 = kết quả sau khi sửa (``Chờ'' = mã đã sửa, chờ retest sau khi khởi động lại backend do có thay đổi phía server); hạn ghi dạng ngày/tháng năm 2026. Chi tiết đầy đủ (đánh giá ảnh hưởng, người phụ trách, test lần 3) xem tệp Excel đính kèm.}

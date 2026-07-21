@@ -662,27 +662,74 @@ Giao diện màn hình đăng nhập thực tế của hệ thống được th�
 \caption*{\small Hình 3.5. Giao diện màn hình đăng nhập}
 \addcontentsline{lof}{figure}{Hình 3.5. Giao diện màn hình đăng nhập}
 \end{figure}
-Về phân quyền, hệ thống áp dụng RBAC: quyền được định nghĩa chi tiết theo cặp resource + action (ví dụ AssetCreate, AssetUpdate, AccountMfaSetup\ldots{}) và gán cho vai trò; vai trò gán cho người dùng. Các controller chính: LoginController, RegisterController, AccountController (xác thực); RoleController, PermissionController, RolePermissionController, UserRoleController (phân quyền); UserSessionController (quản lý phiên).
+Về phân quyền, hệ thống áp dụng RBAC: quyền được định nghĩa chi tiết theo cặp resource + action (ví dụ AssetCreate, AssetUpdate, AccountMfaSetup\ldots{}) và gán cho vai trò; vai trò gán cho người dùng. Danh mục quyền là nguồn sự thật duy nhất được khai báo tập trung ở \texttt{PermissionConstants.cs} (mỗi quyền gồm tên policy PascalCase và mã \texttt{resource.action}); mỗi mã policy tự động sinh một Authorization Policy yêu cầu claim \texttt{permission} tương ứng, và được gắn lên controller/action bằng thuộc tính \texttt{[Authorize(Policy = "...")]}. Nhờ vậy RBAC thông suốt đầu–cuối: seed CSDL $\rightarrow$ gán vai trò $\rightarrow$ nhúng claim vào JWT $\rightarrow$ frontend ẩn/hiện chức năng $\rightarrow$ backend chặn ở tầng API. Toàn hệ thống hiện có 70 quyền chia hai nhóm CORE (nền tảng) và MODULE (nghiệp vụ).
+
+Các nhóm API chính của phân hệ Xác thực và Tài khoản được tổng hợp ở Bảng 3.1.
+
+\begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.44\linewidth}|>{\raggedright\arraybackslash}p{0.28\linewidth}|}
+\hline
+\rowcolor{gray!15}\textbf{Nhóm} & \textbf{Endpoint tiêu biểu} & \textbf{Chức năng} \\ \hline
+Đăng nhập & POST /login/StaffLogin, /login/userLogin & Đăng nhập nhân viên / cư dân \\ \hline
+MFA \& token & POST /login/mfa/verify; POST /login/auth/refresh & Xác thực 2 lớp; làm mới token (rotation) \\ \hline
+Đăng xuất & POST /login/logout, /login/logout/all & Đăng xuất một / mọi thiết bị \\ \hline
+Đăng ký & POST /register; /register/create-bql; /register/create-resident & Cư dân tự đăng ký; Admin tạo BQL; BQL tạo cư dân \\ \hline
+Tài khoản & GET /account/mfa/status; POST /account/mfa/totp/start$|$confirm$|$disable & Bật/tắt xác thực TOTP \\ \hline
+Mật khẩu & POST /account/password/change/*, /account/password/forgot/* & Đổi \& quên mật khẩu (qua email hoặc MFA) \\ \hline
+Phiên & GET /userSession/getall, /userSession/getByUserId/\{id\} & Quản lý phiên đăng nhập đa thiết bị \\ \hline
+\end{tabular}}\end{center}
+\textit{Bảng 3.1. Các nhóm API phân hệ Xác thực \& Tài khoản.}
 
 \phantomsection
 \subsection*{3.4.2. User Management - Người dùng và nhật ký hoạt động}
 \addcontentsline{toc}{subsection}{3.4.2. User Management - Người dùng và nhật ký hoạt động}
-Phân hệ quản lý người dùng cung cấp các thao tác CRUD tài khoản (UserController) kèm trạng thái hoạt động, vai trò và thông tin hồ sơ. Base cung cấp định danh trung tâm để các phân hệ khác liên kết (ví dụ phân hệ Quản lý dân cư gắn tài khoản với cư dân/căn hộ). Toàn bộ hành động quan trọng trong hệ thống được ghi lại qua AuditLogController (đăng nhập, thay đổi quyền, thao tác dữ liệu\ldots{}) phục vụ truy vết và an toàn thông tin.
+Phân hệ quản lý người dùng cung cấp các thao tác CRUD tài khoản (UserController) kèm trạng thái hoạt động, vai trò và thông tin hồ sơ. Base cung cấp định danh trung tâm để các phân hệ khác liên kết (ví dụ phân hệ Quản lý dân cư gắn tài khoản với cư dân/căn hộ). Việc quản trị vai trò và quyền được tách thành các controller riêng: \texttt{RoleController} (tạo/sửa/nhân bản vai trò), \texttt{PermissionController} (danh mục quyền, tra quyền theo vai trò/người dùng), \texttt{UserRoleController} (gán vai trò cho người dùng). Mỗi API quản trị đều có biến thể thường và biến thể \texttt{admin/} với chính sách quyền cao hơn, tránh việc một quản trị viên cấp thấp tự nâng quyền cho mình. Các nhóm API được tổng hợp ở Bảng 3.2.
+
+\begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.18\linewidth}|>{\raggedright\arraybackslash}p{0.46\linewidth}|>{\raggedright\arraybackslash}p{0.28\linewidth}|}
+\hline
+\rowcolor{gray!15}\textbf{Nhóm} & \textbf{Endpoint tiêu biểu} & \textbf{Chức năng} \\ \hline
+Người dùng & GET /user/getAllUsers, /user/me, /user/by-role; PUT /user/update/profile; DELETE /user/deleteUser & Danh sách, hồ sơ, lọc theo vai trò, cập nhật, xoá \\ \hline
+Vai trò & GET /roles/getall; POST /roles/addRole, /roles/clonerole; PUT /roles/updateRole; DELETE /roles/deleteRole/\{id\} & CRUD \& nhân bản vai trò \\ \hline
+Quyền & GET /permissions/getall, /permissions/getbyRoleID/\{id\}, /permissions/getbyUserID/\{id\} & Danh mục quyền; tra quyền theo vai trò/người dùng \\ \hline
+Gán vai trò & POST /user-roles/assign-roles, /user-roles/admin/assign-roles & Đồng bộ vai trò cho người dùng \\ \hline
+Nhật ký & GET /auditLog/getbyuser/\{id\} & Truy vết hành động theo người dùng \\ \hline
+\end{tabular}}\end{center}
+\textit{Bảng 3.2. Các nhóm API phân hệ Quản lý người dùng \& Phân quyền.}
+
+Giao diện quản trị tài khoản người dùng và màn hình vai trò – quyền (RBAC) được thể hiện ở Hình 3.7 và Hình 3.8.
+
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/real_users.png}
+\caption*{\small Hình 3.7. Giao diện Quản trị tài khoản người dùng}
+\addcontentsline{lof}{figure}{Hình 3.7. Giao diện Quản trị tài khoản người dùng}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/real_permissions.png}
+\caption*{\small Hình 3.8. Giao diện Danh mục quyền \& phân quyền theo vai trò (RBAC)}
+\addcontentsline{lof}{figure}{Hình 3.8. Giao diện Danh mục quyền \& phân quyền theo vai trò (RBAC)}
+\end{figure}
 
 \phantomsection
 \subsection*{3.4.3. Notification Engine - Thông báo}
 \addcontentsline{toc}{subsection}{3.4.3. Notification Engine - Thông báo}
-Phân hệ thông báo cho phép gửi thông báo đa kênh (push, email, SMS) qua NotificationController, quản lý mẫu thông báo tái sử dụng qua NotificationTemplateController và tra cứu lịch sử thông báo đã gửi. Đây là dịch vụ dùng chung cho các phân hệ nghiệp vụ, ví dụ cảnh báo tồn kho thấp, nhắc hạn bảo trì hoặc cảnh báo sắp/đã quá hạn SLA.
+Phân hệ thông báo cho phép gửi thông báo đa kênh (push, email, SMS) qua NotificationController, quản lý mẫu thông báo tái sử dụng qua NotificationTemplateController và tra cứu lịch sử thông báo đã gửi. Mỗi thông báo lưu đối tượng nhận (audience), kênh gửi, số lượng gửi/thành công/thất bại và trạng thái (đã gửi, đã đọc), cho phép theo dõi tỉ lệ tiếp cận. Đây là dịch vụ dùng chung cho các phân hệ nghiệp vụ, ví dụ cảnh báo tồn kho thấp, nhắc hạn bảo trì hoặc cảnh báo sắp/đã quá hạn SLA — các phân hệ chỉ cần gọi dịch vụ thông báo với mã tham chiếu (referenceType, referenceId) mà không phải tự xây kênh gửi riêng. Giao diện soạn và theo dõi thông báo được thể hiện ở Hình 3.9.
+
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/real_notifications.png}
+\caption*{\small Hình 3.9. Giao diện Quản lý \& lịch sử thông báo}
+\addcontentsline{lof}{figure}{Hình 3.9. Giao diện Quản lý \& lịch sử thông báo}
+\end{figure}
 
 \phantomsection
 \subsection*{3.4.4. Configuration - Cấu hình và danh mục dùng chung}
 \addcontentsline{toc}{subsection}{3.4.4. Configuration - Cấu hình và danh mục dùng chung}
-Phân hệ cấu hình quản lý các tham số chung của hệ thống (tên khu, logo, định dạng và độ dài sinh mã, phương pháp khấu hao mặc định\ldots{}) và các danh mục dùng chung như loại tài sản, loại phí, loại dịch vụ. Việc tập trung danh mục giúp chuẩn hóa dữ liệu đầu vào và cho phép các phân hệ tự động áp dụng giá trị mặc định.
+Phân hệ cấu hình quản lý các tham số chung của hệ thống và các danh mục dùng chung như loại tài sản, loại phí, loại dịch vụ. Mỗi tham số lưu dạng khóa–giá trị kèm kiểu dữ liệu và cờ công khai (\texttt{SystemConfig}: key, value, dataType, isPublic), cho phép thay đổi hành vi hệ thống mà không cần sửa mã. Một số nhóm cấu hình tiêu biểu: định dạng \& độ dài sinh mã (mã tài sản, phiếu, hóa đơn), phương pháp khấu hao mặc định, ngưỡng cảnh báo tồn kho, thời gian sống của token, và thông tin hiển thị khu (tên, logo). Việc tập trung danh mục giúp chuẩn hóa dữ liệu đầu vào và cho phép các phân hệ tự động áp dụng giá trị mặc định.
 
 \phantomsection
 \subsection*{3.4.5. Reporting - Dashboard và KPI}
 \addcontentsline{toc}{subsection}{3.4.5. Reporting - Dashboard và KPI}
-Phân hệ báo cáo tổng hợp số liệu toàn hệ thống thành dashboard trực quan và các báo cáo KPI, báo cáo chi phí (route /reports, /reports/kpi, /reports/cost; KpiSnapshotController, CostTrackingController). Số liệu được thu thập từ các phân hệ nghiệp vụ để phục vụ ra quyết định vận hành. Giao diện Bảng điều khiển được thể hiện ở Hình 3.6.
+Phân hệ báo cáo tổng hợp số liệu toàn hệ thống thành dashboard trực quan và các báo cáo KPI, báo cáo chi phí (route /reports, /reports/kpi, /reports/cost; KpiSnapshotController, CostTrackingController). Bảng điều khiển hiển thị các chỉ số nhanh (tổng tài sản, sự cố đang mở, work order tới hạn, chi phí bảo trì trong tháng), biểu đồ dòng tiền theo tháng và thống kê sự cố theo loại. Báo cáo KPI theo dõi hiệu suất xử lý (tỉ lệ đúng hạn SLA, thời gian xử lý trung bình), còn báo cáo chi phí bóc tách chi phí bảo trì – vật tư – mua sắm theo kỳ. Số liệu được thu thập từ các phân hệ nghiệp vụ (tài sản, kho, sự cố) qua tham chiếu Guid cross-service, phục vụ ra quyết định vận hành. Giao diện Bảng điều khiển được thể hiện ở Hình 3.6.
 
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img11.png}
@@ -1736,24 +1783,26 @@ Trong khuôn khổ đồ án nhóm, tác giả (Nguyễn Xuân Thưởng) chịu
 \hline
 \textbf{Loại công việc} & \textbf{Thời gian làm việc} & \textbf{Nhiệm vụ được giao} & \textbf{Kết quả thực hiện} & \textbf{Kiến thức/​kỹ năng áp dụng} & \textbf{Vấn đề cần bổ sung, chỉnh sửa} & \textbf{Tự đánh giá \& rút kinh nghiệm} & \textbf{Chữ ký} \\ \hline
 \endhead
-\textbf{Tuần 1:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 1: 25/01/2026 – 15/02/2026 — Khởi động \& khảo sát} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}12 giờ & Đọc chương 1 học phần ĐATN; tìm hiểu bài toán quản lý vận hành tòa nhà; khảo sát yêu cầu các phân hệ Tài sản, Kho–Mua sắm, Sự cố. & Hoàn thành khảo sát và đặc tả yêu cầu; phác thảo kiến trúc phân hệ phụ trách. & Phân tích yêu cầu; kiến trúc phần mềm; .NET 8, Next.​js. & Chuẩn hóa lại phạm vi từng phân hệ. & Cần bám sát chuẩn đầu ra học phần. & SV / GVHD \\ \hline
 Làm việc theo nhóm & \textasciitilde{}8 giờ & Thống nhất kiến trúc tổng thể; phân chia module Base và phần riêng; thiết lập Git, quy ước code. & Khung dự án chạy được; phân công công việc rõ ràng. & Làm việc nhóm; Git; quản lý dự án. & Thống nhất chuẩn code và CSDL chung. & Cần phối hợp chặt chẽ hơn. & SV / GVHD \\ \hline
-\textbf{Tuần 2:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 2: 16/02/2026 – 08/03/2026 — Thiết kế CSDL \& kiến trúc} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Thiết kế CSDL schema asset (ERD); thiết kế API và phân quyền cho phân hệ Tài sản. & Hoàn thành ERD và bộ API tài sản; sinh sơ đồ bằng draw.​io. & Thiết kế CSDL quan hệ; REST API; RBAC. & Rà soát ràng buộc khóa ngoại. & Cần đặt tên nhất quán. & SV / GVHD \\ \hline
-\textbf{Tuần 3:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 3: 09/03/2026 – 30/03/2026 — Vòng đời tài sản \& khấu hao} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Cài đặt vòng đời tài sản: ghi tăng, điều chuyển, thanh lý; khấu hao tự động; sinh \& in mã QR. & Các chức năng tài sản chạy được; khấu hao định kỳ tự động. & EF Core; job nền; sinh mã QR. & Kiểm thử các phương pháp khấu hao. & Cần thêm ràng buộc nghiệp vụ. & SV / GVHD \\ \hline
-\textbf{Tuần 4:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 4: 31/03/2026 – 20/04/2026 — Bảo trì phòng ngừa (PM/WO)} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Cài đặt bảo trì phòng ngừa (PM): lịch bảo trì, lệnh công việc (WO), checklist, nghiệm thu. & Quy trình PM và Work Order hoạt động; đính kèm ảnh minh chứng. & Máy trạng thái; hàng đợi; lịch cron. & Chuẩn hóa trạng thái WO. & Cần tối ưu truy vấn danh sách. & SV / GVHD \\ \hline
-\textbf{Tuần 5:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 5: 21/04/2026 – 15/05/2026 — Kho – Mua sắm – Nhà cung cấp} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Cài đặt Kho – Mua sắm – NCC: tồn kho, cảnh báo tồn thấp, quy trình PR $\rightarrow$ PO, quản lý NCC/​hợp đồng. & Quy trình mua sắm nhiều cấp chạy được; cảnh báo tồn kho. & Thiết kế quy trình duyệt; giao dịch CSDL. & Rà soát luồng duyệt nhiều cấp. & Cần bổ sung nhật ký thao tác. & SV / GVHD \\ \hline
-\textbf{Tuần 6:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 6: 16/05/2026 – 08/06/2026 — Tích hợp OCR hóa đơn} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Tích hợp OCR hóa đơn: sinh dataset hóa đơn tổng hợp; huấn luyện \& đánh giá VietOCR, PaddleOCR; nối dịch vụ OCR với backend. & Dịch vụ OCR chạy; PaddleOCR val-acc 99,64\%; có bảng so sánh 3 engine. & AI/​OCR; PyTorch/​Paddle; FastAPI; hàng đợi nền. & Cần thêm hóa đơn thật để cải thiện phát hiện. & Đánh giá khách quan giữa các engine. & SV / GVHD \\ \hline
-\textbf{Tuần 7:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 7: 09/06/2026 – 01/07/2026 — Sự cố \& SLA, hoàn thiện tính năng} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Cài đặt Quản lý sự cố \& SLA: tạo ticket, phân công KTV, giám sát và leo thang SLA, dashboard. & Phân hệ sự cố hoạt động; theo dõi SLA thời gian thực. & Sự kiện/​thông báo; đo lường SLA; realtime. & Chuẩn hóa mức ưu tiên và SLA. & Cần bổ sung báo cáo thống kê. & SV / GVHD \\ \hline
-\textbf{Tuần 8:  \ldots{}\ldots{}/\ldots{}\ldots{}  -  \ldots{}\ldots{}/\ldots{}\ldots{}} &  &  &  &  &  &  &  \\ \hline
+\textbf{Giai đoạn 8: 02/07/2026 – 20/07/2026 — Kiểm thử, viết tài liệu \& bảo vệ} &  &  &  &  &  &  &  \\ \hline
 Làm việc độc lập & \textasciitilde{}14 giờ & Kiểm thử và tích hợp toàn hệ thống; sửa lỗi; viết thuyết minh ĐATN; dựng sơ đồ (draw.​io); chuẩn bị bảo vệ. & Hệ thống chạy ổn định; hoàn thành quyển thuyết minh và biên bản kiểm thử. & Kiểm thử; viết tài liệu; trình bày. & Hoàn thiện định dạng theo mẫu ĐATN. & Cần luyện trình bày bảo vệ. & SV / GVHD \\ \hline
 \end{longtable}}\end{landscape}
-\textit{Ghi chú: sinh viên điền mốc thời gian từng tuần và ký xác nhận cùng GVHD.}
+\textit{Ghi chú: Đồ án được giao ngày 25/01/2026 (buổi gặp GVHD tại trường); toàn bộ tính năng hoàn thành ngày 01/07/2026; giai đoạn 02–20/07/2026 dành cho kiểm thử tổng thể, viết tài liệu và chuẩn bị bảo vệ. Mỗi giai đoạn có xác nhận của SV và GVHD.}
 
 \input{frag_test_appendix}
+
+\input{frag_bug_tracker}

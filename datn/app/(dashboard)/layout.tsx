@@ -88,6 +88,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
         children: [
           { label: "Tồn kho", path: "/inventory", perm: "inventory.view" },
           { label: "Danh mục vật tư", path: "/inventory/catalog", perm: "inventory.view" },
+          { label: "Danh sách kho", path: "/inventory/warehouses", perm: "inventory.view" },
           { label: "Kiểm kê", path: "/inventory/stock-taking", perm: "inventory.audit" },
         ],
       },

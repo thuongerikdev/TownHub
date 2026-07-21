@@ -14,6 +14,7 @@ import {
   type UpdateVendorInput, type CreateVendorEvaluationInput,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockVendors, mockVendorContracts, mockVendorEvaluations } from "@/lib/mock/vendor";
 import {
   StatCard, EntityModal, Field, MockBanner, LoadingState, ErrorState,
@@ -50,6 +51,8 @@ function scoreTone(score: number): string {
 }
 
 export default function VendorDetail() {
+  const { hasPermission } = useAuth();
+  const mayEvaluate = hasPermission("vendor.evaluate");
   const id = String(useParams().id ?? "");
 
   const vendorQ = useApi<VendorResponse>(() => vendorsApi.getById(id), {
@@ -228,7 +231,7 @@ export default function VendorDetail() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={openEdit}><Pencil className="size-4" /> Sửa</Button>
-              <Button variant="outline" onClick={() => setEvalOpen(true)}><ClipboardCheck className="size-4" /> Đánh giá mới</Button>
+              {mayEvaluate && <Button variant="outline" onClick={() => setEvalOpen(true)}><ClipboardCheck className="size-4" /> Đánh giá mới</Button>}
               {vendor.status === "BLACKLISTED" ? (
                 <Button variant="outline" className="text-success hover:text-success" onClick={activate}>
                   <RotateCcw className="size-4" /> Kích hoạt lại

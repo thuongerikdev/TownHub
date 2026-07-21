@@ -10,6 +10,7 @@ import {
   type VendorContractResponse, type VendorResponse, type CreateVendorContractInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockVendorContracts, mockVendors } from "@/lib/mock/vendor";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
@@ -51,6 +52,8 @@ function expiringSoon(c: VendorContractResponse): boolean {
 }
 
 export default function ContractList() {
+  const { hasPermission } = useAuth();
+  const mayManage = hasPermission("vendor.update");
   const q = useApiList<VendorContractResponse>(() => vendorContracts.getAll(), { mock: mockVendorContracts });
   const vendorsQ = useApiList<VendorResponse>(() => vendorsApi.getAll(), { mock: mockVendors });
   const list = q.items;
@@ -165,7 +168,7 @@ export default function ContractList() {
         title="Hợp đồng nhà thầu"
         description="Quản lý hợp đồng khung, theo dõi hiệu lực và hạn gia hạn"
         icon={FileText}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo hợp đồng</Button>}
+        actions={mayManage ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo hợp đồng</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}

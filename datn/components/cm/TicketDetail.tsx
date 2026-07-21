@@ -18,6 +18,7 @@ import {
   type InventoryTransactionResponse, type PurchaseRequestResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockTickets, mockSlaConfigs } from "@/lib/mock/cm";
 import { mockWarehouses, mockMaterials } from "@/lib/mock/inventory";
 import {
@@ -135,6 +136,11 @@ export default function TicketDetail() {
   );
 
   // ── Assign modal state ────────────────────────────────────────────────────────
+  const { hasPermission } = useAuth();
+  const mayAssign = hasPermission("ticket.assign");
+  const mayResolve = hasPermission("ticket.resolve");
+  const mayClose = hasPermission("ticket.close");
+  const mayChangeStatus = mayResolve || mayClose;
   const [assignOpen, setAssignOpen] = useState(false);
   const [techId,     setTechId]     = useState("");
   const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
@@ -285,7 +291,7 @@ export default function TicketDetail() {
   const rem    = remaining(t);
   const nexts  = NEXT_STATUS[t.status] ?? [];
   const closed = isClosed(t);
-  const canAssign = t.status === "NEW" || t.status === "OPEN";
+  const canAssign = (t.status === "NEW" || t.status === "OPEN") && mayAssign;
   const primary = PRIMARY_NEXT[t.status];               // bước tiến chính (nếu có)
   const otherNexts = nexts.filter((s) => s !== primary?.to);
   const showMaterial = SHOW_MATERIAL.has(t.status);
@@ -625,7 +631,7 @@ export default function TicketDetail() {
                 <Button className="w-full" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công KTV</Button>
               )}
               {/* Bước tiến chính: nút rõ ràng để nhảy sang bước tiếp theo của luồng. */}
-              {primary && !closed && (
+              {primary && !closed && mayChangeStatus && (
                 <Button
                   className="w-full"
                   variant="default"
@@ -635,7 +641,7 @@ export default function TicketDetail() {
                 </Button>
               )}
               {/* Chuyển sang trạng thái khác (rẽ nhánh, vd. chờ vật tư). */}
-              {otherNexts.length > 0 && !closed && (
+              {otherNexts.length > 0 && !closed && mayChangeStatus && (
                 <Button
                   className="w-full"
                   variant="outline"

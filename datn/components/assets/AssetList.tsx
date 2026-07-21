@@ -13,6 +13,7 @@ import {
   type BuildingResponse, type FloorResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockAssets, mockAssetCategories, mockAssetLocations } from "@/lib/mock/asset";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field,
@@ -77,6 +78,11 @@ function MaintenanceCell({ iso }: { iso?: string | null }) {
 
 export default function AssetList() {
   const router = useRouter();
+  // Ẩn/hiện nút theo quyền (RBAC ở tầng giao diện) — admin được bỏ qua trong hasPermission.
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("asset.create");
+  const canUpdate = hasPermission("asset.update");
+  const canDelete = hasPermission("asset.delete");
   const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll(), { mock: mockAssets });
   const catsQ = useApiList(() => assetCategories.getAll(), { mock: mockAssetCategories });
   const locsQ = useApiList(() => assetLocations.getAll(), { mock: mockAssetLocations });
@@ -197,6 +203,14 @@ export default function AssetList() {
     if (!form.name.trim()) { toast.error("Nhập tên tài sản."); return; }
     if (!form.categoryId) { toast.error("Chọn danh mục tài sản."); return; }
     if (!form.buildingId.trim()) { toast.error("Thiếu mã toà nhà (chọn vị trí hoặc nhập thủ công)."); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    if (form.purchaseDate && form.purchaseDate > today) { toast.error("Ngày mua không được ở tương lai."); return; }
+    if (form.purchaseDate && form.warrantyExpiryDate && form.warrantyExpiryDate < form.purchaseDate) {
+      toast.error("Hết hạn bảo hành phải sau ngày mua."); return;
+    }
+    for (const [v, label] of [[form.purchasePrice, "Giá mua"], [form.usefulLifeMonths, "Vòng đời"], [form.salvageValue, "Giá trị thu hồi"]] as const) {
+      if (v.trim() !== "" && Number(v) < 0) { toast.error(`${label} không được âm.`); return; }
+    }
 
     const num = (s: string) => (s.trim() === "" ? undefined : Number(s));
     const base: CreateAssetInput = {
@@ -214,7 +228,15 @@ export default function AssetList() {
 
     setSubmitting(true);
     const res = editing
-      ? await assetApi.update({ ...base, id: editing.id } as UpdateAssetInput)
+      ? await assetApi.update({
+          ...base, id: editing.id,
+          // Giữ nguyên các trường KHÔNG có trên form để tránh bị ghi đè null
+          // (backend UpdateAsync ghi đè toàn bộ trường được map).
+          vendorId: editing.vendorId, vendorContractId: editing.vendorContractId,
+          parentAssetId: editing.parentAssetId, installationDate: editing.installationDate,
+          accountCode: editing.accountCode, paymentMethod: editing.paymentMethod,
+          lastMaintenanceDate: editing.lastMaintenanceDate, nextMaintenanceDate: editing.nextMaintenanceDate,
+        } as UpdateAssetInput)
       : await assetApi.create(base);
     setSubmitting(false);
 
@@ -278,8 +300,8 @@ export default function AssetList() {
         <div className="flex items-center justify-end gap-1">
           <Button variant="ghost" size="icon" title="Xem chi tiết" onClick={() => router.push(`/assets/${a.id}`)}><Eye className="size-4" /></Button>
           <Button variant="ghost" size="icon" title="Mã QR" onClick={() => setQrAsset(a)}><QrCode className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(a)}><Pencil className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(a)}><Trash2 className="size-4" /></Button>
+          {canUpdate && <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(a)}><Pencil className="size-4" /></Button>}
+          {canDelete && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(a)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
     },
@@ -295,7 +317,7 @@ export default function AssetList() {
           <>
             <Button variant="outline" onClick={() => router.push("/assets/scan")}><ScanLine className="size-4" /> Quét QR</Button>
             <Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Xuất CSV</Button>
-            <Button onClick={openCreate}><Plus className="size-4" /> Thêm tài sản</Button>
+            {canCreate && <Button onClick={openCreate}><Plus className="size-4" /> Thêm tài sản</Button>}
           </>
         }
       />
@@ -418,7 +440,7 @@ export default function AssetList() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tài chính & vòng đời</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Giá mua (₫)">
-                <Input type="number" value={form.purchasePrice} onChange={(e) => patch({ purchasePrice: e.target.value })} placeholder="0" />
+                <Input type="number" min="0" value={form.purchasePrice} onChange={(e) => patch({ purchasePrice: e.target.value })} placeholder="0" />
               </Field>
               <Field label="Ngày mua">
                 <Input type="date" value={form.purchaseDate} onChange={(e) => patch({ purchaseDate: e.target.value })} />
@@ -427,10 +449,10 @@ export default function AssetList() {
                 <Input type="date" value={form.warrantyExpiryDate} onChange={(e) => patch({ warrantyExpiryDate: e.target.value })} />
               </Field>
               <Field label="Vòng đời (tháng)">
-                <Input type="number" value={form.usefulLifeMonths} onChange={(e) => patch({ usefulLifeMonths: e.target.value })} placeholder="120" />
+                <Input type="number" min="0" value={form.usefulLifeMonths} onChange={(e) => patch({ usefulLifeMonths: e.target.value })} placeholder="120" />
               </Field>
               <Field label="Giá trị thu hồi ước tính (₫)">
-                <Input type="number" value={form.salvageValue} onChange={(e) => patch({ salvageValue: e.target.value })} placeholder="0" />
+                <Input type="number" min="0" value={form.salvageValue} onChange={(e) => patch({ salvageValue: e.target.value })} placeholder="0" />
               </Field>
               <Field label="Phương pháp khấu hao">
                 <Select value={form.depreciationMethod} onValueChange={(v) => patch({ depreciationMethod: v })}>
