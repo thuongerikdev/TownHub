@@ -360,6 +360,13 @@ namespace TH.Asset.Domain.Inventory
         public string? paymentMethod { get; set; }
         // Cross-service (Auth) — không dùng navigation property
         public Guid? confirmedBy { get; set; }
+
+        // Người xác nhận thanh toán (Auth userID là int → lưu id + tên hiển thị,
+        // không để kế toán gõ tay tên vào ghi chú như trước).
+        public int? confirmedByUserId { get; set; }
+        [MaxLength(150)]
+        public string? confirmedByName { get; set; }
+
         public DateTime? confirmedAt { get; set; }
         public string? notes { get; set; }
 

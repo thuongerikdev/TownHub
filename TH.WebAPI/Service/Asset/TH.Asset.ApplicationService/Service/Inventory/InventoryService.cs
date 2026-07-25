@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -1344,7 +1344,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
         Task<ResponseDto<List<InvoiceResponse>>> GetAllAsync(Guid? vendorId = null, string? paymentStatus = null);
         Task<ResponseDto<InvoiceResponse>> GetByIdAsync(Guid id);
-        Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null);
+        Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null, int? confirmedByUserId = null, string? confirmedByName = null);
         Task<ResponseDto<bool>> AddItemAsync(CreateInvoiceItemDto request);
         Task<ResponseDto<List<InvoiceItemResponse>>> GetItemsAsync(Guid invoiceId);
     }
@@ -1424,6 +1424,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 entity.paidDate      = request.paidDate;
                 entity.paymentMethod = request.paymentMethod;
                 entity.confirmedBy   = request.confirmedBy;
+                entity.confirmedByUserId = request.confirmedByUserId;
+                entity.confirmedByName   = request.confirmedByName;
                 entity.confirmedAt   = request.confirmedAt;
                 entity.notes         = request.notes;
 
@@ -1506,7 +1508,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null)
+        public async Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null, int? confirmedByUserId = null, string? confirmedByName = null)
         {
             try
             {
@@ -1521,9 +1523,12 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 // Nhận ngày thanh toán do người dùng chọn (mặc định hôm nay); DbContext ép UTC.
                 entity.paidDate      = paidDate ?? DateTime.UtcNow;
                 entity.paymentMethod = paymentMethod;
-                entity.confirmedBy   = confirmedBy;   // Guid? — để null khi chưa có lookup user thật
+                entity.confirmedBy   = confirmedBy;   // Guid? — giữ lại cho dữ liệu seed cũ
+                // Người xác nhận lấy theo tài khoản Auth (id + tên), không phải chuỗi gõ tay.
+                entity.confirmedByUserId = confirmedByUserId;
+                entity.confirmedByName   = confirmedByName;
                 entity.confirmedAt   = DateTime.UtcNow;
-                // Người xác nhận (dạng chữ) + mã giao dịch + ghi chú lưu vào notes.
+                // notes chỉ còn mã giao dịch / ghi chú nghiệp vụ.
                 if (!string.IsNullOrWhiteSpace(notes)) entity.notes = notes;
                 entity.status        = "PAID";
 
@@ -1613,6 +1618,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             paymentStatus = x.paymentStatus,
             paymentMethod = x.paymentMethod,
             confirmedBy   = x.confirmedBy,
+            confirmedByUserId = x.confirmedByUserId,
+            confirmedByName   = x.confirmedByName,
             confirmedAt   = x.confirmedAt,
             notes         = x.notes
         };

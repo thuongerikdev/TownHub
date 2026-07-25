@@ -11,9 +11,10 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
     // ── Request bodies cho action endpoints ──────────────────────────────────
     public record ApproveRequestBody(Guid ApprovedBy);
     public record RejectRequestBody(string Reason);
-    // ConfirmedBy là Guid? người dùng thực (để null khi FE chưa có lookup user-Guid);
-    // thông tin người xác nhận / mã giao dịch / ghi chú đưa vào Notes.
-    public record MarkPaidRequestBody(string PaymentMethod, DateTime? PaidDate = null, string? Notes = null, Guid? ConfirmedBy = null);
+    // Người xác nhận thanh toán lấy theo tài khoản Auth: ConfirmedByUserId (int) + tên
+    // hiển thị, KHÔNG để client gõ tay tên vào Notes. ConfirmedBy (Guid?) giữ lại cho
+    // dữ liệu seed cũ. Notes chỉ còn mã giao dịch / ghi chú nghiệp vụ.
+    public record MarkPaidRequestBody(string PaymentMethod, DateTime? PaidDate = null, string? Notes = null, Guid? ConfirmedBy = null, int? ConfirmedByUserId = null, string? ConfirmedByName = null);
     public record MarkReviewedRequestBody(Guid ReviewedBy, string? ReviewedByName = null);
 
     // ════════════════════════════════════════════════════════════════════════
@@ -510,7 +511,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         [HttpPut("mark-paid/{id}")]
         public async Task<IActionResult> MarkPaid(Guid id, [FromBody] MarkPaidRequestBody body)
         {
-            var result = await _service.MarkPaidAsync(id, body.PaymentMethod, body.PaidDate, body.Notes, body.ConfirmedBy);
+            var result = await _service.MarkPaidAsync(id, body.PaymentMethod, body.PaidDate, body.Notes, body.ConfirmedBy, body.ConfirmedByUserId, body.ConfirmedByName);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);

@@ -1486,7 +1486,8 @@ export interface InvoiceResponse {
   ocrJobId?: string; status: string; invoiceDate?: string; invoiceNumber?: string;
   subtotal?: number; taxAmount?: number; totalAmount?: number; currency: string;
   paymentDueDate?: string; paidDate?: string; paymentStatus: string; paymentMethod?: string;
-  confirmedBy?: string; confirmedAt?: string; notes?: string;
+  confirmedBy?: string; confirmedByUserId?: number; confirmedByName?: string;
+  confirmedAt?: string; notes?: string;
 }
 export interface InvoiceItemResponse {
   id: string; invoiceId: string; materialId: string; materialCode?: string; materialName?: string;
@@ -1593,12 +1594,22 @@ export const invoices = {
   update: (body: UpdateInvoiceInput) =>
     apiFetch<boolean>(`/api/asset/invoice/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/invoice/delete/${id}`, { method: "DELETE" }),
-  // confirmedBy ở backend là Guid? — KHÔNG gửi tên người (chuỗi) vào đó (tránh 400).
-  // Ngày thanh toán, mã giao dịch, người xác nhận & ghi chú gửi qua paidDate/notes.
-  markPaid: (id: string, paymentMethod: string, opts?: { paidDate?: string; notes?: string }) =>
+  // Người xác nhận lấy theo tài khoản Auth: confirmedByUserId (int) + tên hiển thị.
+  // KHÔNG gửi tên vào confirmedBy (cột Guid? ở backend → 400) và không nhét tên vào notes.
+  markPaid: (
+    id: string,
+    paymentMethod: string,
+    opts?: { paidDate?: string; notes?: string; confirmedByUserId?: number; confirmedByName?: string },
+  ) =>
     apiFetch<boolean>(`/api/asset/invoice/mark-paid/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ paymentMethod, paidDate: opts?.paidDate, notes: opts?.notes }),
+      body: JSON.stringify({
+        paymentMethod,
+        paidDate: opts?.paidDate,
+        notes: opts?.notes,
+        confirmedByUserId: opts?.confirmedByUserId,
+        confirmedByName: opts?.confirmedByName,
+      }),
     }),
   getItems: (invoiceId: string) => apiFetch<InvoiceItemResponse[]>(`/api/asset/invoice/get-items/${invoiceId}`, {}),
   addItem: (body: { invoiceId: string; materialId: string; description?: string; quantity?: number; unitPrice?: number; totalPrice?: number; poItemId?: string }) =>

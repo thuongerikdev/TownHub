@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace TH.Asset.Dtos
 {
@@ -435,6 +435,8 @@ namespace TH.Asset.Dtos
         public string? paymentMethod { get; set; }
         // Cross-service (Auth)
         public Guid? confirmedBy { get; set; }
+        public int? confirmedByUserId { get; set; }
+        public string? confirmedByName { get; set; }
         public DateTime? confirmedAt { get; set; }
     }
 
@@ -459,6 +461,8 @@ namespace TH.Asset.Dtos
         public string paymentStatus { get; set; } = null!;
         public string? paymentMethod { get; set; }
         public Guid? confirmedBy { get; set; }
+        public int? confirmedByUserId { get; set; }
+        public string? confirmedByName { get; set; }
         public DateTime? confirmedAt { get; set; }
         public string? notes { get; set; }
     }
