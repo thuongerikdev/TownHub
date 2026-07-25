@@ -1,0 +1,93 @@
+\contentsline {chapter}{Nhận xét của giảng viên hướng dẫn}{i}{chapter*.2}%
+\contentsline {chapter}{Nhận xét của giảng viên phản biện}{ii}{chapter*.4}%
+\contentsline {chapter}{Tóm tắt}{v}{chapter*.6}%
+\contentsline {chapter}{Nhiệm vụ đồ án tốt nghiệp}{vii}{chapter*.8}%
+\contentsline {chapter}{Lời nói đầu}{x}{chapter*.10}%
+\contentsline {chapter}{Lời cam đoan}{xi}{chapter*.12}%
+\contentsline {chapter}{Danh mục hình vẽ}{xvi}{section*.14}%
+\contentsline {chapter}{Danh mục ký hiệu, chữ viết tắt}{xix}{chapter*.17}%
+\contentsline {chapter}{Mở đầu}{1}{chapter*.19}%
+\contentsline {section}{1. Lý do chọn đề tài}{1}{section*.21}%
+\contentsline {section}{2. Mục tiêu của đề tài}{1}{section*.23}%
+\contentsline {section}{3. Đối tượng và phạm vi}{2}{section*.25}%
+\contentsline {section}{4. Phương pháp thực hiện}{2}{section*.27}%
+\contentsline {section}{5. Phân công công việc trong nhóm}{2}{section*.29}%
+\contentsline {section}{6. Bố cục báo cáo}{7}{section*.36}%
+\contentsline {chapter}{Chương 1. Tổng quan và khảo sát bài toán}{8}{chapter*.38}%
+\contentsline {section}{1.1. Tổng quan về quản lý vận hành tòa nhà}{8}{section*.40}%
+\contentsline {subsection}{1.1.1. Các bên liên quan và vai trò}{8}{section*.42}%
+\contentsline {subsection}{1.1.2. Các nghiệp vụ chính}{9}{section*.44}%
+\contentsline {section}{1.2. Khảo sát hiện trạng và vấn đề đặt ra}{9}{section*.46}%
+\contentsline {section}{1.3. Khảo sát các giải pháp hiện có}{10}{section*.48}%
+\contentsline {subsection}{1.3.1. Các phần mềm thương mại đang triển khai thực tế}{10}{section*.50}%
+\contentsline {subsection}{1.3.2. So sánh tổng hợp và định vị TownHub}{16}{section*.58}%
+\contentsline {section}{1.4. Đề xuất giải pháp và kiến trúc module hoá}{18}{section*.60}%
+\contentsline {section}{1.5. Mục tiêu, phạm vi và yêu cầu hệ thống}{19}{section*.62}%
+\contentsline {subsection}{1.5.1. Yêu cầu chức năng}{19}{section*.64}%
+\contentsline {subsection}{1.5.2. Yêu cầu phi chức năng}{19}{section*.66}%
+\contentsline {section}{1.6. Kết luận chương}{19}{section*.68}%
+\contentsline {chapter}{Chương 2. Cơ sở lý thuyết và công nghệ sử dụng}{20}{chapter*.70}%
+\contentsline {section}{2.1. Kiến trúc phần mềm áp dụng}{20}{section*.72}%
+\contentsline {section}{2.2. Công nghệ Backend (.NET 8 Web API)}{20}{section*.74}%
+\contentsline {section}{2.3. Công nghệ Frontend (Next.js 16 + React 19)}{21}{section*.76}%
+\contentsline {section}{2.4. Cơ sở dữ liệu PostgreSQL}{22}{section*.78}%
+\contentsline {section}{2.5. Bảo mật và phân quyền (JWT, OAuth, MFA/TOTP, RBAC)}{22}{section*.80}%
+\contentsline {section}{2.6. Hạ tầng cache, lưu trữ và email}{22}{section*.82}%
+\contentsline {section}{2.7. Công nghệ AI/OCR (VietOCR) và xử lý nền}{22}{section*.84}%
+\contentsline {section}{2.8. Công cụ quản lý dự án và triển khai}{23}{section*.86}%
+\contentsline {section}{2.9. Kết luận chương}{23}{section*.88}%
+\contentsline {chapter}{Chương 3. Phân tích và thiết kế module chung (Base)}{24}{chapter*.90}%
+\contentsline {section}{3.1. Kiến trúc tổng thể hệ thống TownHub}{24}{section*.92}%
+\contentsline {section}{3.2. Biểu đồ Use Case tổng quát}{25}{section*.95}%
+\contentsline {section}{3.3. Thiết kế cơ sở dữ liệu lõi (schema auth)}{27}{section*.98}%
+\contentsline {section}{3.4. Đặc tả các phân hệ Base}{29}{section*.101}%
+\contentsline {subsection}{3.4.1. Auth \& Security - Xác thực và phân quyền}{29}{section*.103}%
+\contentsline {subsection}{3.4.2. User Management - Người dùng và nhật ký hoạt động}{32}{section*.107}%
+\contentsline {subsection}{3.4.3. Notification Engine - Thông báo}{34}{section*.111}%
+\contentsline {subsection}{3.4.4. Configuration - Cấu hình và danh mục dùng chung}{35}{section*.114}%
+\contentsline {subsection}{3.4.5. Reporting - Dashboard và KPI}{35}{section*.116}%
+\contentsline {section}{3.5. Thiết kế API dùng chung và điểm mở rộng cho phân hệ riêng}{36}{section*.119}%
+\contentsline {section}{3.6. Kết luận chương}{37}{section*.121}%
+\contentsline {chapter}{Chương 4. Phân tích và thiết kế phân hệ Quản lý tài sản (phần riêng)}{38}{chapter*.123}%
+\contentsline {section}{4.1. Nghiệp vụ Tài sản \& bảo trì}{38}{section*.125}%
+\contentsline {subsection}{4.1.1. Đặt vấn đề và phạm vi}{38}{section*.127}%
+\contentsline {subsection}{4.1.2. Mối liên hệ và kế thừa từ module Base}{39}{section*.129}%
+\contentsline {subsection}{4.1.3. Phân tích yêu cầu chức năng}{39}{section*.131}%
+\contentsline {subsection}{4.1.4. Yêu cầu phi chức năng}{41}{section*.141}%
+\contentsline {subsection}{4.1.5. Thiết kế phân hệ}{41}{section*.143}%
+\contentsline {subsection}{4.1.6. Thiết kế giao diện}{49}{section*.154}%
+\contentsline {subsection}{4.1.7. Thành phần thông minh: sinh mã \& khấu hao tự động}{51}{section*.159}%
+\contentsline {section}{4.2. Nghiệp vụ Kho, Mua sắm và Nhà cung cấp}{51}{section*.161}%
+\contentsline {subsection}{4.2.1. Đặt vấn đề và phạm vi}{51}{section*.163}%
+\contentsline {subsection}{4.2.2. Mối liên hệ với Base và các phân hệ khác}{52}{section*.165}%
+\contentsline {subsection}{4.2.3. Phân tích yêu cầu chức năng}{52}{section*.167}%
+\contentsline {subsection}{4.2.4. Yêu cầu phi chức năng}{57}{section*.177}%
+\contentsline {subsection}{4.2.5. Thiết kế phân hệ}{57}{section*.179}%
+\contentsline {subsection}{4.2.6. Thiết kế giao diện}{61}{section*.186}%
+\contentsline {subsection}{4.2.7. Chi tiết kỹ thuật OCR hóa đơn: mô hình, huấn luyện và đánh giá}{63}{section*.191}%
+\contentsline {subsection}{4.2.8. Khảo sát các giải pháp AI OCR khác và lý do lựa chọn}{79}{section*.210}%
+\contentsline {section}{4.3. Nghiệp vụ Quản lý sự cố và SLA}{86}{section*.218}%
+\contentsline {subsection}{4.3.1. Đặt vấn đề và phạm vi}{86}{section*.220}%
+\contentsline {subsection}{4.3.2. Mối liên hệ với Base và các phân hệ khác}{87}{section*.222}%
+\contentsline {subsection}{4.3.3. Phân tích yêu cầu chức năng}{87}{section*.224}%
+\contentsline {subsection}{4.3.4. Yêu cầu phi chức năng}{89}{section*.232}%
+\contentsline {subsection}{4.3.5. Thiết kế phân hệ}{89}{section*.234}%
+\contentsline {subsection}{4.3.6. Thiết kế giao diện}{93}{section*.243}%
+\contentsline {section}{4.4. Kết luận chương}{95}{section*.247}%
+\contentsline {chapter}{Chương 5. Triển khai, kiểm thử và đánh giá}{96}{chapter*.249}%
+\contentsline {section}{5.1. Môi trường và công nghệ triển khai}{96}{section*.251}%
+\contentsline {section}{5.2. Kết quả triển khai module Base}{97}{section*.253}%
+\contentsline {section}{5.3. Kết quả triển khai phân hệ Quản lý tài sản (phần riêng)}{98}{section*.257}%
+\contentsline {section}{5.4. Kiểm thử hệ thống}{99}{section*.259}%
+\contentsline {section}{5.5. Đánh giá hệ thống}{100}{section*.262}%
+\contentsline {section}{5.6. Đánh giá đạo đức, an toàn dữ liệu và bối cảnh xã hội}{100}{section*.264}%
+\contentsline {section}{5.7. Kết luận chương}{101}{section*.266}%
+\contentsline {chapter}{Kết luận}{102}{chapter*.268}%
+\contentsline {section}{1. Kết quả đạt được}{102}{section*.270}%
+\contentsline {section}{2. Hạn chế}{102}{section*.272}%
+\contentsline {section}{3. Hướng phát triển}{102}{section*.274}%
+\contentsline {section}{4. Đóng góp của cá nhân}{103}{section*.276}%
+\contentsline {chapter}{Tài liệu tham khảo}{104}{chapter*.278}%
+\contentsline {chapter}{Phụ lục}{105}{chapter*.280}%
+\contentsline {section}{Phụ lục. Biên bản kiểm thử hệ thống theo vai trò}{113}{section*.281}%
+\contentsline {section}{Phụ lục. Theo dõi lỗi \& kiểm thử chi tiết}{130}{section*.299}%
