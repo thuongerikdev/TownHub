@@ -237,9 +237,28 @@ async function apiFetch<T>(
       signal: controller.signal,
     });
 
-    const contentType = res.headers.get("content-type");
-    const isJson = contentType?.includes("application/json");
-    const data = isJson ? await res.json() : { errorCode: res.status, errorMessage: res.statusText, data: null };
+    // Nhận cả "application/json" LẪN "application/problem+json" (lỗi validate model
+    // của ASP.NET). Trước đây chỉ khớp "application/json" nên lỗi 400 validate bị
+    // rơi về "Bad Request" chung chung, che mất nguyên nhân thật.
+    const contentType = res.headers.get("content-type") ?? "";
+    const isJson = contentType.includes("json");
+    let data: ApiResponse<T>;
+    if (isJson) {
+      const raw = await res.json().catch(() => null);
+      if (raw && typeof raw === "object" && "errorCode" in raw) {
+        data = raw as ApiResponse<T>;
+      } else if (raw && typeof raw === "object") {
+        // ASP.NET ProblemDetails → gom title/detail/errors thành thông báo dễ đọc.
+        const pd = raw as { title?: string; detail?: string; errors?: Record<string, string[]> };
+        const fieldMsgs = pd.errors ? Object.values(pd.errors).flat() : [];
+        const msg = [pd.detail, ...fieldMsgs].filter(Boolean).join(" ") || pd.title || res.statusText;
+        data = { errorCode: res.status, errorMessage: msg, data: null as T };
+      } else {
+        data = { errorCode: res.status, errorMessage: res.statusText, data: null as T };
+      }
+    } else {
+      data = { errorCode: res.status, errorMessage: res.statusText, data: null as T };
+    }
 
     if (!res.ok) {
       if (
