@@ -750,7 +750,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     requestedByName   = ticket.assignedToName;
                 }
 
-                _dbContext.PurchaseRequests.Add(new PurchaseRequest
+                var pr = new PurchaseRequest
                 {
                     prCode       = prCode,
                     ticketId     = request.ticketId,
@@ -763,7 +763,27 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     justification = request.justification,
                     priority     = request.priority,
                     neededByDate = request.neededByDate
-                });
+                };
+                _dbContext.PurchaseRequests.Add(pr);
+
+                // Dòng vật tư đề xuất (nếu client gửi kèm) — thêm cùng giao dịch, tránh phải gọi add-item riêng.
+                if (request.items != null && request.items.Count > 0)
+                {
+                    var matIds = request.items.Select(i => i.materialId).Distinct().ToList();
+                    var validMat = await _dbContext.Materials.Where(m => matIds.Contains(m.id)).Select(m => m.id).ToListAsync();
+                    foreach (var line in request.items)
+                    {
+                        if (!validMat.Contains(line.materialId))
+                            return ResponseConst.Error<bool>(400, "Có vật tư không tồn tại trong danh sách đề xuất.");
+                        _dbContext.PurchaseRequestItems.Add(new PurchaseRequestItem
+                        {
+                            prId              = pr.id,
+                            materialId        = line.materialId,
+                            targetWarehouseId = line.targetWarehouseId
+                        });
+                    }
+                }
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Tạo phiếu đề xuất mua hàng thành công.", true);
             }
@@ -1080,7 +1100,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 var now = DateTime.UtcNow;
                 var poCode = await PurchaseOrderCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
 
-                _dbContext.PurchaseOrders.Add(new PurchaseOrder
+                var po = new PurchaseOrder
                 {
                     poCode           = poCode,
                     prId             = request.prId,
@@ -1092,7 +1112,27 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     paymentTerms     = request.paymentTerms,
                     notes            = request.notes,
                     createdBy        = request.createdBy
-                });
+                };
+                _dbContext.PurchaseOrders.Add(po);
+
+                // Dòng vật tư của đơn (nếu client gửi kèm) — thêm cùng giao dịch.
+                if (request.items != null && request.items.Count > 0)
+                {
+                    var matIds = request.items.Select(i => i.materialId).Distinct().ToList();
+                    var validMat = await _dbContext.Materials.Where(m => matIds.Contains(m.id)).Select(m => m.id).ToListAsync();
+                    foreach (var line in request.items)
+                    {
+                        if (!validMat.Contains(line.materialId))
+                            return ResponseConst.Error<bool>(400, "Có vật tư không tồn tại trong danh sách đơn hàng.");
+                        _dbContext.PurchaseOrderItems.Add(new PurchaseOrderItem
+                        {
+                            poId              = po.id,
+                            materialId        = line.materialId,
+                            targetWarehouseId = line.targetWarehouseId
+                        });
+                    }
+                }
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Tạo đơn đặt hàng thành công.", true);
             }

@@ -15,8 +15,9 @@ import {
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
   type SlaConfigResponse, type UpdateTicketInput, type TicketAttachmentResponse,
   type WarehouseResponse, type MaterialResponse,
-  type InventoryTransactionResponse, type PurchaseRequestResponse,
+  type InventoryTransactionResponse, type PurchaseRequestResponse, type PurchaseLineInput,
 } from "@/lib/api";
+import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import { useApi, useApiList } from "@/lib/use-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { mockTickets, mockSlaConfigs } from "@/lib/mock/cm";
@@ -156,6 +157,7 @@ export default function TicketDetail() {
 
   // ── PR inline form ────────────────────────────────────────────────────────────
   const [prForm,     setPrForm]     = useState<PrForm>(emptyPr);
+  const [prLines,    setPrLines]    = useState<PurchaseLineInput[]>([]);
   const [prWorking,  setPrWorking]  = useState(false);
 
   const [working, setWorking] = useState(false);
@@ -260,11 +262,13 @@ export default function TicketDetail() {
       title:           prForm.title.trim() || `Vật tư cho ${t.ticketCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
+      items:           prLines.length ? prLines : undefined,
     });
     setPrWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã tạo phiếu đề xuất mua hàng.");
       setPrForm(emptyPr);
+      setPrLines([]);
       linkedPrsQ.refetch();
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
   }
@@ -480,6 +484,9 @@ export default function TicketDetail() {
                       <div className="col-span-full">
                         <label className="mb-1 block text-xs text-muted-foreground">Lý do / Mô tả</label>
                         <Textarea rows={2} value={prForm.justification} onChange={(e) => setPrForm((f) => ({ ...f, justification: e.target.value }))} placeholder="Mô tả nhu cầu vật tư cần mua…" />
+                      </div>
+                      <div className="col-span-full">
+                        <MaterialLinesPicker value={prLines} onChange={setPrLines} label="Vật tư đề xuất" compact />
                       </div>
                       <div className="col-span-full flex justify-end">
                         <Button size="sm" onClick={doCreatePr} disabled={prWorking}>

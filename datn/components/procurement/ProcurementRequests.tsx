@@ -5,8 +5,9 @@ import { Plus, ShoppingCart, Check, X, Trash2, Eye, Clock, CheckCircle2, Send } 
 import { toast } from "sonner";
 import {
   purchaseRequests, displayUser, EMPTY_GUID,
-  type PurchaseRequestResponse, type CreatePurchaseRequestInput,
+  type PurchaseRequestResponse, type CreatePurchaseRequestInput, type PurchaseLineInput,
 } from "@/lib/api";
+import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import { useApiList } from "@/lib/use-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { mockPurchaseRequests } from "@/lib/mock/procurement";
@@ -50,8 +51,11 @@ export default function ProcurementRequests() {
   const [statusF, setStatusF] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [lines, setLines] = useState<PurchaseLineInput[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [detail, setDetail] = useState<PurchaseRequestResponse | null>(null);
+  // Dòng vật tư của PR đang xem chi tiết.
+  const detailItemsQ = useApiList(() => purchaseRequests.getItems(detail!.id), { deps: [detail?.id], enabled: !!detail });
   const [rejecting, setRejecting] = useState<PurchaseRequestResponse | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [confirmDel, setConfirmDel] = useState<PurchaseRequestResponse | null>(null);
@@ -74,6 +78,7 @@ export default function ProcurementRequests() {
 
   function openCreate() {
     setForm(emptyForm); // Mã PR do server sinh khi lưu.
+    setLines([]);
     setOpen(true);
   }
 
@@ -84,6 +89,7 @@ export default function ProcurementRequests() {
       requestedByName: form.requestedBy.trim(), title: form.title.trim(),
       justification: form.justification.trim() || undefined, priority: form.priority,
       neededByDate: form.neededByDate || undefined,
+      items: lines.length ? lines : undefined,
     };
     setSubmitting(true);
     const res = await purchaseRequests.create(body);
@@ -225,6 +231,9 @@ export default function ProcurementRequests() {
           <Field label="Lý do mua" className="col-span-2">
             <Textarea rows={3} value={form.justification} onChange={(e) => setForm((f) => ({ ...f, justification: e.target.value }))} placeholder="Tồn kho dưới mức tối thiểu, cần cho công việc đang chờ…" />
           </Field>
+          <div className="col-span-2">
+            <MaterialLinesPicker value={lines} onChange={setLines} label="Vật tư đề xuất" />
+          </div>
         </div>
       </EntityModal>
 
@@ -247,6 +256,23 @@ export default function ProcurementRequests() {
             {displayUser(detail.approvedBy) && <DetailRow label="Người duyệt">{displayUser(detail.approvedBy)}</DetailRow>}
             {detail.justification && <div className="col-span-2"><DetailRow label="Lý do">{detail.justification}</DetailRow></div>}
             {detail.rejectedReason && <div className="col-span-2"><DetailRow label="Lý do từ chối">{detail.rejectedReason}</DetailRow></div>}
+            <div className="col-span-2">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Vật tư đề xuất ({detailItemsQ.items.length})</p>
+              {detailItemsQ.loading ? (
+                <p className="text-sm text-muted-foreground">Đang tải…</p>
+              ) : detailItemsQ.items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Phiếu này chưa có dòng vật tư.</p>
+              ) : (
+                <ul className="divide-y divide-border rounded-lg border border-border">
+                  {detailItemsQ.items.map((it) => (
+                    <li key={it.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                      <span><span className="font-medium text-foreground">{it.materialName ?? it.materialId}</span> <span className="text-xs text-muted-foreground">{it.materialCode}</span></span>
+                      <span className="text-xs text-muted-foreground">{it.warehouseName ?? ""}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
       </EntityModal>

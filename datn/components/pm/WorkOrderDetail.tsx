@@ -14,8 +14,9 @@ import {
   type RoleMember,
   type WorkOrderResponse,
   type WarehouseResponse, type MaterialResponse,
-  type InventoryTransactionResponse, type PurchaseRequestResponse,
+  type InventoryTransactionResponse, type PurchaseRequestResponse, type PurchaseLineInput,
 } from "@/lib/api";
+import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import { useApi, useApiList } from "@/lib/use-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { mockWorkOrders } from "@/lib/mock/pm";
@@ -106,6 +107,7 @@ export default function WorkOrderDetail() {
   const [matForm,    setMatForm]    = useState<MatForm>(emptyMat);
   const [matWorking, setMatWorking] = useState(false);
   const [prForm,     setPrForm]     = useState<PrForm>(emptyPr);
+  const [prLines,    setPrLines]    = useState<PurchaseLineInput[]>([]);
   const [prWorking,  setPrWorking]  = useState(false);
 
   // Full payload: WorkOrder UpdateAsync overwrites every mapped field, so a partial
@@ -191,11 +193,13 @@ export default function WorkOrderDetail() {
       title:           prForm.title.trim() || `Vật tư cho ${wo.woCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
+      items:           prLines.length ? prLines : undefined,
     });
     setPrWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã tạo phiếu đề xuất mua hàng.");
       setPrForm(emptyPr);
+      setPrLines([]);
       linkedPrsQ.refetch();
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
   }
@@ -379,6 +383,9 @@ export default function WorkOrderDetail() {
                       <div className="col-span-full">
                         <label className="mb-1 block text-xs text-muted-foreground">Lý do / Mô tả</label>
                         <Textarea rows={2} value={prForm.justification} onChange={(e) => setPrForm((f) => ({ ...f, justification: e.target.value }))} placeholder="Mô tả nhu cầu vật tư cần mua…" />
+                      </div>
+                      <div className="col-span-full">
+                        <MaterialLinesPicker value={prLines} onChange={setPrLines} label="Vật tư đề xuất" compact />
                       </div>
                       <div className="col-span-full flex justify-end">
                         <Button size="sm" onClick={doCreatePr} disabled={prWorking}>

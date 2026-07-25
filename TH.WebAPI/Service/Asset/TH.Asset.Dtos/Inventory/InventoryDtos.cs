@@ -231,6 +231,16 @@ namespace TH.Asset.Dtos
         public string? justification { get; set; }
         public string priority { get; set; } = "MEDIUM";
         public DateTime? neededByDate { get; set; }
+
+        // Dòng vật tư đề xuất — tạo kèm ngay khi lập phiếu (header + lines trong 1 giao dịch).
+        public List<PurchaseLineDto>? items { get; set; }
+    }
+
+    // Dòng vật tư dùng chung khi tạo PR/PO kèm danh sách vật tư (chỉ chọn vật tư + kho đích).
+    public class PurchaseLineDto
+    {
+        public Guid materialId { get; set; }
+        public Guid? targetWarehouseId { get; set; }
     }
 
     public class UpdatePurchaseRequestDto : CreatePurchaseRequestDto
@@ -305,6 +315,9 @@ namespace TH.Asset.Dtos
         public string? notes { get; set; }
         // Cross-service (Auth)
         public Guid? createdBy { get; set; }
+
+        // Dòng vật tư của đơn hàng — tạo kèm ngay khi lập đơn.
+        public List<PurchaseLineDto>? items { get; set; }
     }
 
     public class UpdatePurchaseOrderDto : CreatePurchaseOrderDto

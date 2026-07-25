@@ -1518,11 +1518,14 @@ export function parseOcrPayload(raw?: string | null): OcrExtractedPayload | null
     return p && typeof p === "object" ? p : null;
   } catch { return null; }
 }
+// Dòng vật tư tạo kèm PR/PO (chọn vật tư + kho đích).
+export interface PurchaseLineInput { materialId: string; targetWarehouseId?: string }
 export interface CreatePurchaseRequestInput {
   // prCode do server sinh — không gửi. requestedBy* server tự suy từ KTV phụ trách WO.
   prCode?: string; ticketId?: string; woId?: string; departmentId?: string;
   requestedBy?: string; requestedByUserId?: number; requestedByName?: string;
   title?: string; justification?: string; priority?: string; neededByDate?: string;
+  items?: PurchaseLineInput[];
 }
 export interface UpdatePurchaseRequestInput extends CreatePurchaseRequestInput {
   id: string; status?: string; approvedBy?: string; approvedAt?: string; rejectedReason?: string;
@@ -1531,6 +1534,7 @@ export interface CreatePurchaseOrderInput {
   // poCode do server sinh — không gửi khi tạo.
   poCode?: string; prId?: string; vendorId: string; issueDate?: string; expectedDelivery?: string;
   totalAmount?: number; currency?: string; paymentTerms?: string; notes?: string; createdBy?: string;
+  items?: PurchaseLineInput[];
 }
 export interface UpdatePurchaseOrderInput extends CreatePurchaseOrderInput { id: string; status?: string; actualDelivery?: string; }
 export interface CreateInvoiceItemLine {
