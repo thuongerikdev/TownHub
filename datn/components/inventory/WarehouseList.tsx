@@ -25,9 +25,10 @@ interface FormState { code: string; name: string; buildingId: string; }
 const emptyForm: FormState = { code: "", name: "", buildingId: "" };
 
 export default function WarehouseList() {
-  // RBAC ở tầng giao diện: quản lý kho cần quyền ghi kho (admin bỏ qua).
+  // RBAC ở tầng giao diện: thêm/sửa/xoá kho là master-data → cần inventory.manage.
+  // KTV chỉ có inventory.transaction (xuất/nhập kho) nên chỉ được xem danh sách kho.
   const { hasPermission } = useAuth();
-  const canManage = hasPermission("inventory.transaction");
+  const canManage = hasPermission("inventory.manage");
 
   const q = useApiList<WarehouseResponse>(() => warehouses.getAll(), { mock: mockWarehouses });
   const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());

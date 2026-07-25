@@ -1,2 +1,10 @@
 import DocumentList from '@/components/assets/DocumentList';
-export default function Page() { return <DocumentList />; }
+import { RequirePermission } from '@/components/shared';
+
+export default function Page() {
+  return (
+    <RequirePermission perm="asset.accounting">
+      <DocumentList />
+    </RequirePermission>
+  );
+}

@@ -11,6 +11,7 @@ import {
   type AssetResponse, type ChecklistTemplateResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockMaintenanceSchedules, mockChecklistTemplates } from "@/lib/mock/pm";
 import { mockAssets } from "@/lib/mock/asset";
 import {
@@ -57,6 +58,10 @@ export default function PMSchedules() {
   const assetsQ = useApiList<AssetResponse>(() => assetApi.getAll(), { mock: mockAssets });
   const tplQ = useApiList<ChecklistTemplateResponse>(() => checklistTemplates.getAll(), { mock: mockChecklistTemplates });
   const list = q.items;
+
+  // Lịch bảo trì do Kỹ sư trưởng/BQL hoạch định (workorder.create) — KTV chỉ xem.
+  const { hasPermission } = useAuth();
+  const canManage = hasPermission("workorder.create");
 
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState("all");
@@ -193,9 +198,9 @@ export default function PMSchedules() {
       key: "status", header: "Trạng thái", sortable: true, sortAccessor: (s) => (s.isActive ? 1 : 0),
       cell: (s) => s.isActive ? <ToneBadge tone="success" dot>Đang chạy</ToneBadge> : <ToneBadge tone="neutral" dot>Tạm dừng</ToneBadge>,
     },
-    {
+    ...(canManage ? [{
       key: "actions", header: "", align: "right",
-      cell: (s) => (
+      cell: (s: MaintenanceScheduleResponse) => (
         <div className="flex items-center justify-end gap-1">
           {woDoneIds.has(s.id) ? (
             <ToneBadge tone="success" dot>Đã tạo WO</ToneBadge>
@@ -213,7 +218,7 @@ export default function PMSchedules() {
           <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(s)}><Trash2 className="size-4" /></Button>
         </div>
       ),
-    },
+    } as Column<MaintenanceScheduleResponse>] : []),
   ];
 
   return (
@@ -222,7 +227,7 @@ export default function PMSchedules() {
         title="Lịch bảo trì định kỳ"
         description="Quản lý chu kỳ PM, tự sinh phiếu công việc trước hạn"
         icon={CalendarClock}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo lịch</Button>}
+        actions={canManage ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo lịch</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}

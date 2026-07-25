@@ -36,9 +36,10 @@ const emptyForm: FormState = {
 const toNum = (s: string) => (s.trim() ? Number(s) : undefined);
 
 export default function ItemCatalog() {
-  // RBAC ở tầng giao diện: quản lý master-data vật tư cần quyền ghi kho (admin bỏ qua).
+  // RBAC ở tầng giao diện: sửa danh mục vật tư là master-data → cần inventory.manage.
+  // KTV chỉ có inventory.transaction (xuất/nhập kho) nên chỉ được xem danh mục.
   const { hasPermission } = useAuth();
-  const canManage = hasPermission("inventory.transaction");
+  const canManage = hasPermission("inventory.manage");
   const q = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
   const list = q.items;
   // Lấy danh mục từ API (được seed sẵn) — tránh bế tắc khi chưa có vật tư nào (BUG-13).

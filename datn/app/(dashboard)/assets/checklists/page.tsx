@@ -1,2 +1,10 @@
 import ChecklistConfig from '@/components/assets/ChecklistConfig';
-export default function Page() { return <ChecklistConfig />; }
+import { RequirePermission } from '@/components/shared';
+
+export default function Page() {
+  return (
+    <RequirePermission perm="workorder.create">
+      <ChecklistConfig />
+    </RequirePermission>
+  );
+}

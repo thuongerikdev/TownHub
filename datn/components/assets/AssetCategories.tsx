@@ -8,6 +8,7 @@ import {
   type CreateAssetCategoryInput, type UpdateAssetCategoryInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockAssetCategories } from "@/lib/mock/asset";
 import {
   PageHeader, DataTable, FilterBar, EntityModal, Field, MockBanner, type Column,
@@ -21,6 +22,12 @@ import {
 export default function AssetCategories() {
   const q = useApiList<AssetCategoryResponse>(() => assetCategories.getAll(), { mock: mockAssetCategories });
   const cats = q.items;
+
+  // Danh mục là dữ liệu nền — KTV chỉ được xem (backend gác asset.create/update/delete).
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("asset.create");
+  const canUpdate = hasPermission("asset.update");
+  const canDelete = hasPermission("asset.delete");
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -79,15 +86,15 @@ export default function AssetCategories() {
     { key: "name", header: "Tên danh mục", sortable: true, sortAccessor: (c) => c.name, cell: (c) => <span className="font-medium text-foreground">{c.name}</span> },
     { key: "parent", header: "Danh mục cha", cell: (c) => <span className="text-muted-foreground">{c.parentName ?? "—"}</span> },
     { key: "tpl", header: "Checklist mặc định", cell: (c) => <span className="text-muted-foreground">{c.defaultChecklistTemplateName ?? "—"}</span> },
-    {
+    ...(canUpdate || canDelete ? [{
       key: "actions", header: "", align: "right",
-      cell: (c) => (
+      cell: (c: AssetCategoryResponse) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(c)}><Pencil className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(c)}><Trash2 className="size-4" /></Button>
+          {canUpdate && <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(c)}><Pencil className="size-4" /></Button>}
+          {canDelete && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(c)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
-    },
+    } as Column<AssetCategoryResponse>] : []),
   ];
 
   return (
@@ -96,7 +103,7 @@ export default function AssetCategories() {
         title="Danh mục tài sản"
         description={`${cats.length} danh mục thiết bị`}
         icon={FolderTree}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Thêm danh mục</Button>}
+        actions={canCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Thêm danh mục</Button> : undefined}
       />
       {q.isMock && <MockBanner />}
       <FilterBar search={search} onSearch={setSearch} placeholder="Tìm danh mục…" />

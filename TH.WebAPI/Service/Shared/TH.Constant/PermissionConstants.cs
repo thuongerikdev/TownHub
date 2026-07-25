@@ -83,6 +83,8 @@ namespace TH.Constant
             { "ResidentCreate", "resident.create" },
             { "ResidentUpdate", "resident.update" },
             { "ResidentDelete", "resident.delete" },
+            { "ResidentFaceRegister", "resident.face_register" },
+            { "ResidentAccessReview", "resident.access_review" },   // camera giám sát + người lạ ra/vào
 
             // --- Thông báo ---
             { "NotificationView", "notification.view" },
@@ -96,6 +98,9 @@ namespace TH.Constant
             { "AssetCreate", "asset.create" },
             { "AssetUpdate", "asset.update" },
             { "AssetDelete", "asset.delete" },
+            // Kế toán tài sản: khấu hao, chứng từ, thanh lý, nhật ký chung, sổ cái, báo cáo kế toán.
+            // Tách khỏi asset.view để KTV xem được tài sản mà không thấy phần sổ sách.
+            { "AssetAccounting", "asset.accounting" },
 
             // --- Bảo trì định kỳ (PM / Work Order) ---
             { "WorkOrderView", "workorder.view" },
@@ -114,7 +119,8 @@ namespace TH.Constant
 
             // --- Kho vật tư ---
             { "InventoryView", "inventory.view" },
-            { "InventoryTransaction", "inventory.transaction" },
+            { "InventoryTransaction", "inventory.transaction" },   // nhập/xuất/điều chuyển (KTV có)
+            { "InventoryManage", "inventory.manage" },             // danh mục vật tư & danh sách kho (KTV KHÔNG có)
             { "InventoryAudit", "inventory.audit" },
 
             // --- Mua sắm ---
@@ -133,6 +139,21 @@ namespace TH.Constant
             // --- Báo cáo ---
             { "ReportKpi", "report.kpi" },
             { "ReportCost", "report.cost" },
+        };
+
+        /// <summary>
+        /// Policy tổng hợp "hoặc" (OR) — chỉ dùng cho [Authorize(Policy = "...")],
+        /// KHÔNG phải quyền lưu DB nên không seed và không hiện ở màn Phân quyền.
+        ///
+        /// Cần thiết vì endpoint `update` của WorkOrder/Ticket vừa là chỗ người quản lý
+        /// sửa nội dung phiếu, vừa là chỗ kỹ thuật viên đẩy trạng thái khi check-in /
+        /// hoàn tất xử lý. KTV chỉ có execute/resolve nên nếu chỉ gác bằng create thì
+        /// check-in trả 403.
+        /// </summary>
+        public static readonly Dictionary<string, string[]> CompositePolicies = new()
+        {
+            { "WorkOrderWrite", new[] { "workorder.create", "workorder.execute" } },
+            { "TicketWrite",    new[] { "ticket.create",    "ticket.resolve"    } },
         };
 
         /// <summary>

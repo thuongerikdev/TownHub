@@ -447,6 +447,14 @@ namespace TH.Auth.ApplicationService.StartUp
                 foreach (var permission in PermissionConstants.Permissions)
                     options.AddPolicy(permission.Key, policy => policy.RequireClaim("permission", permission.Value));
 
+                // Policy "hoặc": cùng một endpoint phục vụ 2 nhóm người dùng khác nhau.
+                // Kỹ thuật viên chỉ có quyền *thực hiện* (execute/resolve) nhưng vẫn phải
+                // PUT được phiếu để check-in (WO → IN_PROGRESS) và kết thúc xử lý sự cố
+                // (ticket → RESOLVED). Không cấp create/delete cho họ.
+                foreach (var (name, codes) in PermissionConstants.CompositePolicies)
+                    options.AddPolicy(name, policy => policy.RequireAssertion(ctx =>
+                        ctx.User.Claims.Any(c => c.Type == "permission" && codes.Contains(c.Value))));
+
                 //options.AddPolicy("ActiveVIP", p => p.Requirements.Add(new ActiveVipRequirement()));
             });
 

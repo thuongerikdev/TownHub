@@ -9,6 +9,7 @@ import {
   type AssetResponse, type BuildingResponse, type FloorResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   PageHeader, DataTable, FilterBar, EntityModal, Field, MockBanner, type Column,
 } from "@/components/shared";
@@ -24,6 +25,12 @@ export default function AssetLocations() {
   const buildingsQ = useApiList<BuildingResponse>(() => buildings.getAll());
   const floorsQ = useApiList<FloorResponse>(() => floors.getAll());
   const locs = q.items;
+
+  // Vị trí là dữ liệu nền — KTV chỉ được xem (backend gác asset.create/update/delete).
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("asset.create");
+  const canUpdate = hasPermission("asset.update");
+  const canDelete = hasPermission("asset.delete");
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -114,15 +121,15 @@ export default function AssetLocations() {
     { key: "area", header: "Khu vực / Vị trí", sortable: true, sortAccessor: (l) => l.areaCode ?? "", cell: (l) => <span className="font-medium text-foreground">{l.areaCode ?? "—"}</span> },
     { key: "building", header: "Toà nhà", cell: (l) => <span className="text-muted-foreground">{buildingLabel(l.buildingId)}</span> },
     { key: "floor", header: "Tầng", cell: (l) => <span className="text-muted-foreground">{floorLabel(l.floorId)}</span> },
-    {
+    ...(canUpdate || canDelete ? [{
       key: "actions", header: "", align: "right",
-      cell: (l) => (
+      cell: (l: AssetLocationResponse) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(l)}><Pencil className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(l)}><Trash2 className="size-4" /></Button>
+          {canUpdate && <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(l)}><Pencil className="size-4" /></Button>}
+          {canDelete && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(l)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
-    },
+    } as Column<AssetLocationResponse>] : []),
   ];
 
   return (
@@ -131,7 +138,7 @@ export default function AssetLocations() {
         title="Vị trí tài sản"
         description={`${locs.length} vị trí`}
         icon={MapPin}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Thêm vị trí</Button>}
+        actions={canCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Thêm vị trí</Button> : undefined}
       />
       <FilterBar search={search} onSearch={setSearch} placeholder="Tìm vị trí…" />
       <DataTable columns={columns} rows={filtered} getRowId={(l) => l.id} loading={q.loading} error={q.error} onRetry={q.refetch} />

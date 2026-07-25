@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -267,7 +267,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetDepreciationService _service;
         public AssetDepreciationController(IAssetDepreciationService service) => _service = service;
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAssetId(Guid assetId)
         {
@@ -275,7 +275,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get-by-period")]
         public async Task<IActionResult> GetByPeriod([FromQuery] int year, [FromQuery] int month)
         {
@@ -283,7 +283,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetUpdate")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpPost("run-period")]
         public async Task<IActionResult> RunPeriod([FromBody] RunDepreciationDto request)
         {
@@ -302,7 +302,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetDocumentService _service;
         public AssetDocumentController(IAssetDocumentService service) => _service = service;
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll([FromQuery] string? documentType)
         {
@@ -310,7 +310,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -320,7 +320,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAsset(Guid assetId)
         {
@@ -339,7 +339,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetDisposalService _service;
         public AssetDisposalController(IAssetDisposalService service) => _service = service;
 
-        [Authorize(Policy = "AssetUpdate")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateAssetDisposalDto request)
         {
@@ -349,7 +349,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll()
         {
@@ -357,7 +357,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -367,7 +367,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("get-by-asset/{assetId}")]
         public async Task<IActionResult> GetByAsset(Guid assetId)
         {
@@ -387,7 +387,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
         private readonly IAssetReportService _service;
         public AssetReportController(IAssetReportService service) => _service = service;
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("accounts")]
         public async Task<IActionResult> GetAccounts()
         {
@@ -395,7 +395,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("journal")]
         public async Task<IActionResult> GetJournal(
             [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string? account)
@@ -404,7 +404,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("ledger")]
         public async Task<IActionResult> GetLedger(
             [FromQuery] string account, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
@@ -415,7 +415,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("trial-balance")]
         public async Task<IActionResult> GetTrialBalance([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
@@ -423,7 +423,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("asset-register")]
         public async Task<IActionResult> GetAssetRegister()
         {
@@ -431,7 +431,7 @@ namespace TH.WebAPI.Controllers.Asset.Core
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "AssetView")]
+        [Authorize(Policy = "AssetAccounting")]
         [HttpGet("movement")]
         public async Task<IActionResult> GetMovement([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {

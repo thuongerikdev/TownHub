@@ -179,7 +179,8 @@ namespace TH.Auth.Infrastructure
                 {
                     "apartment.view","apartment.create","apartment.update","apartment.delete",
                     "resident.view","resident.create","resident.update","resident.delete",
-                    "asset.view","asset.update",
+                    "resident.face_register","resident.access_review",
+                    "asset.view","asset.update","asset.accounting",
                     "workorder.view","workorder.create","workorder.assign","workorder.review","workorder.close",
                     "ticket.view","ticket.assign","ticket.close",
                     "inventory.view",
@@ -194,12 +195,16 @@ namespace TH.Auth.Infrastructure
                     "asset.view","asset.create","asset.update","asset.delete",
                     "workorder.view","workorder.create","workorder.assign","workorder.execute","workorder.review","workorder.close",
                     "ticket.view","ticket.create","ticket.assign","ticket.resolve","ticket.close",
-                    "inventory.view","inventory.transaction","inventory.audit",
+                    "inventory.view","inventory.transaction","inventory.manage","inventory.audit",
                     "procurement.view","procurement.request",
                     "vendor.view","vendor.evaluate",
                     "report.kpi",
                     "notification.view",
                 },
+                // KTV chỉ thi hành hiện trường: xem tài sản, thực hiện WO/ticket, xuất vật tư.
+                // KHÔNG có asset.accounting (khấu hao/chứng từ/thanh lý/sổ sách), KHÔNG có
+                // resident.access_review (camera & người lạ), KHÔNG có quyền sửa danh mục
+                // (asset.create/update, workorder.create, inventory.manage).
                 ["Kỹ thuật viên"] = new[]
                 {
                     "asset.view",
@@ -210,7 +215,7 @@ namespace TH.Auth.Infrastructure
                 },
                 ["Kế toán"] = new[]
                 {
-                    "asset.view","asset.update",
+                    "asset.view","asset.update","asset.accounting",
                     "procurement.view","procurement.order","procurement.invoice",
                     "vendor.view",
                     "report.cost","report.kpi",

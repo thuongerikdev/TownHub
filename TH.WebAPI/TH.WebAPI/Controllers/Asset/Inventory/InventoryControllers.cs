@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -25,7 +25,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IWarehouseService _service;
         public WarehouseController(IWarehouseService service) => _service = service;
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateWarehouseDto request)
         {
@@ -33,7 +33,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateWarehouseDto request)
         {
@@ -43,7 +43,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -82,7 +82,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IMaterialService _service;
         public MaterialController(IMaterialService service) => _service = service;
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateMaterialDto request)
         {
@@ -90,7 +90,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateMaterialDto request)
         {
@@ -100,7 +100,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

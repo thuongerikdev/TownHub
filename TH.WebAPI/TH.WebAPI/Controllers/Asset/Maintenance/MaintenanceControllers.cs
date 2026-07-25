@@ -187,7 +187,9 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "WorkOrderCreate")]
+        // KTV cần PUT được để check-in (→ IN_PROGRESS) và nộp nghiệm thu (→ PENDING_REVIEW),
+        // nên chấp nhận cả workorder.execute chứ không chỉ workorder.create.
+        [Authorize(Policy = "WorkOrderWrite")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateWorkOrderDto request)
         {

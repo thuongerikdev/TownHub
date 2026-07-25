@@ -84,7 +84,9 @@ namespace TH.WebAPI.Controllers.Asset.Incident
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "TicketCreate")]
+        // KTV cần PUT được để ghi nhận kết quả xử lý (→ RESOLVED, resolutionNote, resolvedAt)
+        // ngay sau change-status, nên chấp nhận cả ticket.resolve chứ không chỉ ticket.create.
+        [Authorize(Policy = "TicketWrite")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateTicketDto request)
         {

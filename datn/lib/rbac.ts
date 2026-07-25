@@ -108,6 +108,7 @@ export const RESOURCE_DEFS: ResourceDef[] = [
       { ...A.create, description: "Khai báo tài sản, gắn QR" },
       { ...A.update, description: "Cập nhật tình trạng, vị trí, khấu hao" },
       { ...A.delete, description: "Thanh lý / xoá tài sản" },
+      { action: "accounting", label: "Kế toán tài sản", description: "Khấu hao, chứng từ, thanh lý, nhật ký chung, sổ cái, báo cáo kế toán" },
     ],
   },
   {
@@ -136,6 +137,7 @@ export const RESOURCE_DEFS: ResourceDef[] = [
     actions: [
       { ...A.view, description: "Xem tồn kho & danh mục vật tư" },
       { action: "transaction", label: "Nhập / Xuất kho", description: "Tạo phiếu nhập, xuất, điều chuyển" },
+      { action: "manage", label: "Quản lý danh mục & kho", description: "Thêm/sửa/xoá danh mục vật tư và danh sách kho" },
       { action: "audit", label: "Kiểm kê", description: "Tạo & chốt kỳ kiểm kê, điều chỉnh tồn" },
     ],
   },

@@ -4,8 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
 import { accessControl, type AccessEventResponse } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { RequirePermission } from "@/components/shared";
 
+// Nhật ký người lạ ra/vào là nghiệp vụ an ninh của BQL, không thuộc khối kỹ thuật.
 export default function AccessAlertsPage() {
+  return (
+    <RequirePermission perm="resident.access_review">
+      <AccessAlertsScreen />
+    </RequirePermission>
+  );
+}
+
+function AccessAlertsScreen() {
   const { user } = useAuth();
   const [items, setItems] = useState<AccessEventResponse[]>([]);
   const [loading, setLoading] = useState(true);

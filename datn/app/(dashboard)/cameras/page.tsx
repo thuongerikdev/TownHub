@@ -7,11 +7,22 @@ import {
   CheckCircle2, Loader2, Play, ScanFace, Square, UserCheck,
 } from "lucide-react";
 import { accessControl, type CameraRecognitionResponse } from "@/lib/api";
+import { RequirePermission } from "@/components/shared";
 
 const ANALYZE_INTERVAL_MS = 3000;
 const FRAME_MAX_WIDTH = 720;
 
+// Giám sát an ninh là nghiệp vụ của BQL. Bọc ngoài để người không có quyền
+// không mount được màn này — tránh bật camera rồi mới báo 403.
 export default function CamerasPage() {
+  return (
+    <RequirePermission perm="resident.access_review">
+      <CamerasScreen />
+    </RequirePermission>
+  );
+}
+
+function CamerasScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);

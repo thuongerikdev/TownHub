@@ -27,21 +27,29 @@ namespace TH.TownHub.WebAPI.Controllers
         public async Task<IActionResult> UpdateAiResult(int residentId, UpdateFaceAiResultRequestDto request) =>
             ToResult(await _service.UpdateFaceAiResultAsync(residentId, request));
 
+        // Nhật ký ra/vào + camera giám sát là nghiệp vụ an ninh của BQL, không phải
+        // của khối kỹ thuật → gác riêng bằng resident.access_review.
+        // (Nhóm faces/* để trống policy vì cư dân tự đăng ký khuôn mặt của mình.)
+        [Authorize(Policy = "ResidentAccessReview")]
         [HttpPost("events")]
         public async Task<IActionResult> CreateEvent(CreateAccessEventRequestDto request) => ToResult(await _service.CreateEventAsync(request));
 
+        [Authorize(Policy = "ResidentAccessReview")]
         [HttpGet("events")]
         public async Task<IActionResult> GetEvents(string? personType, string? status, string? direction) =>
             ToResult(await _service.GetEventsAsync(personType, status, direction));
 
+        [Authorize(Policy = "ResidentAccessReview")]
         [HttpPut("events/{id:long}/handle")]
         public async Task<IActionResult> HandleEvent(long id, HandleAccessEventRequestDto request) =>
             ToResult(await _service.HandleEventAsync(id, request));
 
+        [Authorize(Policy = "ResidentAccessReview")]
         [HttpDelete("events/{id:long}")]
         public async Task<IActionResult> DeleteEvent(long id) =>
             ToResult(await _service.DeleteEventAsync(id));
 
+        [Authorize(Policy = "ResidentAccessReview")]
         [HttpPost("camera/analyze")]
         [RequestSizeLimit(5_000_000)]
         public async Task<IActionResult> AnalyzeFrame(AnalyzeCameraFrameRequestDto request) =>

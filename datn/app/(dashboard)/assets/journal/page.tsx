@@ -1,2 +1,10 @@
 import JournalReport from '@/components/assets/JournalReport';
-export default function Page() { return <JournalReport />; }
+import { RequirePermission } from '@/components/shared';
+
+export default function Page() {
+  return (
+    <RequirePermission perm="asset.accounting">
+      <JournalReport />
+    </RequirePermission>
+  );
+}
