@@ -125,11 +125,23 @@ export default function PurchaseOrders() {
     });
     setLines([]);
     setOpen(true);
-    // Kế thừa vật tư từ đề xuất (nếu PR đã có dòng) để khỏi chọn lại.
-    const res = await purchaseRequests.getItems(pr.id);
-    if (res.errorCode === 200 && res.data?.length) {
-      setLines(res.data.map((it) => ({ materialId: it.materialId, targetWarehouseId: it.targetWarehouseId })));
+    await loadPrItems(pr.id);
+  }
+
+  // Nạp vật tư của một PR vào danh sách dòng PO (PO kế thừa vật tư từ đề xuất).
+  async function loadPrItems(prId: string) {
+    const res = await purchaseRequests.getItems(prId);
+    if (res.errorCode === 200) {
+      setLines((res.data ?? []).map((it) => ({ materialId: it.materialId, targetWarehouseId: it.targetWarehouseId })));
     }
+  }
+
+  // Chọn PR trong dropdown khi đang tạo PO: gắn prId + tự điền vật tư của PR đó.
+  async function pickPr(v: string) {
+    const prId = v === "none" ? "" : v;
+    setForm((f) => ({ ...f, prId }));
+    if (prId) await loadPrItems(prId);
+    else setLines([]);
   }
 
   function buildUpdate(po: PurchaseOrderResponse, status: string): UpdatePurchaseOrderInput {
@@ -294,13 +306,14 @@ export default function PurchaseOrders() {
             </Select>
           </Field>
           <Field label="Từ đề xuất (PR)" hint="Tuỳ chọn" className="col-span-2">
-            <Select value={form.prId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, prId: v === "none" ? "" : v }))}>
+            <Select value={form.prId || "none"} onValueChange={pickPr}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— Không liên kết —</SelectItem>
                 {prsQ.items.map((p) => <SelectItem key={p.id} value={p.id}>{p.prCode}{p.title ? ` · ${p.title}` : ""}</SelectItem>)}
               </SelectContent>
             </Select>
+            {form.prId && <p className="mt-1 text-xs text-muted-foreground">Vật tư của đề xuất đã được nạp vào danh sách bên dưới — có thể chỉnh thêm.</p>}
           </Field>
           <Field label="Ngày đặt">
             <Input type="date" value={form.issueDate} onChange={(e) => setForm((f) => ({ ...f, issueDate: e.target.value }))} />

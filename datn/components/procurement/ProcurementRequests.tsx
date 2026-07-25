@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Plus, ShoppingCart, Check, X, Trash2, Eye, Clock, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
-  purchaseRequests, displayUser, EMPTY_GUID,
-  type PurchaseRequestResponse, type CreatePurchaseRequestInput, type PurchaseLineInput,
+  purchaseRequests, users, displayUser, EMPTY_GUID,
+  type PurchaseRequestResponse, type CreatePurchaseRequestInput, type PurchaseLineInput, type RoleMember,
 } from "@/lib/api";
 import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import { useApiList } from "@/lib/use-api";
@@ -34,13 +34,15 @@ const STATUS_OPTIONS = ["DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "CONVERTED
 const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 interface FormState {
-  title: string; justification: string; priority: string; neededByDate: string; requestedBy: string;
+  title: string; justification: string; priority: string; neededByDate: string; requestedById: string;
 }
-const emptyForm: FormState = { title: "", justification: "", priority: "MEDIUM", neededByDate: "", requestedBy: "" };
+const emptyForm: FormState = { title: "", justification: "", priority: "MEDIUM", neededByDate: "", requestedById: "" };
 
 export default function ProcurementRequests() {
   const q = useApiList<PurchaseRequestResponse>(() => purchaseRequests.getAll(), { mock: mockPurchaseRequests });
   const list = q.items;
+  // Danh sách người đề xuất — chọn theo ID (không nhập tay), giống phân công KTV ở WO/Ticket.
+  const staffQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"));
   // RBAC ở tầng giao diện: chỉ hiện nút theo quyền (admin được bỏ qua).
   const { hasPermission } = useAuth();
   const canRequest = hasPermission("procurement.request");
@@ -84,9 +86,12 @@ export default function ProcurementRequests() {
 
   async function submit() {
     if (!form.title.trim()) { toast.error("Nhập tiêu đề đề xuất."); return; }
-    if (!form.requestedBy.trim()) { toast.error("Nhập người đề xuất."); return; }
+    const performer = staffQ.items.find((u) => String(u.userID) === form.requestedById);
+    if (!performer) { toast.error("Chọn người đề xuất."); return; }
     const body: CreatePurchaseRequestInput = {
-      requestedByName: form.requestedBy.trim(), title: form.title.trim(),
+      requestedByUserId: performer.userID,
+      requestedByName: performer.fullName?.trim() || performer.userName,
+      title: form.title.trim(),
       justification: form.justification.trim() || undefined, priority: form.priority,
       neededByDate: form.neededByDate || undefined,
       items: lines.length ? lines : undefined,
@@ -212,7 +217,16 @@ export default function ProcurementRequests() {
             <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Người đề xuất" required>
-            <Input value={form.requestedBy} onChange={(e) => setForm((f) => ({ ...f, requestedBy: e.target.value }))} placeholder="Nguyễn Văn An" />
+            <Select value={form.requestedById} onValueChange={(v) => setForm((f) => ({ ...f, requestedById: v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder={staffQ.loading ? "Đang tải…" : staffQ.items.length ? "Chọn người đề xuất" : "Chưa có nhân sự"} />
+              </SelectTrigger>
+              <SelectContent>
+                {staffQ.items.map((u) => (
+                  <SelectItem key={u.userID} value={String(u.userID)}>{u.fullName?.trim() || u.userName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Tiêu đề" required className="col-span-2">
             <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Mua cáp thép thang máy bổ sung tồn kho" />
