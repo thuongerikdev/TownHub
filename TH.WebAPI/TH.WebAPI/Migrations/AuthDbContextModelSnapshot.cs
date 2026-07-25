@@ -516,7 +516,8 @@ namespace TH.WebAPI.Migrations
                 {
                     b.HasOne("TH.Auth.Domain.User.AuthUser", "user")
                         .WithMany("auditLogs")
-                        .HasForeignKey("userID");
+                        .HasForeignKey("userID")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("user");
                 });

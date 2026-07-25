@@ -501,5 +501,24 @@ namespace TH.Auth.ApplicationService.StartUp
                 }
             }
         }
+
+        // Seed nhân sự + cư dân demo (idempotent). Trả về map userName→userID để
+        // module Base liên kết Resident.AuthUserId. Gọi khi bật cờ seed demo.
+        public static async Task<Dictionary<string, int>> SeedDemoUsersAsync(this WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
+            var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("AuthDemoSeeder");
+            try
+            {
+                var context = services.GetRequiredService<AuthDbContext>();
+                return await AuthDataSeeder.SeedDemoUsersAsync(context, services);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Lỗi khi seed nhân sự/cư dân demo.");
+                throw;
+            }
+        }
     }
 }

@@ -24,7 +24,6 @@ Luồng chính &
 5. Worker chuẩn hóa kết quả, tạo bản ghi \texttt{Invoice}/\texttt{InvoiceItem} (trạng thái \emph{chờ xác nhận}) và cập nhật \texttt{ocr\_jobs} = \emph{done}.\newline
 6. Người dùng mở màn hình xác nhận, đối chiếu với ảnh gốc và với PO, chỉnh sửa nếu cần rồi lưu chính thức. \\ \hline
 Luồng thay thế / ngoại lệ &
-3a. Tệp là PDF có lớp văn bản: hệ thống đọc thẳng text-layer, bỏ qua OCR ảnh.\newline
 4a. Bố cục lạ hoặc chất lượng ảnh kém: người dùng chọn lại engine \texttt{vietocr} (độ chính xác nhận dạng cao nhất) hoặc bổ sung hóa đơn thật để fine-tune lại.\newline
 4b. Dịch vụ OCR lỗi/timeout: job chuyển \emph{failed}, ghi log lỗi; người dùng có thể thử lại hoặc nhập tay.\newline
 6a. Độ tin cậy (confidence) thấp hơn ngưỡng: hệ thống tô cảnh báo các trường nghi ngờ để người dùng kiểm tra kỹ. \\ \hline

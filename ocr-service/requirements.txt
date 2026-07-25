@@ -6,7 +6,6 @@ requests
 numpy
 pillow
 pdf2image
-pdfplumber
 opencv-python-headless
 
 # VietOCR (recognition) + detector easyocr

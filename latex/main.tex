@@ -45,6 +45,21 @@
 \setlist[itemize,3]{label={•}}
 \usepackage{caption}
 \captionsetup{font=small,labelformat=empty,justification=centering}
+
+% --- Hình khổ lớn: chiếm TRỌN một trang NGANG (landscape) ---------------
+% Sơ đồ rộng (use case, tuần tự, ERD, lưu đồ) khi để dọc bị thu nhỏ -> chữ
+% không đọc được lúc in. Xoay ngang cho chiều rộng ~702pt (thay vì 455pt),
+% chữ to hơn ~55%. Dùng: \figland{images/imgNN.pdf}{Chú thích}{Mục lục hình}
+\newcommand{\figland}[3]{%
+  \begin{landscape}%
+  \thispagestyle{fancy}%
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{#1}%
+  \caption*{\small #2}%
+  \addcontentsline{lof}{figure}{#3}%
+  \end{figure}%
+  \end{landscape}%
+}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage[table]{xcolor}

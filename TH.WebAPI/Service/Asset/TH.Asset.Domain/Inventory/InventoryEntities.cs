@@ -418,7 +418,7 @@ namespace TH.Asset.Domain.Inventory
         [MaxLength(20)]
         public string status { get; set; } = "QUEUED";
 
-        // Engine OCR người dùng chọn: "paddleocr" | "vietocr" | "pdf".
+        // Engine OCR người dùng chọn: "paddleocr" | "vietocr".
         // Worker gửi giá trị này xuống service Python qua field "model".
         [MaxLength(20)]
         public string ocrEngine { get; set; } = "paddleocr";
