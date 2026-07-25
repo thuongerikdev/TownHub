@@ -449,4 +449,74 @@ namespace TH.Asset.Domain.Inventory
         // ── Navigation Properties (inverse) ──
         public virtual ICollection<Invoice>? invoices { get; set; }
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // KIỂM KÊ KHO (Stock Take) — header + dòng chi tiết.
+    // Lưu MỌI kỳ kiểm kê (kể cả khớp sổ, không lệch) để tra cứu lịch sử. Với các
+    // dòng có chênh lệch, service sinh thêm giao dịch điều chỉnh (ADJUST) tham
+    // chiếu về stock_take.id nên referenceId luôn là Guid hợp lệ.
+    // ════════════════════════════════════════════════════════════════════════
+    [Table("stock_takes", Schema = "asset")]
+    public class StockTake
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public Guid id { get; set; }
+
+        [Required, MaxLength(50)]
+        public required string stkCode { get; set; }
+
+        public Guid warehouseId { get; set; }
+
+        [MaxLength(100)]
+        public string? period { get; set; }             // "Tháng 07/2026"
+        public DateTime countDate { get; set; } = DateTime.UtcNow;
+
+        // Cross-service (Auth) — lưu id + tên hiển thị (giống PurchaseRequest, không nhập tay)
+        public int? performedByUserId { get; set; }
+        [MaxLength(150)]
+        public string? performedByName { get; set; }
+
+        [MaxLength(20)]
+        public string status { get; set; } = "COMPLETED";
+
+        // Tổng hợp kết quả kiểm kê
+        public int totalItems { get; set; }
+        public int matchedItems { get; set; }
+        public int diffItems { get; set; }
+        public decimal totalDiffValue { get; set; }
+        public string? notes { get; set; }
+        public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+        // ── Navigation Properties ──
+        [ForeignKey(nameof(warehouseId))]
+        public virtual Warehouse? warehouse { get; set; }
+        public virtual ICollection<StockTakeLine>? lines { get; set; }
+    }
+
+    [Table("stock_take_lines", Schema = "asset")]
+    public class StockTakeLine
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public Guid id { get; set; }
+
+        public Guid stockTakeId { get; set; }
+        public Guid materialId { get; set; }
+
+        public decimal systemQty { get; set; }    // tồn sổ sách (mốc đối chiếu)
+        public decimal countedQty { get; set; }   // số đếm thực tế
+        public decimal diff { get; set; }          // countedQty - systemQty
+        public decimal? unitPrice { get; set; }
+        public decimal? diffValue { get; set; }    // diff * unitPrice
+        [MaxLength(500)]
+        public string? note { get; set; }          // giải trình chênh lệch
+
+        // ── Navigation Properties ──
+        [ForeignKey(nameof(stockTakeId))]
+        public virtual StockTake? stockTake { get; set; }
+
+        [ForeignKey(nameof(materialId))]
+        public virtual Material? material { get; set; }
+    }
 }

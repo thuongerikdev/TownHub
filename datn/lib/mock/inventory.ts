@@ -1,6 +1,7 @@
 // Dữ liệu mẫu xem trước UI Kho vật tư khi backend chưa kết nối.
 import type {
   WarehouseResponse, MaterialResponse, InventoryLevelResponse, InventoryTransactionResponse,
+  StockTakeResponse,
 } from "@/lib/api";
 
 const BUILDING = "11111111-1111-1111-1111-111111111111";
@@ -44,9 +45,27 @@ export const mockInventoryTransactions: InventoryTransactionResponse[] = [
   { id: "tx4", txnCode: "TXN-2026-0304", warehouseId: "w1", warehouseName: "Kho vật tư khu A", materialId: "m6", materialCode: "MAT-0006", materialName: "Bình chữa cháy CO2 5kg", referenceType: "PO", referenceId: "po2", txnType: "IN", quantity: 10, unitCost: 520_000, totalCost: 5_200_000, performedBy: "Thủ kho A", performedAt: "2026-05-30T04:00:00Z" },
 ];
 
-// Giao dịch điều chỉnh sinh từ các kỳ kiểm kê (referenceType = STOCK_TAKE), gộp theo referenceId.
-export const mockStockTakeTransactions: InventoryTransactionResponse[] = [
-  { id: "stk1", txnCode: "STK-2026-4821-1", warehouseId: "w1", warehouseName: "Kho vật tư khu A", materialId: "m1", materialCode: "MAT-0001", materialName: "Cáp thép thang máy 12mm", referenceType: "STOCK_TAKE", referenceId: "STK-2026-4821", txnType: "ADJUST", quantity: -3, unitCost: 120_000, totalCost: 360_000, notes: "Hao hụt do cắt mẫu · Người thực hiện: Nguyễn Văn A", performedAt: "2026-06-30T08:00:00Z" },
-  { id: "stk2", txnCode: "STK-2026-4821-2", warehouseId: "w1", warehouseName: "Kho vật tư khu A", materialId: "m6", materialCode: "MAT-0006", materialName: "Bình chữa cháy CO2 5kg", referenceType: "STOCK_TAKE", referenceId: "STK-2026-4821", txnType: "ADJUST", quantity: 2, unitCost: 520_000, totalCost: 1_040_000, notes: "Kiểm kê Tháng 06/2026 · Người thực hiện: Nguyễn Văn A", performedAt: "2026-06-30T08:00:00Z" },
-  { id: "stk3", txnCode: "STK-2026-3907", warehouseId: "w1", warehouseName: "Kho vật tư khu A", materialId: "m3", materialCode: "MAT-0003", materialName: "Lọc gió AHU 595x595", referenceType: "STOCK_TAKE", referenceId: "STK-2026-3907", txnType: "ADJUST", quantity: -1, unitCost: 250_000, totalCost: 250_000, notes: "Kiểm kê Tháng 05/2026 · Người thực hiện: Trần Văn B", performedAt: "2026-05-31T09:30:00Z" },
+// Các kỳ kiểm kê đã lưu (header + dòng chi tiết), kể cả kỳ khớp sổ không lệch.
+export const mockStockTakes: StockTakeResponse[] = [
+  {
+    id: "st1", stkCode: "STK-202606-001", warehouseId: "w1", warehouseName: "Kho vật tư khu A",
+    period: "Tháng 06/2026", countDate: "2026-06-30T08:00:00Z", performedByName: "Nguyễn Văn A",
+    status: "COMPLETED", totalItems: 3, matchedItems: 1, diffItems: 2, totalDiffValue: 680_000,
+    createdAt: "2026-06-30T08:00:00Z",
+    lines: [
+      { id: "l1", materialId: "m1", materialCode: "MAT-0001", materialName: "Cáp thép thang máy 12mm", unitOfMeasure: "m", systemQty: 120, countedQty: 117, diff: -3, unitPrice: 120_000, diffValue: -360_000, note: "Hao hụt do cắt mẫu" },
+      { id: "l2", materialId: "m6", materialCode: "MAT-0006", materialName: "Bình chữa cháy CO2 5kg", unitOfMeasure: "bình", systemQty: 40, countedQty: 42, diff: 2, unitPrice: 520_000, diffValue: 1_040_000 },
+      { id: "l3", materialId: "m3", materialCode: "MAT-0003", materialName: "Lọc gió AHU 595x595", unitOfMeasure: "cái", systemQty: 25, countedQty: 25, diff: 0, unitPrice: 250_000, diffValue: 0 },
+    ],
+  },
+  {
+    id: "st2", stkCode: "STK-202605-002", warehouseId: "w1", warehouseName: "Kho vật tư khu A",
+    period: "Tháng 05/2026", countDate: "2026-05-31T09:30:00Z", performedByName: "Trần Văn B",
+    status: "COMPLETED", totalItems: 2, matchedItems: 2, diffItems: 0, totalDiffValue: 0,
+    createdAt: "2026-05-31T09:30:00Z",
+    lines: [
+      { id: "l4", materialId: "m3", materialCode: "MAT-0003", materialName: "Lọc gió AHU 595x595", unitOfMeasure: "cái", systemQty: 26, countedQty: 26, diff: 0, unitPrice: 250_000, diffValue: 0 },
+      { id: "l5", materialId: "m4", materialCode: "MAT-0004", materialName: "Vòng bi máy bơm 6204", unitOfMeasure: "cái", systemQty: 18, countedQty: 18, diff: 0, unitPrice: 180_000, diffValue: 0 },
+    ],
+  },
 ];

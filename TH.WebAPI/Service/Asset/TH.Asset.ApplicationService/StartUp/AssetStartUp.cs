@@ -141,6 +141,7 @@ namespace TH.Asset.ApplicationService.StartUp
             builder.Services.AddScoped<IWarehouseService,          WarehouseService>();
             builder.Services.AddScoped<IMaterialService,           MaterialService>();
             builder.Services.AddScoped<IInventoryTransactionService,InventoryTransactionService>();
+            builder.Services.AddScoped<IStockTakeService,          StockTakeService>();
             builder.Services.AddScoped<IPurchaseRequestService,    PurchaseRequestService>();
             builder.Services.AddScoped<IPurchaseOrderService,      PurchaseOrderService>();
             builder.Services.AddScoped<IInvoiceService,            InvoiceService>();

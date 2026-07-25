@@ -153,6 +153,65 @@ namespace TH.Asset.Dtos
     }
 
     // ============================================================
+    // STOCK TAKE (Kiểm kê kho) DTOs
+    // ============================================================
+    public class CreateStockTakeLineDto
+    {
+        public Guid materialId { get; set; }
+        public decimal systemQty { get; set; }
+        public decimal countedQty { get; set; }
+        public decimal? unitPrice { get; set; }
+        public string? note { get; set; }
+    }
+
+    public class CreateStockTakeDto
+    {
+        public Guid warehouseId { get; set; }
+        public string? period { get; set; }
+        public DateTime? countDate { get; set; }
+        // Cross-service (Auth) — lưu id + tên hiển thị của người thực hiện.
+        public int? performedByUserId { get; set; }
+        public string? performedByName { get; set; }
+        public string? notes { get; set; }
+        public List<CreateStockTakeLineDto> lines { get; set; } = new();
+    }
+
+    public class StockTakeLineResponse
+    {
+        public Guid id { get; set; }
+        public Guid materialId { get; set; }
+        public string? materialCode { get; set; }
+        public string? materialName { get; set; }
+        public string? unitOfMeasure { get; set; }
+        public decimal systemQty { get; set; }
+        public decimal countedQty { get; set; }
+        public decimal diff { get; set; }
+        public decimal? unitPrice { get; set; }
+        public decimal? diffValue { get; set; }
+        public string? note { get; set; }
+    }
+
+    public class StockTakeResponse
+    {
+        public Guid id { get; set; }
+        public string stkCode { get; set; } = null!;
+        public Guid warehouseId { get; set; }
+        public string? warehouseName { get; set; }
+        public string? period { get; set; }
+        public DateTime countDate { get; set; }
+        public int? performedByUserId { get; set; }
+        public string? performedByName { get; set; }
+        public string status { get; set; } = null!;
+        public int totalItems { get; set; }
+        public int matchedItems { get; set; }
+        public int diffItems { get; set; }
+        public decimal totalDiffValue { get; set; }
+        public string? notes { get; set; }
+        public DateTime createdAt { get; set; }
+        public List<StockTakeLineResponse> lines { get; set; } = new();
+    }
+
+    // ============================================================
     // PURCHASE REQUEST DTOs
     // ============================================================
     public class CreatePurchaseRequestDto

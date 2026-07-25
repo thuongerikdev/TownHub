@@ -976,7 +976,7 @@ Phân hệ do cá nhân em phát triển nhưng không hoạt động cô lập 
 \subsubsection*{a) Quản lý kho và vật tư}
 Khai báo kho (Warehouse), danh mục vật tư (Material) và mức tồn (InventoryLevel). Mọi biến động tồn ghi qua InventoryTransaction (nhập/xuất/điều chỉnh). Hệ thống cảnh báo các vật tư dưới ngưỡng tồn tối thiểu (get-low-stock).
 
-Quy trình kiểm kê kho định kỳ - chốt số liệu tồn hệ thống, đếm thực tế tại kho, đối chiếu chênh lệch và phê duyệt phiếu điều chỉnh - được minh họa ở Hình 4.9.
+Quy trình kiểm kê kho định kỳ - chốt số liệu tồn hệ thống, đếm thực tế tại kho, đối chiếu chênh lệch và phê duyệt phiếu điều chỉnh - được minh họa ở Hình 4.9. Mỗi kỳ kiểm kê được lưu thành một phiếu \textbf{StockTake} (gồm phần đầu phiếu và các dòng chi tiết \textbf{StockTakeLine}), ghi lại kho, kỳ, người thực hiện (chọn từ danh sách nhân sự, không nhập tay) cùng số tồn sổ sách - thực đếm - chênh lệch của từng vật tư. Toàn bộ các kỳ kiểm kê đều được lưu để tra cứu \emph{lịch sử kiểm kê} - kể cả kỳ khớp sổ hoàn toàn (không có chênh lệch); với các dòng có chênh lệch, hệ thống tự sinh giao dịch điều chỉnh (ADJUST) tham chiếu về mã phiếu kiểm kê và cập nhật lại mức tồn.
 
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img20.pdf}
@@ -1100,6 +1100,7 @@ Biểu đồ use case của phân hệ Kho – Mua sắm – Nhà cung cấp đ�
 \textbf{Mã UC} & \textbf{Use case} & \textbf{Tác nhân} \\ \hline
 UC-INV-01 & Quản lý kho \& vật tư, mức tồn & Thủ kho \\ \hline
 UC-INV-02 & Nhập/​xuất/​kiểm kê vật tư & Thủ kho \\ \hline
+UC-INV-03 & Lưu \& tra cứu lịch sử kiểm kê kho & Kỹ sư trưởng \\ \hline
 UC-PR-01 & Lập \& duyệt/​từ chối đề xuất mua (PR) & NV mua sắm/​Quản lý \\ \hline
 UC-PO-01 & Tạo đơn mua (PO) \& hóa đơn & NV mua sắm \\ \hline
 UC-VD-01 & Quản lý nhà cung cấp \& hợp đồng & Quản lý \\ \hline
@@ -1113,6 +1114,7 @@ UC-OCR-01 & OCR hóa đơn tự động & NV mua sắm/​Hệ thống \\ \hline
 \textbf{Thực thể} & \textbf{Ý nghĩa} \\ \hline
 Warehouse, Material, InventoryLevel & Kho, danh mục vật tư, mức tồn \\ \hline
 InventoryTransaction & Phiếu nhập/​xuất/điều chỉnh tồn \\ \hline
+StockTake / StockTakeLine & Phiếu kiểm kê (đầu phiếu \& dòng chi tiết đối chiếu tồn), lưu lịch sử mọi kỳ kiểm kê \\ \hline
 PurchaseRequest / PurchaseRequestItem & Đề xuất mua và dòng vật tư \\ \hline
 PurchaseOrder / PurchaseOrderItem & Đơn mua và dòng hàng \\ \hline
 Invoice / InvoiceItem, OcrJob & Hóa đơn, dòng hóa đơn, công việc OCR \\ \hline
@@ -1125,6 +1127,7 @@ Vendor, VendorContract, VendorContractService, VendorEvaluation & Nhà cung cấ
 \textbf{Nhóm Endpoint} & \textbf{Chức năng} \\ \hline
 /api/​asset/​warehouse/*, /api/​asset/​material/* & CRUD kho \& vật tư; get-low-stock, get-inventory-levels \\ \hline
 /api/​asset/​inventory-transaction/* & Tạo \& tra cứu giao dịch kho \\ \hline
+/api/​asset/​stock-take/* & Kiểm kê: tạo phiếu (create), lịch sử (get-all), chi tiết (get) \\ \hline
 /api/​asset/​purchase-request/* & PR: tạo, duyệt (approve), từ chối (reject), thêm dòng \\ \hline
 /api/​asset/​purchase-order/* & PO: tạo, cập nhật, thêm dòng \\ \hline
 /api/​asset/​vendor/* & NCC: CRUD, blacklist, activate \\ \hline
@@ -1139,7 +1142,7 @@ Vendor, VendorContract, VendorContractService, VendorEvaluation & Nhà cung cấ
 \hline
 \textbf{Route} & \textbf{Chức năng} \\ \hline
 /inventory, /inventory/​catalog & Tồn kho \& danh mục vật tư \\ \hline
-/inventory/​stock-taking, /inventory/​transactions/​new & Kiểm kê \& tạo giao dịch \\ \hline
+/inventory/​stock-taking, /inventory/​stock-taking/​history, /inventory/​transactions/​new & Kiểm kê, lịch sử kiểm kê \& tạo giao dịch \\ \hline
 /procurement/​requests, /procurement/​orders, /procurement/​invoices & PR / PO / hóa đơn \\ \hline
 /procurement/​ocr/​new, /procurement/​ocr/[id]/verify & OCR hóa đơn \& xác nhận \\ \hline
 /vendors, /vendors/​contracts, /vendors/​performance & Nhà cung cấp, hợp đồng, hiệu suất \\ \hline

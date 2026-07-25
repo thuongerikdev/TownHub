@@ -200,6 +200,45 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
     }
 
     // ════════════════════════════════════════════════════════════════════════
+    // STOCK TAKE CONTROLLER (Kiểm kê kho)
+    // ════════════════════════════════════════════════════════════════════════
+    [ApiController]
+    [Route("api/asset/stock-take")]
+    public class StockTakeController : ControllerBase
+    {
+        private readonly IStockTakeService _service;
+        public StockTakeController(IStockTakeService service) => _service = service;
+
+        [Authorize(Policy = "InventoryAudit")]
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] CreateStockTakeDto request)
+        {
+            var result = await _service.CreateAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "InventoryView")]
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] Guid? warehouseId,
+            [FromQuery] string? status)
+        {
+            var result = await _service.GetAllAsync(warehouseId, status);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "InventoryView")]
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
     // PURCHASE REQUEST CONTROLLER
     // ════════════════════════════════════════════════════════════════════════
     [ApiController]

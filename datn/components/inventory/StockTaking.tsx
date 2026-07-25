@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  warehouses, materials, inventoryTransactions, users,
+  warehouses, materials, stockTakes, users,
   type MaterialResponse, type RoleMember,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
@@ -34,9 +34,6 @@ const STEPS: { key: Step; label: string }[] = [
 function defaultPeriod(): string {
   const d = new Date();
   return `Tháng ${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
-function genStockTakeCode(): string {
-  return `STK-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 export default function StockTaking() {
@@ -103,40 +100,31 @@ export default function StockTaking() {
   async function approve() {
     if (!effectiveWh) return;
     setSubmitting(true);
-    const base = genStockTakeCode();
-    let ok = true;
-    for (let i = 0; i < diffRows.length; i++) {
-      const r = diffRows[i];
-      const price = matMap[r.lv.materialId]?.unitPrice;
-      // performedBy ở backend là Guid? — không map được userID (int) của Auth service,
-      // nên ghi tên người thực hiện vào notes để tra cứu (giống phiếu xuất/nhập kho).
-      const baseNote = notes[r.lv.materialId]?.trim() || `Kiểm kê ${period}`;
-      const combinedNotes = [baseNote, performerName ? `Người thực hiện: ${performerName}` : ""]
-        .filter(Boolean).join(" · ");
-      const res = await inventoryTransactions.create({
-        txnCode: diffRows.length > 1 ? `${base}-${i + 1}` : base,
-        warehouseId: effectiveWh,
+    // Lưu cả kỳ kiểm kê (header + mọi dòng, kể cả khớp sổ) qua 1 phiếu StockTake.
+    // Backend tự sinh mã, điều chỉnh tồn cho dòng lệch và ghi lịch sử.
+    const res = await stockTakes.create({
+      warehouseId: effectiveWh,
+      period,
+      countDate: date,
+      performedByUserId: performer?.userID,
+      performedByName: performerName || undefined,
+      lines: rows.map((r) => ({
         materialId: r.lv.materialId,
-        txnType: "ADJUST",
-        quantity: r.diff ?? 0,
-        unitCost: price,
-        totalCost: price != null ? Math.abs(r.diff ?? 0) * price : undefined,
-        referenceType: "STOCK_TAKE",
-        referenceId: base,
-        notes: combinedNotes,
-      });
-      if (res.errorCode !== 200) {
-        ok = false;
-        toast.error(res.errorMessage || `Tạo điều chỉnh cho ${r.lv.materialName} thất bại.`);
-        break;
-      }
-    }
+        systemQty: r.lv.quantityOnHand,
+        countedQty: r.actual ?? 0,
+        unitPrice: matMap[r.lv.materialId]?.unitPrice,
+        note: notes[r.lv.materialId]?.trim() || undefined,
+      })),
+    });
     setSubmitting(false);
-    if (ok) {
+    if (res.errorCode === 200) {
+      const code = res.data?.stkCode ?? "";
       toast.success(diffRows.length
-        ? `Đã duyệt & điều chỉnh tồn cho ${diffRows.length} vật tư.`
-        : "Kiểm kê khớp sổ, đã hoàn tất.");
-      router.push("/inventory");
+        ? `Đã lưu phiếu kiểm kê ${code} & điều chỉnh tồn cho ${diffRows.length} vật tư.`
+        : `Đã lưu phiếu kiểm kê ${code} — khớp sổ, không cần điều chỉnh.`);
+      router.push("/inventory/stock-taking/history");
+    } else {
+      toast.error(res.errorMessage || "Lưu phiếu kiểm kê thất bại.");
     }
   }
 

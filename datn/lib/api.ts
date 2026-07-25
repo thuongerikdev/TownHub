@@ -1433,6 +1433,33 @@ export const inventoryTransactions = {
     apiFetch<boolean>(`/api/asset/inventory-transaction/create`, { method: "POST", body: JSON.stringify(body) }),
 };
 
+// ─── Stock Take (Kiểm kê kho) ───────────────────────────────────────────────
+export interface StockTakeLineInput {
+  materialId: string; systemQty: number; countedQty: number; unitPrice?: number; note?: string;
+}
+export interface CreateStockTakeInput {
+  warehouseId: string; period?: string; countDate?: string;
+  performedByUserId?: number; performedByName?: string; notes?: string;
+  lines: StockTakeLineInput[];
+}
+export interface StockTakeLineResponse {
+  id: string; materialId: string; materialCode?: string; materialName?: string; unitOfMeasure?: string;
+  systemQty: number; countedQty: number; diff: number; unitPrice?: number; diffValue?: number; note?: string;
+}
+export interface StockTakeResponse {
+  id: string; stkCode: string; warehouseId: string; warehouseName?: string;
+  period?: string; countDate: string; performedByUserId?: number; performedByName?: string;
+  status: string; totalItems: number; matchedItems: number; diffItems: number;
+  totalDiffValue: number; notes?: string; createdAt: string; lines: StockTakeLineResponse[];
+}
+export const stockTakes = {
+  getAll: (params?: { warehouseId?: string; status?: string }) =>
+    apiFetch<StockTakeResponse[]>(`/api/asset/stock-take/get-all${qs(params)}`, {}),
+  getById: (id: string) => apiFetch<StockTakeResponse>(`/api/asset/stock-take/get/${id}`, {}),
+  create: (body: CreateStockTakeInput) =>
+    apiFetch<StockTakeResponse>(`/api/asset/stock-take/create`, { method: "POST", body: JSON.stringify(body) }),
+};
+
 // ─── Procurement (Mua sắm): types ──────────────────────────────────────────────
 export interface PurchaseRequestResponse {
   id: string; prCode: string; ticketId?: string; ticketCode?: string; woId?: string; woCode?: string;

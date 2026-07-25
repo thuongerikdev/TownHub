@@ -1,0 +1,65 @@
+\documentclass[border=12pt]{standalone}
+\usepackage{fontspec}
+\IfFontExistsTF{Arial}{\setmainfont{Arial}}{}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,shapes.multipart,calc}
+\tikzset{
+  entity/.style={draw=blue!55!black, line width=0.8pt, rectangle split, rectangle split parts=2,
+    rectangle split part align={center, left}, rectangle split part fill={blue!12, white},
+    inner sep=4pt, font=\footnotesize, text=black, align=left, rounded corners=0.4pt},
+  entitynew/.style={draw=green!45!black, line width=0.9pt, rectangle split, rectangle split parts=2,
+    rectangle split part align={center, left}, rectangle split part fill={green!16, green!4},
+    inner sep=4pt, font=\footnotesize, text=black, align=left, rounded corners=0.4pt},
+  rel/.style={draw=gray!60!black, line width=0.7pt, -{Stealth[length=6pt,width=5pt]}},
+}
+\begin{document}
+\begin{tikzpicture}
+\node[font=\large\bfseries] at (-2.5,9.6) {ERD — Phân hệ Kho, Mua sắm \& Nhà cung cấp};
+\node[font=\small,text=green!45!black,anchor=west] at (-13.7,8.5) {Ô nền xanh: bảng bổ sung cho chức năng Kiểm kê kho (lịch sử kiểm kê).};
+\node[entity] (materialcategories) at (-13.2,6.2) {\textbf{material\_categories}\nodepart{two}PK id\\FK parentId\\code, name};
+\node[entity] (warehouses) at (-13.4,2.4) {\textbf{warehouses}\nodepart{two}PK id\\code, name\\FK buildingId\\FK managerId};
+\node[entity] (materials) at (-8.7,4.3) {\textbf{materials}\nodepart{two}PK id\\FK categoryId\\FK preferredVendorId\\materialCode, name\\unitPrice, minStock};
+\node[entity] (inventorylevels) at (-13.4,-1.6) {\textbf{inventory\_levels}\nodepart{two}PK id\\FK warehouseId\\FK materialId\\quantityOnHand};
+\node[entity] (inventorytransactions) at (-13.7,-6.6) {\textbf{inventory\_transactions}\nodepart{two}PK id\\FK warehouseId\\FK materialId\\txnCode, txnType\\referenceType\\referenceId (Guid)\\quantity, unitCost};
+\node[entitynew] (stocktakes) at (-8.7,-0.6) {\textbf{stock\_takes}\nodepart{two}PK id\\FK warehouseId\\stkCode, period\\countDate, status\\performedByUserId\\performedByName\\totalItems, diffItems\\totalDiffValue};
+\node[entitynew] (stocktakelines) at (-8.6,-6.6) {\textbf{stock\_take\_lines}\nodepart{two}PK id\\FK stockTakeId\\FK materialId\\systemQty, countedQty\\diff, unitPrice\\diffValue, note};
+\node[entity] (purchaserequests) at (-3.4,5.2) {\textbf{purchase\_requests}\nodepart{two}PK id\\FK ticketId, woId\\prCode, status\\title\\requestedByUserId};
+\node[entity] (purchaserequestitems) at (-3.4,0.6) {\textbf{purchase\_request\_items}\nodepart{two}PK id\\FK prId\\FK materialId\\FK targetWarehouseId};
+\node[entity] (purchaseorders) at (2.0,4.6) {\textbf{purchase\_orders}\nodepart{two}PK id\\FK prId\\FK vendorId\\poCode, status\\totalAmount};
+\node[entity] (purchaseorderitems) at (2.0,0.4) {\textbf{purchase\_order\_items}\nodepart{two}PK id\\FK poId\\FK materialId\\FK targetWarehouseId};
+\node[entity] (poapprovalworkflow) at (2.0,-3.8) {\textbf{po\_approval\_workflow}\nodepart{two}PK id\\FK poId\\status, approvalLevel};
+\node[entity] (invoices) at (7.7,3.4) {\textbf{invoices}\nodepart{two}PK id\\FK vendorId\\FK poId\\FK ocrJobId\\invoiceCode\\status, paymentStatus};
+\node[entity] (invoiceitems) at (7.7,-1.4) {\textbf{invoice\_items}\nodepart{two}PK id\\FK invoiceId\\FK materialId\\FK poItemId};
+\node[entity] (ocrjobs) at (7.9,7.2) {\textbf{ocr\_jobs}\nodepart{two}PK id\\documentType, status\\ocrEngine\\confidenceScore};
+\node[entity] (vendors) at (-1.2,-6.8) {\textbf{vendors}\nodepart{two}PK id\\vendorCode, name\\taxId, status};
+\node[entity] (vendorcontracts) at (3.6,-7.4) {\textbf{vendor\_contracts}\nodepart{two}PK id\\FK vendorId\\contractCode, status\\contractValue};
+\node[entity] (vendorcontractservices) at (8.2,-7.2) {\textbf{vendor\_contract\_services}\nodepart{two}PK id\\FK contractId};
+\node[entity] (vendorevaluations) at (-1.2,-9.8) {\textbf{vendor\_evaluations}\nodepart{two}PK id\\FK vendorId\\FK contractId};
+% quan he con->cha
+\draw[rel] (materials) to[out=157,in=337] (materialcategories);
+\draw[rel] (materials) to[out=-56,in=124] (vendors);
+\draw[rel] (stocktakes) to[out=147,in=327] (warehouses);
+\draw[rel] (vendorcontracts) to[out=173,in=353] (vendors);
+\draw[rel] (inventorylevels) to[out=90,in=270] (warehouses);
+\draw[rel] (inventorylevels) to[out=51,in=231] (materials);
+\draw[rel] (inventorytransactions) to[out=88,in=268] (warehouses);
+\draw[rel] (inventorytransactions) to[out=65,in=245] (materials);
+\draw[rel] (stocktakelines) to[out=91,in=271] (stocktakes);
+\draw[rel] (stocktakelines) to[out=91,in=271] (materials);
+\draw[rel] (vendorcontractservices) to[out=-178,in=2] (vendorcontracts);
+\draw[rel] (vendorevaluations) to[out=90,in=270] (vendors);
+\draw[rel] (vendorevaluations) to[out=27,in=207] (vendorcontracts);
+\draw[rel] (purchaserequestitems) to[out=90,in=270] (purchaserequests);
+\draw[rel] (purchaserequestitems) to[out=145,in=325] (materials);
+\draw[rel] (purchaseorders) to[out=174,in=354] (purchaserequests);
+\draw[rel] (purchaseorders) to[out=-106,in=74] (vendors);
+\draw[rel] (purchaseorderitems) to[out=90,in=270] (purchaseorders);
+\draw[rel] (purchaseorderitems) to[out=160,in=340] (materials);
+\draw[rel] (poapprovalworkflow) to[out=90,in=270] (purchaseorders);
+\draw[rel] (invoices) to[out=-131,in=49] (vendors);
+\draw[rel] (invoices) to[out=168,in=348] (purchaseorders);
+\draw[rel] (invoices) to[out=87,in=267] (ocrjobs);
+\draw[rel] (invoiceitems) to[out=90,in=270] (invoices);
+\draw[rel] (invoiceitems) to[out=161,in=341] (materials);
+\end{tikzpicture}
+\end{document}

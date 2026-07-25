@@ -6,11 +6,9 @@ import {
   ClipboardList, ArrowLeft, ClipboardCheck, ChevronRight, ChevronDown,
   CheckCircle2, AlertTriangle, PackageCheck, Wallet, User,
 } from "lucide-react";
-import {
-  inventoryTransactions, type InventoryTransactionResponse,
-} from "@/lib/api";
+import { stockTakes, type StockTakeResponse } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
-import { mockStockTakeTransactions } from "@/lib/mock/inventory";
+import { mockStockTakes } from "@/lib/mock/inventory";
 import {
   PageHeader, StatCard, FilterBar, MockBanner,
   LoadingState, ErrorState, EmptyState,
@@ -21,106 +19,54 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency, formatNumber, formatDateTime } from "@/lib/format";
 
-// Một kỳ kiểm kê = nhóm các giao dịch ADJUST cùng referenceId (mã phiếu kiểm kê).
-type Session = {
-  code: string;
-  warehouseId: string;
-  warehouseName: string;
-  performedAt: string;
-  performer: string;
-  period: string;
-  lines: InventoryTransactionResponse[];
-  surplus: number;
-  missing: number;
-  netValue: number;
-};
-
-// notes có dạng "<ghi chú/kỳ> · Người thực hiện: <tên>". Tách ra để hiển thị.
-function parseNote(notes?: string): { performer: string; period: string } {
-  if (!notes) return { performer: "", period: "" };
-  const performer = notes.match(/Người thực hiện:\s*(.+?)\s*$/)?.[1]?.trim() ?? "";
-  const period = notes.match(/Kiểm kê\s+([^·]+?)(?:\s*·|\s*$)/)?.[1]?.trim() ?? "";
-  return { performer, period };
-}
-
 export default function StockTakingHistory() {
-  const txnQ = useApiList<InventoryTransactionResponse>(
-    () => inventoryTransactions.getAll({ referenceType: "STOCK_TAKE" }),
-    { mock: mockStockTakeTransactions },
+  const takesQ = useApiList<StockTakeResponse>(
+    () => stockTakes.getAll(),
+    { mock: mockStockTakes },
   );
 
   const [search, setSearch] = useState("");
   const [whF, setWhF] = useState("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const sessions = useMemo(() => {
-    const map = new Map<string, Session>();
-    for (const tx of txnQ.items) {
-      if (tx.referenceType !== "STOCK_TAKE") continue;
-      const key = tx.referenceId || tx.txnCode;
-      let s = map.get(key);
-      if (!s) {
-        const meta = parseNote(tx.notes);
-        s = {
-          code: key,
-          warehouseId: tx.warehouseId,
-          warehouseName: tx.warehouseName ?? "—",
-          performedAt: tx.performedAt,
-          performer: meta.performer,
-          period: meta.period,
-          lines: [], surplus: 0, missing: 0, netValue: 0,
-        };
-        map.set(key, s);
-      }
-      const meta = parseNote(tx.notes);
-      if (!s.performer && meta.performer) s.performer = meta.performer;
-      if (!s.period && meta.period) s.period = meta.period;
-      if (tx.performedAt < s.performedAt) s.performedAt = tx.performedAt;
-      s.lines.push(tx);
-      if (tx.quantity > 0) s.surplus++; else if (tx.quantity < 0) s.missing++;
-      s.netValue += tx.quantity * (tx.unitCost ?? 0);
-    }
-    return [...map.values()].sort((a, b) => b.performedAt.localeCompare(a.performedAt));
-  }, [txnQ.items]);
-
   const warehouseOptions = useMemo(() => {
     const m = new Map<string, string>();
-    for (const s of sessions) m.set(s.warehouseId, s.warehouseName);
+    for (const s of takesQ.items) m.set(s.warehouseId, s.warehouseName ?? s.warehouseId);
     return [...m.entries()].map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name, "vi"));
-  }, [sessions]);
+  }, [takesQ.items]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return sessions.filter((s) => {
+    return takesQ.items.filter((s) => {
       if (whF !== "all" && s.warehouseId !== whF) return false;
       if (!q) return true;
-      return [s.code, s.warehouseName, s.performer, s.period,
+      return [s.stkCode, s.warehouseName, s.performedByName, s.period,
         ...s.lines.map((l) => l.materialName), ...s.lines.map((l) => l.materialCode)]
         .some((f) => f?.toLowerCase().includes(q));
     });
-  }, [sessions, search, whF]);
+  }, [takesQ.items, search, whF]);
 
   const stats = useMemo(() => {
-    let items = 0, netValue = 0;
-    for (const s of visible) { items += s.lines.length; netValue += s.netValue; }
-    return { sessions: visible.length, items, netValue };
+    let items = 0, diffValue = 0;
+    for (const s of visible) { items += s.diffItems; diffValue += s.totalDiffValue; }
+    return { sessions: visible.length, items, diffValue };
   }, [visible]);
 
-  function toggle(code: string) {
+  function toggle(id: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(code) ? next.delete(code) : next.add(code);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
 
-  const body = txnQ.loading ? <LoadingState />
-    : txnQ.error ? <ErrorState message={txnQ.error} onRetry={txnQ.refetch} />
+  const body = takesQ.loading ? <LoadingState />
+    : takesQ.error ? <ErrorState message={takesQ.error} onRetry={takesQ.refetch} />
     : visible.length === 0 ? (
       <EmptyState
         title="Chưa có kỳ kiểm kê nào"
-        description="Lịch sử ghi nhận các kỳ kiểm kê đã sinh phiếu điều chỉnh tồn kho. Kỳ kiểm kê khớp sổ hoàn toàn (không lệch) sẽ không xuất hiện ở đây."
+        description="Mỗi kỳ kiểm kê đã hoàn tất sẽ được lưu tại đây — kể cả khi khớp sổ hoàn toàn."
       />
     ) : null;
 
@@ -132,7 +78,7 @@ export default function StockTakingHistory() {
 
       <PageHeader
         title="Lịch sử kiểm kê"
-        description="Các kỳ kiểm kê đã hoàn tất và phiếu điều chỉnh tồn kho phát sinh"
+        description="Toàn bộ các kỳ kiểm kê đã hoàn tất và kết quả đối chiếu tồn kho"
         icon={ClipboardList}
         actions={
           <Button asChild>
@@ -141,17 +87,17 @@ export default function StockTakingHistory() {
         }
       />
 
-      {txnQ.isMock && <MockBanner />}
+      {takesQ.isMock && <MockBanner />}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Số kỳ kiểm kê" value={stats.sessions} icon={ClipboardCheck} tone="brand" loading={txnQ.loading} />
-        <StatCard label="Vật tư điều chỉnh" value={stats.items} icon={PackageCheck} tone="info" loading={txnQ.loading} />
+        <StatCard label="Số kỳ kiểm kê" value={stats.sessions} icon={ClipboardCheck} tone="brand" loading={takesQ.loading} />
+        <StatCard label="Vật tư điều chỉnh" value={stats.items} icon={PackageCheck} tone="info" loading={takesQ.loading} />
         <StatCard
           label="Giá trị điều chỉnh ròng"
-          value={formatCurrency(stats.netValue, { compact: true })}
+          value={formatCurrency(stats.diffValue, { compact: true })}
           icon={Wallet}
-          tone={stats.netValue < 0 ? "danger" : stats.netValue > 0 ? "info" : "neutral"}
-          loading={txnQ.loading}
+          tone={stats.diffValue < 0 ? "danger" : stats.diffValue > 0 ? "info" : "neutral"}
+          loading={takesQ.loading}
         />
       </div>
 
@@ -182,33 +128,35 @@ export default function StockTakingHistory() {
             </thead>
             <tbody className="divide-y divide-border">
               {visible.map((s) => {
-                const isOpen = expanded.has(s.code);
+                const isOpen = expanded.has(s.id);
+                const surplus = s.lines.filter((l) => l.diff > 0).length;
+                const missing = s.lines.filter((l) => l.diff < 0).length;
                 return (
-                  <Fragment key={s.code}>
-                    <tr onClick={() => toggle(s.code)} className="cursor-pointer hover:bg-surface-2/40">
+                  <Fragment key={s.id}>
+                    <tr onClick={() => toggle(s.id)} className="cursor-pointer hover:bg-surface-2/40">
                       <td className="px-4 py-3 text-muted-foreground">
                         {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-mono text-xs font-semibold text-foreground">{s.code}</p>
-                        <p className="text-xs text-muted-foreground">{s.period || formatDateTime(s.performedAt)}</p>
+                        <p className="font-mono text-xs font-semibold text-foreground">{s.stkCode}</p>
+                        <p className="text-xs text-muted-foreground">{s.period || formatDateTime(s.countDate)}</p>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{s.warehouseName}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.warehouseName ?? "—"}</td>
                       <td className="px-4 py-3">
-                        {s.performer ? (
-                          <span className="inline-flex items-center gap-1.5 text-foreground"><User className="size-3.5 text-muted-foreground" />{s.performer}</span>
+                        {s.performedByName ? (
+                          <span className="inline-flex items-center gap-1.5 text-foreground"><User className="size-3.5 text-muted-foreground" />{s.performedByName}</span>
                         ) : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-3 text-xs font-medium">
-                          {s.missing > 0 && <span className="inline-flex items-center gap-1 text-danger"><AlertTriangle className="size-3.5" />{s.missing} thiếu</span>}
-                          {s.surplus > 0 && <span className="inline-flex items-center gap-1 text-info"><PackageCheck className="size-3.5" />{s.surplus} dư</span>}
-                          {s.missing === 0 && s.surplus === 0 && <span className="inline-flex items-center gap-1 text-success"><CheckCircle2 className="size-3.5" />Khớp</span>}
+                          {missing > 0 && <span className="inline-flex items-center gap-1 text-danger"><AlertTriangle className="size-3.5" />{missing} thiếu</span>}
+                          {surplus > 0 && <span className="inline-flex items-center gap-1 text-info"><PackageCheck className="size-3.5" />{surplus} dư</span>}
+                          {s.diffItems === 0 && <span className="inline-flex items-center gap-1 text-success"><CheckCircle2 className="size-3.5" />Khớp sổ</span>}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={`font-semibold ${s.netValue < 0 ? "text-danger" : s.netValue > 0 ? "text-info" : "text-muted-foreground"}`}>
-                          {s.netValue > 0 ? "+" : ""}{formatCurrency(s.netValue)}
+                        <span className={`font-semibold ${s.totalDiffValue < 0 ? "text-danger" : s.totalDiffValue > 0 ? "text-info" : "text-muted-foreground"}`}>
+                          {s.totalDiffValue > 0 ? "+" : ""}{formatCurrency(s.totalDiffValue)}
                         </span>
                       </td>
                     </tr>
@@ -221,9 +169,11 @@ export default function StockTakingHistory() {
                             <thead>
                               <tr className="text-left uppercase text-muted-foreground">
                                 <th className="pb-2 font-medium">Vật tư</th>
+                                <th className="pb-2 text-right font-medium">Sổ sách</th>
+                                <th className="pb-2 text-right font-medium">Thực tế</th>
                                 <th className="pb-2 text-right font-medium">Chênh lệch</th>
                                 <th className="pb-2 text-right font-medium">Giá trị</th>
-                                <th className="pb-2 font-medium">Ghi chú</th>
+                                <th className="pb-2 font-medium">Giải trình</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-border/60">
@@ -233,15 +183,21 @@ export default function StockTakingHistory() {
                                     <span className="font-medium text-foreground">{l.materialName}</span>
                                     <span className="ml-1 font-mono text-muted-foreground">{l.materialCode}</span>
                                   </td>
+                                  <td className="py-2 text-right text-muted-foreground">{formatNumber(l.systemQty)}</td>
+                                  <td className="py-2 text-right text-foreground">{formatNumber(l.countedQty)}</td>
                                   <td className="py-2 text-right">
-                                    <span className={`font-semibold ${l.quantity < 0 ? "text-danger" : "text-info"}`}>
-                                      {l.quantity > 0 ? "+" : ""}{formatNumber(l.quantity)}
-                                    </span>
+                                    {l.diff === 0 ? (
+                                      <span className="text-success">0</span>
+                                    ) : (
+                                      <span className={`font-semibold ${l.diff < 0 ? "text-danger" : "text-info"}`}>
+                                        {l.diff > 0 ? "+" : ""}{formatNumber(l.diff)}
+                                      </span>
+                                    )}
                                   </td>
                                   <td className="py-2 text-right text-muted-foreground">
-                                    {formatCurrency(l.quantity * (l.unitCost ?? 0))}
+                                    {l.diffValue ? formatCurrency(l.diffValue) : "—"}
                                   </td>
-                                  <td className="py-2 text-muted-foreground">{l.notes ?? "—"}</td>
+                                  <td className="py-2 text-muted-foreground">{l.note ?? "—"}</td>
                                 </tr>
                               ))}
                             </tbody>
