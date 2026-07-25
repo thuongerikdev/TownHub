@@ -154,6 +154,9 @@ namespace TH.Constant
         {
             { "WorkOrderWrite", new[] { "workorder.create", "workorder.execute" } },
             { "TicketWrite",    new[] { "ticket.create",    "ticket.resolve"    } },
+            // KTV được đề xuất mua vật tư nên phải đọc lại được phiếu đề xuất của mình,
+            // dù không có quyền xem toàn bộ hồ sơ mua sắm (procurement.view).
+            { "ProcurementRead", new[] { "procurement.view", "procurement.request" } },
         };
 
         /// <summary>

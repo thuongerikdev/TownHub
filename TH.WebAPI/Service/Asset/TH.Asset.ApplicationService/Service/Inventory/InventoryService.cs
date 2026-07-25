@@ -706,7 +706,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> CreateAsync(CreatePurchaseRequestDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdatePurchaseRequestDto request);
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
-        Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null);
+        Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null, int? requestedByUserId = null);
         Task<ResponseDto<PurchaseRequestResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> SubmitAsync(Guid id);
         Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy);
@@ -842,7 +842,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null)
+        public async Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null, int? requestedByUserId = null)
         {
             try
             {
@@ -854,6 +854,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 if (!string.IsNullOrEmpty(status)) query = query.Where(x => x.status == status);
                 if (ticketId.HasValue)             query = query.Where(x => x.ticketId == ticketId.Value);
                 if (woId.HasValue)                 query = query.Where(x => x.woId     == woId.Value);
+                // KTV chỉ thấy phiếu đề xuất do chính mình lập.
+                if (requestedByUserId.HasValue)    query = query.Where(x => x.requestedByUserId == requestedByUserId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.createdAt)

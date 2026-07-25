@@ -201,7 +201,9 @@ namespace TH.Auth.Infrastructure
                     "report.kpi",
                     "notification.view",
                 },
-                // KTV chỉ thi hành hiện trường: xem tài sản, thực hiện WO/ticket, xuất vật tư.
+                // KTV chỉ thi hành hiện trường: xem tài sản, thực hiện WO/ticket, xuất vật tư,
+                // và ĐỀ XUẤT mua vật tư khi thiếu (procurement.request) — người duyệt vẫn là
+                // cấp trên (procurement.approve) nên không phá vỡ nguyên tắc tách quyền.
                 // KHÔNG có asset.accounting (khấu hao/chứng từ/thanh lý/sổ sách), KHÔNG có
                 // resident.access_review (camera & người lạ), KHÔNG có quyền sửa danh mục
                 // (asset.create/update, workorder.create, inventory.manage).
@@ -211,6 +213,10 @@ namespace TH.Auth.Infrastructure
                     "workorder.view","workorder.execute",
                     "ticket.view","ticket.resolve",
                     "inventory.view","inventory.transaction",
+                    // CHỈ procurement.request, KHÔNG procurement.view: menu Mua sắm vẫn ẩn và
+                    // KTV chỉ thấy PR do chính mình đề xuất (policy ProcurementRead + lọc theo
+                    // requestedByUserId), thay vì toàn bộ PR/PO của khu đô thị.
+                    "procurement.request",
                     "notification.view",
                 },
                 ["Kế toán"] = new[]

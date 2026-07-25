@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { useAuth } from "@/contexts/AuthContext";
+import { isTicketOwnerScoped } from "@/lib/rbac";
 import { mockTickets } from "@/lib/mock/cm";
 import { mockAssets } from "@/lib/mock/asset";
 import { mockSlaConfigs } from "@/lib/mock/cm";
@@ -66,6 +67,8 @@ export default function TicketList(_props: { userRole?: string }) {
   // RBAC ở tầng giao diện: chỉ hiện nút Tạo/Xoá theo quyền (admin được bỏ qua trong hasPermission).
   const { hasPermission } = useAuth();
   const canCreate = hasPermission("ticket.create");
+  // Backend chỉ trả về phiếu được phân công cho KTV — nói rõ để tránh hiểu nhầm là mất dữ liệu.
+  const ownScoped = isTicketOwnerScoped(hasPermission);
   const q = useApiList<TicketResponse>(() => tickets.getAll(), { mock: mockTickets });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const slaQ = useApiList(() => slaConfigs.getAll(), { mock: mockSlaConfigs });
@@ -163,7 +166,9 @@ export default function TicketList(_props: { userRole?: string }) {
     <div>
       <PageHeader
         title="Xử lý sự cố (CM)"
-        description="Tiếp nhận, phân công và theo dõi SLA các ticket sự cố"
+        description={ownScoped
+          ? "Các phiếu sự cố được phân công cho bạn"
+          : "Tiếp nhận, phân công và theo dõi SLA các ticket sự cố"}
         icon={LifeBuoy}
         actions={canCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo ticket</Button> : undefined}
       />

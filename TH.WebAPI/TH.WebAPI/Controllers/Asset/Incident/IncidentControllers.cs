@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using TH.Asset.ApplicationService.Service.Incident;
 using TH.Asset.Dtos;
+using TH.Constant;
 
 namespace TH.WebAPI.Controllers.Asset.Incident
 {
@@ -90,6 +91,10 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateTicketDto request)
         {
+            // Chặn kỹ thuật viên ghi kết quả lên phiếu sự cố của người khác.
+            var denied = await DenyIfNotAssigned(request.id);
+            if (denied != null) return denied;
+
             var result = await _service.UpdateAsync(request);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
@@ -113,7 +118,8 @@ namespace TH.WebAPI.Controllers.Asset.Incident
             [FromQuery] string? status,
             [FromQuery] Guid? reportedBy)
         {
-            var result = await _service.GetAllAsync(buildingId, status, reportedBy);
+            // Kỹ thuật viên chỉ thấy phiếu sự cố được phân công cho mình (xem AssignmentScope).
+            var result = await _service.GetAllAsync(buildingId, status, reportedBy, User.TicketOwnerScope());
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
@@ -122,7 +128,14 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _service.GetByIdAsync(id);
-            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 200)
+            {
+                var scope = User.TicketOwnerScope();
+                if (scope.HasValue && result.Data?.assignedToUserId != scope.Value)
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ResponseConst.Error<TicketResponse>(403, "Phiếu sự cố này không được phân công cho bạn."));
+                return Ok(result);
+            }
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);
         }
@@ -131,6 +144,8 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         [HttpPost("change-status")]
         public async Task<IActionResult> ChangeStatus([FromBody] CreateTicketStatusHistoryDto request)
         {
+            var denied = await DenyIfNotAssigned(request.ticketId);
+            if (denied != null) return denied;
             var result = await _service.ChangeStatusAsync(request);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
@@ -151,6 +166,8 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         [HttpPost("add-attachment")]
         public async Task<IActionResult> AddAttachment([FromBody] CreateTicketAttachmentDto request)
         {
+            var denied = await DenyIfNotAssigned(request.ticketId);
+            if (denied != null) return denied;
             var result = await _service.AddAttachmentAsync(request);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
@@ -171,6 +188,8 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         [HttpGet("get-status-history/{ticketId}")]
         public async Task<IActionResult> GetStatusHistory(Guid ticketId)
         {
+            var denied = await DenyIfNotAssigned(ticketId);
+            if (denied != null) return denied;
             var result = await _service.GetStatusHistoryAsync(ticketId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
@@ -179,6 +198,8 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         [HttpGet("get-escalation-logs/{ticketId}")]
         public async Task<IActionResult> GetEscalationLogs(Guid ticketId)
         {
+            var denied = await DenyIfNotAssigned(ticketId);
+            if (denied != null) return denied;
             var result = await _service.GetEscalationLogsAsync(ticketId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
@@ -187,8 +208,27 @@ namespace TH.WebAPI.Controllers.Asset.Incident
         [HttpGet("get-attachments/{ticketId}")]
         public async Task<IActionResult> GetAttachments(Guid ticketId)
         {
+            var denied = await DenyIfNotAssigned(ticketId);
+            if (denied != null) return denied;
             var result = await _service.GetAttachmentsAsync(ticketId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Trả về response từ chối nếu người gọi bị giới hạn theo phân công mà phiếu
+        /// <paramref name="ticketId"/> lại không phải của họ; null nghĩa là được đi tiếp.
+        /// </summary>
+        private async Task<IActionResult?> DenyIfNotAssigned(Guid ticketId)
+        {
+            var scope = User.TicketOwnerScope();
+            if (!scope.HasValue) return null;
+
+            var current = await _service.GetByIdAsync(ticketId);
+            if (current.ErrorCode == 404) return NotFound(current);
+            if (current.Data?.assignedToUserId == scope.Value) return null;
+
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ResponseConst.Error<bool>(403, "Phiếu sự cố này không được phân công cho bạn."));
         }
     }
 }

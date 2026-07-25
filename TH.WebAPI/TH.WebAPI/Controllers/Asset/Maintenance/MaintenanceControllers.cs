@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using TH.Asset.ApplicationService.Service.Maintenance;
 using TH.Asset.Dtos;
+using TH.Constant;
 
 namespace TH.WebAPI.Controllers.Asset.Maintenance
 {
@@ -193,6 +194,11 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateWorkOrderDto request)
         {
+            // Kỹ thuật viên chỉ được thao tác trên phiếu của mình — nếu không chặn ở đây
+            // thì WorkOrderWrite sẽ cho phép họ đẩy trạng thái phiếu của người khác.
+            var denied = await DenyIfNotAssigned(request.id);
+            if (denied != null) return denied;
+
             var result = await _service.UpdateAsync(request);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
@@ -216,7 +222,8 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
             [FromQuery] string? status,
             [FromQuery] Guid? buildingId)
         {
-            var result = await _service.GetAllAsync(assetId, status, buildingId);
+            // Kỹ thuật viên chỉ thấy phiếu được phân công cho mình (xem AssignmentScope).
+            var result = await _service.GetAllAsync(assetId, status, buildingId, User.WorkOrderOwnerScope());
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
@@ -225,7 +232,14 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _service.GetByIdAsync(id);
-            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 200)
+            {
+                var scope = User.WorkOrderOwnerScope();
+                if (scope.HasValue && result.Data?.assignedToUserId != scope.Value)
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ResponseConst.Error<WorkOrderResponse>(403, "Phiếu công việc này không được phân công cho bạn."));
+                return Ok(result);
+            }
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);
         }
@@ -242,6 +256,8 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         [HttpPost("add-checklist-response")]
         public async Task<IActionResult> AddChecklistResponse([FromBody] CreateWorkOrderChecklistResponseDto request)
         {
+            var denied = await DenyIfNotAssigned(request.woId);
+            if (denied != null) return denied;
             var result = await _service.AddChecklistResponseAsync(request);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
@@ -250,6 +266,8 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         [HttpPost("add-attachment")]
         public async Task<IActionResult> AddAttachment([FromBody] CreateWorkOrderAttachmentDto request)
         {
+            var denied = await DenyIfNotAssigned(request.woId);
+            if (denied != null) return denied;
             var result = await _service.AddAttachmentAsync(request);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
@@ -258,6 +276,8 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         [HttpGet("get-attachments/{woId}")]
         public async Task<IActionResult> GetAttachments(Guid woId)
         {
+            var denied = await DenyIfNotAssigned(woId);
+            if (denied != null) return denied;
             var result = await _service.GetAttachmentsAsync(woId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
@@ -266,8 +286,27 @@ namespace TH.WebAPI.Controllers.Asset.Maintenance
         [HttpPost("add-material-used")]
         public async Task<IActionResult> AddMaterialUsed([FromBody] CreateWorkOrderMaterialUsedDto request)
         {
+            var denied = await DenyIfNotAssigned(request.woId);
+            if (denied != null) return denied;
             var result = await _service.AddMaterialUsedAsync(request);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Trả về response từ chối nếu người gọi bị giới hạn theo phân công mà phiếu
+        /// <paramref name="woId"/> lại không phải của họ; null nghĩa là được đi tiếp.
+        /// </summary>
+        private async Task<IActionResult?> DenyIfNotAssigned(Guid woId)
+        {
+            var scope = User.WorkOrderOwnerScope();
+            if (!scope.HasValue) return null;
+
+            var current = await _service.GetByIdAsync(woId);
+            if (current.ErrorCode == 404) return NotFound(current);
+            if (current.Data?.assignedToUserId == scope.Value) return null;
+
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ResponseConst.Error<bool>(403, "Phiếu công việc này không được phân công cho bạn."));
         }
     }
 }

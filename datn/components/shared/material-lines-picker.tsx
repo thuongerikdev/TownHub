@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Search } from "lucide-react";
 import {
   materials, warehouses,
   type MaterialResponse, type PurchaseLineInput,
@@ -26,6 +26,7 @@ export function MaterialLinesPicker({
   const matQ = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
   const whQ = useApiList(() => warehouses.getAll(), { mock: mockWarehouses });
   const [picking, setPicking] = useState(false);
+  const [search, setSearch] = useState("");
 
   const matMap = useMemo(() => {
     const m = new Map<string, MaterialResponse>();
@@ -35,7 +36,21 @@ export function MaterialLinesPicker({
 
   const available = matQ.items.filter((m) => m.isActive && !value.some((l) => l.materialId === m.id));
 
-  function add(m: MaterialResponse) { onChange([...value, { materialId: m.id }]); setPicking(false); }
+  // Danh mục vật tư có thể lên hàng trăm dòng — lọc theo tên, mã hoặc đơn vị tính.
+  // Bỏ dấu tiếng Việt để gõ "day dien" vẫn ra "Dây điện".
+  const norm = (s: string) =>
+    s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+
+  const shown = useMemo(() => {
+    const q = norm(search.trim());
+    if (!q) return available;
+    return available.filter((m) =>
+      norm(`${m.name} ${m.materialCode ?? ""} ${m.unitOfMeasure ?? ""}`).includes(q));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, matQ.items, value]);
+
+  function openPicker() { setPicking((p) => !p); setSearch(""); }
+  function add(m: MaterialResponse) { onChange([...value, { materialId: m.id }]); setPicking(false); setSearch(""); }
   function remove(id: string) { onChange(value.filter((l) => l.materialId !== id)); }
   function setWh(id: string, wh: string) {
     onChange(value.map((l) => (l.materialId === id ? { ...l, targetWarehouseId: wh || undefined } : l)));
@@ -45,29 +60,53 @@ export function MaterialLinesPicker({
     <div>
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{label} ({value.length})</span>
-        <Button type="button" variant="outline" size="sm" onClick={() => setPicking((p) => !p)} disabled={matQ.loading}>
+        <Button type="button" variant="outline" size="sm" onClick={openPicker} disabled={matQ.loading}>
           <Plus className="size-4" /> Thêm vật tư
         </Button>
       </div>
 
       {picking && (
-        <div className="mb-2 max-h-52 overflow-y-auto rounded-lg border border-border">
-          {available.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">
-              {matQ.items.length === 0 ? "Chưa có vật tư trong danh mục." : "Đã thêm hết vật tư khả dụng."}
-            </p>
-          ) : available.map((m) => (
-            <button
-              key={m.id} type="button" onClick={() => add(m)}
-              className="flex w-full items-center justify-between border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-surface-2"
-            >
-              <span>
-                <span className="font-medium text-foreground">{m.name}</span>{" "}
-                <span className="text-xs text-muted-foreground">{m.materialCode}{m.unitOfMeasure ? ` · ${m.unitOfMeasure}` : ""}</span>
-              </span>
-              <span className="text-xs font-semibold text-brand">+ Thêm</span>
-            </button>
-          ))}
+        <div className="mb-2 rounded-lg border border-border">
+          {/* Ô tìm kiếm ghim trên đầu, danh sách bên dưới mới cuộn. */}
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+            <Search className="size-3.5 shrink-0 text-muted-foreground" />
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setPicking(false); setSearch(""); }
+                // Enter khi chỉ còn đúng 1 kết quả → chọn luôn, đỡ phải rê chuột.
+                if (e.key === "Enter") { e.preventDefault(); if (shown.length === 1) add(shown[0]); }
+              }}
+              placeholder="Tìm theo tên, mã hoặc đơn vị tính…"
+              className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+            <span className="shrink-0 text-xs text-muted-foreground">{shown.length}/{available.length}</span>
+          </div>
+
+          <div className="max-h-52 overflow-y-auto">
+            {available.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-muted-foreground">
+                {matQ.items.length === 0 ? "Chưa có vật tư trong danh mục." : "Đã thêm hết vật tư khả dụng."}
+              </p>
+            ) : shown.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-muted-foreground">
+                Không có vật tư nào khớp “{search.trim()}”.
+              </p>
+            ) : shown.map((m) => (
+              <button
+                key={m.id} type="button" onClick={() => add(m)}
+                className="flex w-full items-center justify-between border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-surface-2"
+              >
+                <span>
+                  <span className="font-medium text-foreground">{m.name}</span>{" "}
+                  <span className="text-xs text-muted-foreground">{m.materialCode}{m.unitOfMeasure ? ` · ${m.unitOfMeasure}` : ""}</span>
+                </span>
+                <span className="text-xs font-semibold text-brand">+ Thêm</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

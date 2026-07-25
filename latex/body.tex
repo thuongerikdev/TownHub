@@ -651,7 +651,15 @@ Giao diện màn hình đăng nhập thực tế của hệ thống được th�
 \caption*{\small Hình 3.5. Giao diện màn hình đăng nhập}
 \addcontentsline{lof}{figure}{Hình 3.5. Giao diện màn hình đăng nhập}
 \end{figure}
-Về phân quyền, hệ thống áp dụng RBAC: quyền được định nghĩa chi tiết theo cặp resource + action (ví dụ AssetCreate, AssetUpdate, AccountMfaSetup\ldots{}) và gán cho vai trò; vai trò gán cho người dùng. Danh mục quyền là nguồn sự thật duy nhất được khai báo tập trung ở \texttt{PermissionConstants.cs} (mỗi quyền gồm tên policy PascalCase và mã \texttt{resource.action}); mỗi mã policy tự động sinh một Authorization Policy yêu cầu claim \texttt{permission} tương ứng, và được gắn lên controller/action bằng thuộc tính \texttt{[Authorize(Policy = "...")]}. Nhờ vậy RBAC thông suốt đầu–cuối: seed CSDL $\rightarrow$ gán vai trò $\rightarrow$ nhúng claim vào JWT $\rightarrow$ frontend ẩn/hiện chức năng $\rightarrow$ backend chặn ở tầng API. Toàn hệ thống hiện có 70 quyền chia hai nhóm CORE (nền tảng) và MODULE (nghiệp vụ).
+Về phân quyền, hệ thống áp dụng RBAC: quyền được định nghĩa chi tiết theo cặp resource + action (ví dụ AssetCreate, AssetUpdate, AccountMfaSetup\ldots{}) và gán cho vai trò; vai trò gán cho người dùng. Danh mục quyền là nguồn sự thật duy nhất được khai báo tập trung ở \texttt{PermissionConstants.cs} (mỗi quyền gồm tên policy PascalCase và mã \texttt{resource.action}); mỗi mã policy tự động sinh một Authorization Policy yêu cầu claim \texttt{permission} tương ứng, và được gắn lên controller/action bằng thuộc tính \texttt{[Authorize(Policy = "...")]}. Nhờ vậy RBAC thông suốt đầu–cuối: seed CSDL $\rightarrow$ gán vai trò $\rightarrow$ nhúng claim vào JWT $\rightarrow$ frontend ẩn/hiện chức năng $\rightarrow$ backend chặn ở tầng API. Toàn hệ thống hiện có 74 quyền chia hai nhóm CORE (nền tảng, 43 quyền) và MODULE (nghiệp vụ, 31 quyền).
+
+Trong quá trình kiểm thử theo vai trò, nhóm phát hiện một số mã quyền được định nghĩa quá rộng khiến nguyên tắc đặc quyền tối thiểu (least privilege) bị vi phạm: quyền \texttt{asset.view} vốn chỉ nhằm cho phép tra cứu tài sản lại đang mở cả khối sổ sách kế toán tài sản cố định (khấu hao, chứng từ, thanh lý, nhật ký chung, sổ cái, báo cáo kế toán), còn \texttt{inventory.transaction} – quyền xuất/nhập kho mà kỹ thuật viên bắt buộc phải có để lĩnh vật tư – lại đồng thời cho phép sửa dữ liệu nền là danh mục vật tư và danh sách kho. Hệ quả là vai trò Kỹ thuật viên nhìn thấy và can thiệp được vào nhiều chức năng ngoài phạm vi công việc. Hệ thống đã được tinh chỉnh bằng cách tách bốn mã quyền mịn hơn: \texttt{asset.accounting} (khối sổ sách kế toán tài sản), \texttt{resident.access\_review} (camera giám sát và nhật ký người lạ ra/vào), \texttt{resident.face\_register} (đăng ký dữ liệu khuôn mặt) và \texttt{inventory.manage} (quản lý danh mục vật tư, danh sách kho). Bốn quyền này chỉ được gán cho các vai trò có trách nhiệm tương ứng, trong khi Kỹ thuật viên giữ nguyên phạm vi thi hành hiện trường.
+
+Một tình huống thiết kế đáng lưu ý phát sinh khi siết quyền: nghiệp vụ check-in hiện trường của kỹ thuật viên (chuyển Work Order sang trạng thái \textit{đang thực hiện}) và nghiệp vụ ghi nhận kết quả khắc phục sự cố đều thực hiện qua endpoint cập nhật đầy đủ của phiếu (\texttt{PUT /api/asset/work-order/update} và \texttt{/ticket/update}) – vốn được gác bằng quyền tạo phiếu \texttt{workorder.create} / \texttt{ticket.create} mà kỹ thuật viên không có, dẫn tới lỗi HTTP 403. Do một endpoint phục vụ hai nhóm người dùng với mục đích khác nhau (người quản lý sửa nội dung phiếu, kỹ thuật viên đẩy trạng thái), hệ thống bổ sung khái niệm \textit{policy tổng hợp} theo phép hoặc: \texttt{WorkOrderWrite} = \texttt{workorder.create} $\vee$ \texttt{workorder.execute} và \texttt{TicketWrite} = \texttt{ticket.create} $\vee$ \texttt{ticket.resolve}, cài đặt bằng \texttt{RequireAssertion} khi khởi tạo Authorization. Một trường hợp tương tự là quyền đề xuất mua vật tư: kỹ thuật viên phát hiện thiếu vật tư ngay tại hiện trường nên cần lập phiếu đề xuất (\texttt{procurement.request}), nhưng không nên thấy toàn bộ hồ sơ mua sắm của khu đô thị (\texttt{procurement.view} – kèm đơn hàng và hoá đơn). Hệ thống vì vậy chỉ cấp \texttt{procurement.request} và mở đường đọc bằng policy tổng hợp \texttt{ProcurementRead} = \texttt{procurement.view} $\vee$ \texttt{procurement.request}, đồng thời lọc danh sách theo \texttt{requestedByUserId}: kỹ thuật viên xem lại được đúng phiếu do mình lập, còn quyền phê duyệt vẫn thuộc về cấp trên nên nguyên tắc tách quyền giữa người đề xuất và người duyệt không bị phá vỡ. Các policy tổng hợp không phải là quyền lưu trong cơ sở dữ liệu nên không được seed và không xuất hiện ở màn hình phân quyền; chúng chỉ đóng vai trò biểu thức kiểm tra ở tầng controller. Cách làm này giữ được đặc quyền tối thiểu (kỹ thuật viên vẫn không thể tạo hay xoá phiếu) mà không phải tách thêm endpoint riêng cho từng chuyển trạng thái.
+
+Ngoài phân quyền ở tầng endpoint (được hay không được gọi API), hệ thống còn cần giới hạn \textit{tầm nhìn dữ liệu} ở mức bản ghi: kỹ thuật viên chỉ được xem những phiếu bảo trì và phiếu sự cố mà mình được phân công, thay vì toàn bộ danh sách của khu đô thị. Quy tắc phân biệt tiếp tục dựa trên mã quyền chứ không dựa trên tên vai trò – vốn có thể thay đổi theo từng lần triển khai: người chỉ có quyền thi hành (\texttt{workorder.execute} / \texttt{ticket.resolve}) mà không có quyền điều phối (\texttt{assign}, \texttt{review}, \texttt{close}, \texttt{create}) được coi là người thừa hành và bị giới hạn theo phân công, trong khi kỹ sư trưởng – vốn có cả hai nhóm quyền – vẫn thấy toàn bộ. Việc lọc được cài đặt bằng một điều kiện \texttt{assignedToUserId} bổ sung vào truy vấn danh sách; song song đó, mọi endpoint thao tác theo định danh phiếu (xem chi tiết, cập nhật, ghi checklist, đổi trạng thái, đính kèm, xem lịch sử) đều đi qua một hàm kiểm tra chung trả về HTTP 403 kèm thông báo rõ ràng nếu phiếu không thuộc về người gọi. Nếu chỉ lọc ở danh sách mà bỏ qua bước này thì người dùng vẫn có thể truy cập phiếu của đồng nghiệp bằng cách đoán hoặc dò định danh.
+
+Về phía frontend, việc ẩn mục menu theo quyền là chưa đủ vì người dùng vẫn có thể truy cập trực tiếp bằng URL. Hệ thống vì vậy áp dụng hai lớp kiểm soát: lọc menu theo mã quyền và bọc toàn trang bằng thành phần \texttt{RequirePermission}, hiển thị thông báo từ chối truy cập thay vì để hàng loạt lời gọi API trả về lỗi 403. Với những trang chủ động bật thiết bị ngoại vi (ví dụ trang camera giám sát), thành phần kiểm tra quyền được đặt \textit{bao ngoài} component con để camera không bị khởi động trước khi quyền được xác nhận.
 
 Các nhóm API chính của phân hệ Xác thực và Tài khoản được tổng hợp ở Bảng 3.1.
 
@@ -669,10 +677,38 @@ Phiên & GET /userSession/getall, /userSession/getByUserId/\{id\} & Quản lý p
 \end{tabular}}\end{center}
 \textit{Bảng 3.1. Các nhóm API phân hệ Xác thực \& Tài khoản.}
 
+Trên cơ sở danh mục quyền nêu trên, hệ thống seed sẵn sáu vai trò nghiệp vụ bám theo tác nhân trong biểu đồ use case. Ma trận phân quyền rút gọn theo các nhóm chức năng chính được trình bày ở Bảng 3.2; ký hiệu \checkmark{} là được cấp, dấu -- là không được cấp.
+
+\begin{center}\begin{minipage}{\linewidth}\centering
+{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.31\linewidth}|c|c|c|c|c|}
+\hline
+\rowcolor{gray!15}\textbf{Nhóm chức năng} & \textbf{QTV} & \textbf{BQL} & \textbf{KS trưởng} & \textbf{KTV} & \textbf{Kế toán} \\ \hline
+Tra cứu tài sản (\texttt{asset.view}) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\ \hline
+Khai báo / sửa / xoá tài sản & \checkmark & sửa & \checkmark & -- & sửa \\ \hline
+Sổ sách kế toán TSCĐ (\texttt{asset.accounting}) & \checkmark & \checkmark & -- & -- & \checkmark \\ \hline
+Lập lịch \& tạo Work Order & \checkmark & \checkmark & \checkmark & -- & -- \\ \hline
+Phân công kỹ thuật viên & \checkmark & \checkmark & \checkmark & -- & -- \\ \hline
+Check-in \& thực hiện bảo trì & \checkmark & -- & \checkmark & \checkmark & -- \\ \hline
+Nghiệm thu \& đóng phiếu & \checkmark & \checkmark & \checkmark & -- & -- \\ \hline
+Tiếp nhận \& xử lý sự cố & \checkmark & phân công & \checkmark & xử lý & -- \\ \hline
+Phạm vi phiếu WO/sự cố được xem & toàn bộ & toàn bộ & toàn bộ & \textit{được giao} & -- \\ \hline
+Xuất / nhập kho (\texttt{inventory.transaction}) & \checkmark & -- & \checkmark & \checkmark & -- \\ \hline
+Danh mục vật tư \& kho (\texttt{inventory.manage}) & \checkmark & -- & \checkmark & -- & -- \\ \hline
+Kiểm kê kho (\texttt{inventory.audit}) & \checkmark & -- & \checkmark & -- & -- \\ \hline
+Mua sắm: đề xuất / duyệt / đặt hàng & \checkmark & \checkmark & đề xuất & \textit{đề xuất} & đặt, hoá đơn \\ \hline
+Camera \& người lạ ra/vào (\texttt{resident.access\_review}) & \checkmark & \checkmark & -- & -- & -- \\ \hline
+Quản trị tài khoản \& phân quyền & \checkmark & một phần & -- & -- & -- \\ \hline
+\end{tabular}}
+
+\vspace{0.6em}
+{\raggedright\textit{Bảng 3.2. Ma trận phân quyền rút gọn theo vai trò nghiệp vụ (QTV: quản trị viên; BQL: ban quản lý; KTV: kỹ thuật viên).}\par}
+\end{minipage}\end{center}
+
 \phantomsection
 \subsection*{3.4.2. User Management - Người dùng và nhật ký hoạt động}
 \addcontentsline{toc}{subsection}{3.4.2. User Management - Người dùng và nhật ký hoạt động}
-Phân hệ quản lý người dùng cung cấp các thao tác CRUD tài khoản (UserController) kèm trạng thái hoạt động, vai trò và thông tin hồ sơ. Base cung cấp định danh trung tâm để các phân hệ khác liên kết (ví dụ phân hệ Quản lý dân cư gắn tài khoản với cư dân/căn hộ). Việc quản trị vai trò và quyền được tách thành các controller riêng: \texttt{RoleController} (tạo/sửa/nhân bản vai trò), \texttt{PermissionController} (danh mục quyền, tra quyền theo vai trò/người dùng), \texttt{UserRoleController} (gán vai trò cho người dùng). Mỗi API quản trị đều có biến thể thường và biến thể \texttt{admin/} với chính sách quyền cao hơn, tránh việc một quản trị viên cấp thấp tự nâng quyền cho mình. Các nhóm API được tổng hợp ở Bảng 3.2.
+Phân hệ quản lý người dùng cung cấp các thao tác CRUD tài khoản (UserController) kèm trạng thái hoạt động, vai trò và thông tin hồ sơ. Base cung cấp định danh trung tâm để các phân hệ khác liên kết (ví dụ phân hệ Quản lý dân cư gắn tài khoản với cư dân/căn hộ). Việc quản trị vai trò và quyền được tách thành các controller riêng: \texttt{RoleController} (tạo/sửa/nhân bản vai trò), \texttt{PermissionController} (danh mục quyền, tra quyền theo vai trò/người dùng), \texttt{UserRoleController} (gán vai trò cho người dùng). Mỗi API quản trị đều có biến thể thường và biến thể \texttt{admin/} với chính sách quyền cao hơn, tránh việc một quản trị viên cấp thấp tự nâng quyền cho mình. Các nhóm API được tổng hợp ở Bảng 3.3.
 
 \begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.2}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{0.18\linewidth}|>{\raggedright\arraybackslash}p{0.46\linewidth}|>{\raggedright\arraybackslash}p{0.28\linewidth}|}
@@ -684,7 +720,7 @@ Quyền & GET /permissions/getall, /permissions/getbyRoleID/\{id\}, /permissions
 Gán vai trò & POST /user-roles/assign-roles, /user-roles/admin/assign-roles & Đồng bộ vai trò cho người dùng \\ \hline
 Nhật ký & GET /auditLog/getbyuser/\{id\} & Truy vết hành động theo người dùng \\ \hline
 \end{tabular}}\end{center}
-\textit{Bảng 3.2. Các nhóm API phân hệ Quản lý người dùng \& Phân quyền.}
+\textit{Bảng 3.3. Các nhóm API phân hệ Quản lý người dùng \& Phân quyền.}
 
 Giao diện quản trị tài khoản người dùng và màn hình vai trò – quyền (RBAC) được thể hiện ở Hình 3.7 và Hình 3.8.
 
@@ -790,7 +826,8 @@ Các tác nhân chính:
 Quản trị viên & Cấu hình, danh mục, phân quyền. \\ \hline
 Kế toán & Ghi tăng, khấu hao, thanh lý, đối chiếu chứng từ. \\ \hline
 Quản lý / BQL & Duyệt điều chuyển, theo dõi giá trị \& tình trạng. \\ \hline
-Kỹ thuật viên & Cấp phát, kiểm kê, quét QR, thực hiện Work Order bảo trì. \\ \hline
+Kỹ sư trưởng & Lập lịch bảo trì, phân công, nghiệm thu; quản lý danh mục vật tư \& kho. \\ \hline
+Kỹ thuật viên & Quét QR check-in, thực hiện Work Order \& checklist, xử lý sự cố, lĩnh vật tư. Chỉ tra cứu (không sửa) danh mục tài sản, vị trí, lịch bảo trì, danh mục vật tư, kho; không truy cập khối sổ sách kế toán. \\ \hline
 \end{tabular}}\end{center}
 \subsubsection*{a) Danh mục và vị trí tài sản}
 Khai báo danh mục (mã, tên, tiền tố sinh mã, thời gian khấu hao mặc định, tài khoản hạch toán) và vị trí lắp đặt theo tòa nhà/tầng; dùng lại khi ghi tăng để chuẩn hóa dữ liệu.
@@ -905,11 +942,21 @@ GET /api/​asset/​asset/​get-all & Danh sách (lọc) & AssetView \\ \hline
 /api/​asset/​asset-category/* & CRUD danh mục & Asset* \\ \hline
 /api/​asset/​asset-qrcode/* & Sinh \& tra cứu QR & AssetView/​Create \\ \hline
 /api/​asset/​asset-transfer/* & Điều chuyển tài sản & AssetUpdate \\ \hline
-/api/​asset/​asset-depreciation/* & Tra cứu khấu hao & AssetView \\ \hline
-/api/​asset/​asset-report/* & Nhật ký chung, sổ cái, báo cáo & AssetView \\ \hline
-/api/​asset/​maintenance-schedule/* & Lịch bảo trì (get-overdue) & AssetView/​Update \\ \hline
-/api/​asset/​work-order/* & Work Order (assign, checklist, attachment) & AssetView/​Update \\ \hline
+/api/​asset/​asset-depreciation/* & Tra cứu \& chạy khấu hao kỳ & AssetAccounting \\ \hline
+/api/​asset/​asset-document/*, /asset-disposal/* & Chứng từ kế toán \& thanh lý & AssetAccounting \\ \hline
+/api/​asset/​asset-report/* & Nhật ký chung, sổ cái, báo cáo & AssetAccounting \\ \hline
+/api/​asset/​maintenance-schedule/* & Lịch bảo trì (get-overdue) & WorkOrderView/​Create \\ \hline
+/api/​asset/​work-order/get-*, /assign-technician & Tra cứu \& phân công Work Order & WorkOrderView/​Assign \\ \hline
+/api/​asset/​work-order/update & Cập nhật phiếu; KTV check-in & WorkOrderWrite (create $\vee$ execute) \\ \hline
+/api/​asset/​work-order/add-checklist-response & Ghi kết quả checklist & WorkOrderExecute \\ \hline
+/api/​asset/​ticket/update & Cập nhật phiếu; KTV ghi kết quả & TicketWrite (create $\vee$ resolve) \\ \hline
+/api/​asset/​warehouse/*, /material/* (ghi) & Danh mục vật tư \& kho & InventoryManage \\ \hline
+/api/​asset/​inventory-transaction/create & Xuất / nhập kho & InventoryTransaction \\ \hline
+/api/​asset/​purchase-request/create, /submit & KTV đề xuất mua vật tư & ProcurementRequest \\ \hline
+/api/​asset/​purchase-request/get-* & Xem phiếu đề xuất (KTV: của mình) & ProcurementRead \\ \hline
+/api/​asset/​purchase-request/approve$|$reject & Duyệt / từ chối đề xuất & ProcurementApprove \\ \hline
 \end{tabular}}\end{center}
+Hai policy \texttt{WorkOrderWrite} và \texttt{TicketWrite} là policy tổng hợp theo phép hoặc (xem mục 3.4.1), cho phép kỹ thuật viên đẩy trạng thái phiếu khi check-in và khi ghi nhận kết quả khắc phục mà không cần cấp thêm quyền tạo/xoá phiếu.
 \phantomsection
 \subsection*{4.1.6. Thiết kế giao diện}
 \addcontentsline{toc}{subsection}{4.1.6. Thiết kế giao diện}

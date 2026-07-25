@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using TH.Asset.ApplicationService.Service.Inventory;
 using TH.Asset.Dtos;
+using TH.Constant;
 
 namespace TH.WebAPI.Controllers.Asset.Inventory
 {
@@ -276,23 +277,31 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "ProcurementView")]
+        [Authorize(Policy = "ProcurementRead")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? status,
             [FromQuery] Guid? ticketId,
             [FromQuery] Guid? woId)
         {
-            var result = await _service.GetAllAsync(status, ticketId, woId);
+            // KTV chỉ thấy phiếu đề xuất do mình lập (xem AssignmentScope).
+            var result = await _service.GetAllAsync(status, ticketId, woId, User.PurchaseRequestOwnerScope());
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "ProcurementView")]
+        [Authorize(Policy = "ProcurementRead")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _service.GetByIdAsync(id);
-            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 200)
+            {
+                var scope = User.PurchaseRequestOwnerScope();
+                if (scope.HasValue && result.Data?.requestedByUserId != scope.Value)
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ResponseConst.Error<PurchaseRequestResponse>(403, "Phiếu đề xuất này không phải của bạn."));
+                return Ok(result);
+            }
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);
         }
@@ -301,6 +310,8 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         [HttpPut("submit/{id}")]
         public async Task<IActionResult> Submit(Guid id)
         {
+            var denied = await DenyIfNotOwnPr(id);
+            if (denied != null) return denied;
             var result = await _service.SubmitAsync(id);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
@@ -335,12 +346,30 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "ProcurementView")]
+        [Authorize(Policy = "ProcurementRead")]
         [HttpGet("get-items/{prId}")]
         public async Task<IActionResult> GetItems(Guid prId)
         {
+            var denied = await DenyIfNotOwnPr(prId);
+            if (denied != null) return denied;
             var result = await _service.GetItemsAsync(prId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Từ chối nếu người gọi chỉ được xem phiếu đề xuất của mình mà PR này lại của người khác.
+        /// </summary>
+        private async Task<IActionResult?> DenyIfNotOwnPr(Guid prId)
+        {
+            var scope = User.PurchaseRequestOwnerScope();
+            if (!scope.HasValue) return null;
+
+            var current = await _service.GetByIdAsync(prId);
+            if (current.ErrorCode == 404) return NotFound(current);
+            if (current.Data?.requestedByUserId == scope.Value) return null;
+
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ResponseConst.Error<bool>(403, "Phiếu đề xuất này không phải của bạn."));
         }
     }
 

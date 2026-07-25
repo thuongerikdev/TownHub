@@ -209,6 +209,24 @@ export function metaOf(code: string): { group: PermGroup; resourceKey: string; r
   };
 }
 
+/**
+ * Người dùng chỉ được xem phiếu do mình phụ trách hay xem toàn bộ?
+ *
+ * Phải khớp với `AssignmentScope` ở backend (TH.WebAPI/Controllers/Asset/
+ * AssignmentScope.cs) — backend mới là nơi chặn thật, hai hàm này chỉ dùng để
+ * hiển thị ghi chú cho đúng. Người chỉ có quyền thi hành (execute/resolve) mà
+ * không có quyền điều phối thì là người thừa hành ⇒ chỉ thấy việc của mình.
+ */
+export function isWorkOrderOwnerScoped(has: (code: string) => boolean): boolean {
+  if (!has("workorder.execute")) return false;
+  return !["workorder.assign", "workorder.review", "workorder.close", "workorder.create"].some(has);
+}
+
+export function isTicketOwnerScoped(has: (code: string) => boolean): boolean {
+  if (!has("ticket.resolve")) return false;
+  return !["ticket.assign", "ticket.close"].some(has);
+}
+
 export const GROUP_LABEL: Record<PermGroup, string> = {
   core: "Hệ thống nền (Core)",
   module: "Nghiệp vụ kỹ thuật (Module)",

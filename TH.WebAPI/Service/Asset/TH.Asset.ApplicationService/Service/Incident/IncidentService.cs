@@ -194,7 +194,7 @@ namespace TH.Asset.ApplicationService.Service.Incident
         Task<ResponseDto<bool>> CreateAsync(CreateTicketDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdateTicketDto request);
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
-        Task<ResponseDto<List<TicketResponse>>> GetAllAsync(Guid? buildingId = null, string? status = null, Guid? reportedBy = null);
+        Task<ResponseDto<List<TicketResponse>>> GetAllAsync(Guid? buildingId = null, string? status = null, Guid? reportedBy = null, int? assignedToUserId = null);
         Task<ResponseDto<TicketResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> ChangeStatusAsync(CreateTicketStatusHistoryDto request);
         Task<ResponseDto<bool>> AssignAsync(CreateTicketAssignmentDto request);
@@ -340,7 +340,7 @@ namespace TH.Asset.ApplicationService.Service.Incident
         }
 
         public async Task<ResponseDto<List<TicketResponse>>> GetAllAsync(
-            Guid? buildingId = null, string? status = null, Guid? reportedBy = null)
+            Guid? buildingId = null, string? status = null, Guid? reportedBy = null, int? assignedToUserId = null)
         {
             try
             {
@@ -353,6 +353,8 @@ namespace TH.Asset.ApplicationService.Service.Incident
                 if (buildingId.HasValue)           query = query.Where(x => x.buildingId == buildingId.Value);
                 if (!string.IsNullOrEmpty(status)) query = query.Where(x => x.status == status);
                 if (reportedBy.HasValue)           query = query.Where(x => x.reportedBy == reportedBy.Value);
+                // Giới hạn theo phân công: kỹ thuật viên chỉ thấy phiếu sự cố của mình.
+                if (assignedToUserId.HasValue)     query = query.Where(x => x.assignedToUserId == assignedToUserId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.createdAt)
