@@ -1,0 +1,8 @@
+﻿Cấu hình,Seq-acc,Char-acc,NED,CER<0.1,ms/ảnh
+VietOCR gốc (trước),0.87,0.976,0.977,0.903,
+VietOCR fine-tune (sau),1.0,1.0,1.0,1.0,317
+PaddleOCR gốc (trước),0.463,0.882,0.882,0.513,
+PaddleOCR fine-tune (sau),0.893,0.967,0.968,0.913,65
+EasyOCR (baseline),0.51,0.811,0.818,0.613,156
+Ensemble (bỏ phiếu),0.92,0.974,0.974,0.933,
+Oracle (best-of-3),1.0,,,,
