@@ -219,9 +219,13 @@ namespace TH.Auth.Infrastructure
                     "procurement.request",
                     "notification.view",
                 },
+                // Kế toán cần ĐỌC danh mục vật tư để đối chiếu dòng hoá đơn OCR sang vật tư
+                // trong kho (màn "Đối chiếu & xác nhận hoá đơn"). Chỉ inventory.view — không
+                // có inventory.transaction (xuất/nhập) lẫn inventory.manage (sửa danh mục).
                 ["Kế toán"] = new[]
                 {
                     "asset.view","asset.update","asset.accounting",
+                    "inventory.view",
                     "procurement.view","procurement.order","procurement.invoice",
                     "vendor.view",
                     "report.cost","report.kpi",
