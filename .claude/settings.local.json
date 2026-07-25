@@ -244,7 +244,8 @@
       "Bash(python -c \"import json,sys; nb=json.load\\(open\\('run_service_colab.ipynb',encoding='utf-8'\\)\\); print\\('cells:', len\\(nb['cells']\\)\\); print\\('OK valid ipynb'\\)\")",
       "Bash(pandoc -t markdown \"D:\\\\DATN\\\\TownHub\\\\Báo_cáo_thực_tập_Nguyễn_Xuân_Thưởng_đã_sửa.docx\" -o report.md)",
       "Bash(pandoc -t markdown \"E:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\Báo cáo\\\\Biểu mẫu_Quy định Tổ chức và Đánh giá TTTN HUCE.docx\" -o bieumau.md)",
-      "PowerShell(Get-Command pandoc,soffice,python -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-Command pandoc,soffice,python -ErrorAction SilentlyContinue)",
+      "Bash(grep -iv \"using\\\\|//\")"
     ]
   }
 }

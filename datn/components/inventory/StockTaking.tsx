@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ClipboardCheck, ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, PackageCheck,
+  ClipboardCheck, ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, PackageCheck, History,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  warehouses, materials, inventoryTransactions,
-  type MaterialResponse,
+  warehouses, materials, inventoryTransactions, users,
+  type MaterialResponse, type RoleMember,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockWarehouses, mockMaterials, mockInventoryLevels } from "@/lib/mock/inventory";
@@ -43,18 +43,21 @@ export default function StockTaking() {
   const router = useRouter();
   const whQ = useApiList(() => warehouses.getAll(), { mock: mockWarehouses });
   const matQ = useApiList(() => materials.getAll(), { mock: mockMaterials });
+  const staffQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"));
 
   const [step, setStep] = useState<Step>("create");
   const [warehouseId, setWarehouseId] = useState("");
   const [period, setPeriod] = useState(defaultPeriod());
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [performedBy, setPerformedBy] = useState("");
+  const [performerId, setPerformerId] = useState("");
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   const effectiveWh = warehouseId || whQ.items[0]?.id || "";
   const whName = whQ.items.find((w) => w.id === effectiveWh)?.name ?? "—";
+  const performer = staffQ.items.find((u) => String(u.userID) === performerId);
+  const performerName = performer ? (performer.fullName?.trim() || performer.userName) : "";
 
   const levelsQ = useApiList(
     () => materials.getInventoryLevels({ warehouseId: effectiveWh }),
@@ -105,6 +108,11 @@ export default function StockTaking() {
     for (let i = 0; i < diffRows.length; i++) {
       const r = diffRows[i];
       const price = matMap[r.lv.materialId]?.unitPrice;
+      // performedBy ở backend là Guid? — không map được userID (int) của Auth service,
+      // nên ghi tên người thực hiện vào notes để tra cứu (giống phiếu xuất/nhập kho).
+      const baseNote = notes[r.lv.materialId]?.trim() || `Kiểm kê ${period}`;
+      const combinedNotes = [baseNote, performerName ? `Người thực hiện: ${performerName}` : ""]
+        .filter(Boolean).join(" · ");
       const res = await inventoryTransactions.create({
         txnCode: diffRows.length > 1 ? `${base}-${i + 1}` : base,
         warehouseId: effectiveWh,
@@ -115,8 +123,7 @@ export default function StockTaking() {
         totalCost: price != null ? Math.abs(r.diff ?? 0) * price : undefined,
         referenceType: "STOCK_TAKE",
         referenceId: base,
-        notes: notes[r.lv.materialId] || `Kiểm kê ${period}`,
-        performedBy: performedBy || undefined,
+        notes: combinedNotes,
       });
       if (res.errorCode !== 200) {
         ok = false;
@@ -143,6 +150,11 @@ export default function StockTaking() {
         title="Kiểm kê kho"
         description="Đối chiếu tồn thực tế với sổ sách và sinh phiếu điều chỉnh"
         icon={ClipboardCheck}
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/inventory/stock-taking/history"><History className="size-4" /> Lịch sử kiểm kê</Link>
+          </Button>
+        }
       />
 
       {isMock && <MockBanner />}
@@ -177,7 +189,18 @@ export default function StockTaking() {
               </Select>
             </Field>
             <Field label="Người thực hiện">
-              <Input value={performedBy} onChange={(e) => setPerformedBy(e.target.value)} placeholder="VD: KTV Trần Thanh B" />
+              <Select value={performerId} onValueChange={setPerformerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={staffQ.loading ? "Đang tải…" : staffQ.items.length ? "Chọn người thực hiện" : "Chưa có kỹ thuật viên"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffQ.items.map((u) => (
+                    <SelectItem key={u.userID} value={String(u.userID)}>
+                      {u.fullName?.trim() || u.userName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Kỳ kiểm kê" required>
               <Input value={period} onChange={(e) => setPeriod(e.target.value)} />
