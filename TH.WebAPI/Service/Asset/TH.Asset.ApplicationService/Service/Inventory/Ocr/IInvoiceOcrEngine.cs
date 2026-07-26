@@ -19,7 +19,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         /// </summary>
         bool RequiresHostedUrl { get; }
 
-        /// <param name="model">Engine con phía service Python: "paddleocr" | "vietocr".</param>
+        /// <param name="model">Engine con phía service Python: "paddleocr" | "vietocr" | "paddledet_viet".</param>
         Task<OcrExtractionResult> ExtractAsync(string fileUrl, string model, CancellationToken ct = default);
     }
 

@@ -1,7 +1,6 @@
 import re, io, requests, json, unicodedata, statistics, os
 import numpy as np
 from PIL import Image
-from pdf2image import convert_from_bytes
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import uvicorn
@@ -104,8 +103,7 @@ def _download(url):
     return r.content
 
 def _to_images(content):
-    if content[:4] == b'%PDF':
-        return convert_from_bytes(content, dpi=200)
+    # Chỉ hỗ trợ ảnh (PNG/JPG). Đã bỏ hỗ trợ PDF (pdf2image/poppler).
     return [Image.open(io.BytesIO(content)).convert('RGB')]
 
 def _strip(s):

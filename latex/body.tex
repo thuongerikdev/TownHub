@@ -154,9 +154,13 @@ Kết quả, nhóm đã hoàn thiện hệ thống chạy được với đầy 
 
 \textbf{3. Dữ liệu đầu vào, giả thiết, tiêu chuẩn/quy chuẩn, phần mềm/công cụ sử dụng}
 
-\textbullet{}  Công cụ: .NET 8, Next.js 16, PostgreSQL, Redis, Cloudinary; AI/OCR: PaddleOCR, VietOCR; draw.io, Git.
+\textbullet{}  \textbf{Dữ liệu đầu vào:} dữ liệu vận hành tòa nhà mô phỏng (tòa nhà, tầng, căn hộ, cư dân, tài sản, vật tư); bộ dữ liệu hóa đơn tiếng Việt tổng hợp phục vụ huấn luyện – đánh giá OCR.
 
-\textbullet{}  Dữ liệu: dữ liệu vận hành tòa nhà mô phỏng; bộ dữ liệu hóa đơn tiếng Việt tổng hợp phục vụ huấn luyện OCR.
+\textbullet{}  \textbf{Giả thiết:} (i) dữ liệu vận hành là dữ liệu giả lập, không gắn với một tòa nhà thật cụ thể; (ii) hệ thống triển khai ở mức nguyên mẫu (prototype) trên một máy chủ, chưa xét tải cực lớn và tính sẵn sàng cao (HA); (iii) người dùng truy cập qua trình duyệt hiện đại có kết nối Internet, thiết bị hỗ trợ camera cho chức năng nhận diện khuôn mặt; (iv) tài khoản và vai trò phân quyền được quản trị viên cấu hình sẵn; (v) tích hợp cổng thanh toán và thiết bị IoT nằm ngoài phạm vi, chỉ nêu định hướng.
+
+\textbullet{}  \textbf{Tiêu chuẩn/quy chuẩn áp dụng:} kiến trúc dịch vụ và API theo phong cách \textbf{REST}, phản hồi thống nhất \texttt{ResponseDto<T>}; bảo mật theo \textbf{JWT} (RFC 7519), \textbf{OAuth 2.0/OIDC} (đăng nhập Google), \textbf{MFA TOTP} (RFC 6238) và \textbf{RBAC}, có tham chiếu khuyến nghị \textbf{OWASP}; phân tích – thiết kế theo \textbf{UML} (use case, tuần tự, trạng thái) và mô hình \textbf{ERD}, cơ sở dữ liệu chuẩn hóa quan hệ; giao diện \emph{responsive} đa thiết bị; mã nguồn tuân thủ quy ước .NET/TypeScript và quản lý phiên bản bằng Git; thuyết minh trình bày theo Quy định tổ chức thực hiện và đánh giá ĐATN của Trường ĐHXD Hà Nội (QĐ 483/QĐ-ĐHXDHN).
+
+\textbullet{}  \textbf{Phần mềm/công cụ:} .NET 8, Next.js 16, PostgreSQL, Redis, Cloudinary; AI/OCR: PaddleOCR, VietOCR; draw.io, Graphviz, Git.
 
 \textbf{4. Kế hoạch/mốc tiến độ dự kiến}
 
@@ -292,27 +296,27 @@ Theo Điều 7 Quy định ĐATN, sản phẩm nhóm thể hiện rõ phần chu
 
 Nhóm áp dụng quy trình làm việc chuyên nghiệp: lập kế hoạch và theo dõi tiến độ bằng biểu đồ Gantt (Hình 0.1); quản trị công việc trực quan trên bảng Kanban (Hình 0.2); họp nhóm định kỳ hằng tuần (trực tiếp và trực tuyến, Hình 0.3) và trao đổi công việc hằng ngày qua nhóm chat (Hình 0.4); mỗi buổi họp đều lập biên bản (Hình 0.5). Toàn bộ minh chứng được tổng hợp trong Hồ sơ minh chứng kèm theo.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img01.png}
 \caption*{\small Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
 \addcontentsline{lof}{figure}{Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img02.png}
 \caption*{\small Hình 0.2. Bảng công việc Kanban của nhóm}
 \addcontentsline{lof}{figure}{Hình 0.2. Bảng công việc Kanban của nhóm}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img03.png}
 \caption*{\small Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
 \addcontentsline{lof}{figure}{Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img04.png}
 \caption*{\small Hình 0.4. Trao đổi công việc trên nhóm chat}
 \addcontentsline{lof}{figure}{Hình 0.4. Trao đổi công việc trên nhóm chat}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img05.png}
 \caption*{\small Hình 0.5. Biên bản họp nhóm (bản mẫu)}
 \addcontentsline{lof}{figure}{Hình 0.5. Biên bản họp nhóm (bản mẫu)}
@@ -380,14 +384,14 @@ Nhóm đã khảo sát hai nhóm đối tượng: (i) các \textbf{phần mềm 
 
 \textbf{a) Building Care (Công ty Cổ phần Công nghệ S-TECH).} Building Care là nền tảng quản lý vận hành tòa nhà toàn diện, tổ chức theo mô hình hai ứng dụng tách biệt: Web/App dành cho Ban quản lý và App riêng cho cư dân. Phần mềm gồm các phân hệ quản lý dự án -- tòa nhà, căn hộ -- cư dân, tài sản -- tài liệu (lên lịch bảo trì, bảo dưỡng và tự động nhắc khi đến hạn), nhân sự, quản lý công việc và quản lý công nợ -- phí dịch vụ. Điểm nổi bật về nghiệp vụ tài sản là số hóa yêu cầu bảo trì: thay vì dùng giấy tờ, cư dân tạo yêu cầu (\textit{ticket}) trực tiếp trên App, hệ thống tự phân công và đẩy tới thiết bị của nhân viên kỹ thuật, cập nhật trạng thái xử lý. Theo trang chủ, giải pháp đã được triển khai cho hơn 60 dự án với hơn 172 tòa nhà (Hình 1.1); tháng 6/2025, chung cư cao cấp FLC Twin Towers (265 Cầu Giấy, Hà Nội, khoảng 420 căn hộ) chính thức đưa Building Care vào vận hành (Hình 1.2).
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/img45.png}
 \caption*{\small Hình 1.1. Trang chủ nền tảng Building Care (S-TECH): mô hình Web/App BQL và App cư dân, đã triển khai 60+ dự án / 172+ tòa nhà}
 \addcontentsline{lof}{figure}{Hình 1.1. Trang chủ nền tảng Building Care (S-TECH)}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://buildingcare.biz/} (truy cập 07/2026).}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img46.png}
 \caption*{\small Hình 1.2. Thông cáo triển khai Building Care tại FLC Twin Towers 265 Cầu Giấy (đăng 27/06/2025)}
 \addcontentsline{lof}{figure}{Hình 1.2. Thông cáo triển khai Building Care tại FLC Twin Towers}
@@ -396,14 +400,14 @@ Nhóm đã khảo sát hai nhóm đối tượng: (i) các \textbf{phần mềm 
 
 \textbf{b) Landsoft Control (Công ty Landsoft -- phân phối qua DIP Holding).} Landsoft Control tập trung vào quản lý vòng đời thiết bị (\textit{lifecycle management}): theo dõi danh mục tài sản -- trang thiết bị kỹ thuật, lập kế hoạch bảo trì -- bảo dưỡng định kỳ, ghi nhận lịch sử sửa chữa và tiếp nhận yêu cầu sửa chữa từ cư dân qua module kỹ thuật. Đây là nền tảng mở, tích hợp hệ thống bãi đỗ xe thông minh qua API, tích hợp Zalo OA để gửi thông báo phí, và đặc biệt đồng bộ với ứng dụng cư dân ``My Home Vime'' tích hợp sẵn cổng thanh toán VNPay và Viettel Pay -- giúp thu phí dịch vụ (phí quản lý, quỹ bảo trì, điện nước) và tự động gạch nợ trên hệ thống kế toán mà không cần đối soát thủ công. Phần mềm đã đồng hành cùng Xuân Mai Corp từ năm 2016 cho 11 dự án tòa nhà lớn (Hình 1.3) và được Geleximco ứng dụng để số hóa quản lý chuỗi tòa nhà (Hình 1.4), bên cạnh các khách hàng như SunGroup, Vietracimex.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img47.png}
 \caption*{\small Hình 1.3. Landsoft Control đồng hành cùng Xuân Mai Corp (từ 2016, 11 dự án tòa nhà); ảnh dưới bài là giao diện phần mềm Landsoft Building}
 \addcontentsline{lof}{figure}{Hình 1.3. Landsoft Control triển khai cho Xuân Mai Corp}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://landsoft.com.vn/landsoft-control-va-hanh-trinh-6-nam-dong-hanh-cung-xuan-mai-corp-xay-dung-thuong-hieu-quan-ly-van-hanh-chuyen-nghiep/}}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img48.png}
 \caption*{\small Hình 1.4. Geleximco số hóa bộ máy quản lý chuỗi tòa nhà bằng Landsoft Control (DIP Holding, 25/02/2021)}
 \addcontentsline{lof}{figure}{Hình 1.4. Geleximco ứng dụng Landsoft Control}
@@ -412,14 +416,14 @@ Nhóm đã khảo sát hai nhóm đối tượng: (i) các \textbf{phần mềm 
 
 \textbf{c) CyHome (Công ty CYFEER JSC).} CyHome là nền tảng quản trị chung cư cung cấp theo mô hình SaaS (\textit{Software as a Service}) trên hạ tầng đám mây Amazon Web Services, thu phí theo đầu căn hộ (tham khảo khoảng 10.000đ/căn/tháng -- một tòa 300 căn trả phí phần mềm khoảng 3 triệu đồng/tháng). Hệ sinh thái gồm App cư dân, Web/App Ban quản lý và đặc biệt App chuyên biệt cho kỹ thuật viên \textbf{CyHome PMS}: kỹ thuật viên đi chốt số dịch vụ định kỳ (đồng hồ điện, nước), nhập số liệu và chụp ảnh lưu chứng cứ trực tiếp tại hiện trường lên đám mây, qua đó khóa chặt lỗ hổng gian lận và sai sót dữ liệu (Hình 1.6). CyHome đã được hơn 200 dự án sử dụng, phục vụ hơn 180.000 cư dân, với các đơn vị quản lý vận hành như CBRE, Visaho, Proman và chủ đầu tư như Vingroup, Novaland; nền tảng đạt giải Sao Khuê 2022 (Hình 1.5).
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img50.png}
 \caption*{\small Hình 1.5. Báo Tuổi Trẻ phân tích mô hình thu phí theo căn hộ của CyHome (01/05/2023)}
 \addcontentsline{lof}{figure}{Hình 1.5. Bài báo Tuổi Trẻ về mô hình phí của CyHome}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://tuoitre.vn/ung-dung-giai-bai-toan-het-canh-xep-hang-dong-phi-chung-cu-20230425232909509.htm}}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img51.png}
 \caption*{\small Hình 1.6. Ứng dụng CyHome PMS dành cho kỹ thuật viên trên Google Play (CYFEER, 4,2\textasteriskcentered): chốt số, phản hồi cư dân, quản lý công việc tại hiện trường}
 \addcontentsline{lof}{figure}{Hình 1.6. Ứng dụng CyHome PMS cho kỹ thuật viên (Google Play)}
@@ -604,7 +608,7 @@ Module chung (Base) do cả nhóm cùng phối hợp xây dựng, là xương s�
 \addcontentsline{toc}{section}{3.1. Kiến trúc tổng thể hệ thống TownHub}
 Hệ thống được xây dựng theo mô hình client–server nhiều tầng, tách biệt rõ ràng giữa tầng trình bày (frontend) và tầng dịch vụ (backend), giao tiếp qua REST API định dạng JSON và bảo mật bằng JWT Bearer. Kiến trúc tổng thể được minh họa ở Hình 3.1.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img06.pdf}
 \caption*{\small Hình 3.1. Kiến trúc tổng thể hệ thống TownHub}
 \addcontentsline{lof}{figure}{Hình 3.1. Kiến trúc tổng thể hệ thống TownHub}
@@ -620,7 +624,7 @@ Tầng dữ liệu và dịch vụ ngoài gồm: PostgreSQL (ba schema auth/asse
 \addcontentsline{toc}{section}{3.2. Biểu đồ Use Case tổng quát}
 Các phân hệ Base phục vụ nhiều nhóm người dùng với vai trò khác nhau. Biểu đồ use case tổng quát của module Base được thể hiện ở Hình 3.2, mô tả các chức năng dùng chung và mối quan hệ với từng tác nhân.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img07.pdf}
 \caption*{\small Hình 3.2. Biểu đồ Use Case tổng quát module Base}
 \addcontentsline{lof}{figure}{Hình 3.2. Biểu đồ Use Case tổng quát module Base}
@@ -640,9 +644,9 @@ Kỹ thuật viên & Đăng nhập, nhận việc/​thông báo, cập nhật x
 \phantomsection
 \section*{3.3. Thiết kế cơ sở dữ liệu lõi (schema auth)}
 \addcontentsline{toc}{section}{3.3. Thiết kế cơ sở dữ liệu lõi (schema auth)}
-Cơ sở dữ liệu lõi của Base tập trung ở schema auth, quản lý người dùng, phân quyền theo vai trò (RBAC), phiên đăng nhập và nhật ký hoạt động. Sơ đồ thực thể – liên kết (ERD) được trình bày ở Hình 3.3.
+Cơ sở dữ liệu lõi của Base tập trung ở schema auth, quản lý người dùng, phân quyền theo vai trò (RBAC), phiên đăng nhập, xác thực đa yếu tố (MFA/TOTP), xác minh email – đặt lại mật khẩu và nhật ký hoạt động. Sơ đồ thực thể – liên kết (ERD) được trình bày ở Hình 3.3.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{images/erd_auth.pdf}
 \caption*{\small Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}
 \addcontentsline{lof}{figure}{Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}
@@ -661,6 +665,9 @@ nguoi\_dung\_vai\_tro / vai\_tro\_quyen & Bảng nối gán vai trò $\leftright
 phien (AuthUserSession) & Phiên theo thiết bị (đa thiết bị) & 1–N refresh\_token \\ \hline
 refresh\_token & Refresh token, hỗ trợ rotation & Thuộc một phiên \\ \hline
 nhat\_ky (AuthAuditLog) & Nhật ký hành động: action, result, IP\ldots{} & Thuộc một người dùng \\ \hline
+mfa\_secret (AuthMfaSecret) & Bí mật MFA/TOTP: type, status, secret, mã khôi phục & Thuộc một người dùng \\ \hline
+email\_verification (AuthEmailVerification) & Mã xác minh email: codeHash, hạn dùng, thời điểm dùng & Thuộc một người dùng \\ \hline
+password\_reset (AuthPasswordReset) & Mã đặt lại mật khẩu: codeHash, purpose, hạn dùng & Thuộc một người dùng \\ \hline
 \end{tabular}}\end{center}
 \phantomsection
 \section*{3.4. Đặc tả các phân hệ Base}
@@ -675,22 +682,21 @@ Phân hệ xác thực hỗ trợ ba phương thức đăng nhập: email/mật 
 \figland{images/img09.pdf}{Hình 3.4. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}{Hình 3.4. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}
 Giao diện màn hình đăng nhập thực tế của hệ thống được thể hiện ở Hình 3.5.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img10.png}
 \caption*{\small Hình 3.5. Giao diện màn hình đăng nhập}
 \addcontentsline{lof}{figure}{Hình 3.5. Giao diện màn hình đăng nhập}
 \end{figure}
-Về phân quyền, hệ thống áp dụng RBAC: quyền được định nghĩa chi tiết theo cặp resource + action (ví dụ AssetCreate, AssetUpdate, AccountMfaSetup\ldots{}) và gán cho vai trò; vai trò gán cho người dùng. Danh mục quyền là nguồn sự thật duy nhất được khai báo tập trung ở \texttt{PermissionConstants.cs} (mỗi quyền gồm tên policy PascalCase và mã \texttt{resource.action}); mỗi mã policy tự động sinh một Authorization Policy yêu cầu claim \texttt{permission} tương ứng, và được gắn lên controller/action bằng thuộc tính \texttt{[Authorize(Policy = "...")]}. Nhờ vậy RBAC thông suốt đầu–cuối: seed CSDL $\rightarrow$ gán vai trò $\rightarrow$ nhúng claim vào JWT $\rightarrow$ frontend ẩn/hiện chức năng $\rightarrow$ backend chặn ở tầng API. Toàn hệ thống hiện có 74 quyền chia hai nhóm CORE (nền tảng, 43 quyền) và MODULE (nghiệp vụ, 31 quyền).
+Về phân quyền, hệ thống dùng RBAC: mỗi \textbf{quyền} gồm tên policy dạng PascalCase (ví dụ \texttt{AssetCreate}) và mã \texttt{resource.action} (\texttt{asset.create}); quyền được gán cho \textbf{vai trò}, rồi vai trò gán cho \textbf{người dùng}. Toàn bộ quyền khai báo tập trung tại \texttt{PermissionConstants.cs} (nguồn sự thật duy nhất); mỗi quyền tự sinh một Authorization Policy và được gắn lên API bằng \texttt{[Authorize(Policy="...")]}. Nhờ đó phân quyền thông suốt đầu–cuối: seed CSDL $\rightarrow$ gán vai trò $\rightarrow$ nhúng claim vào JWT $\rightarrow$ frontend ẩn/hiện chức năng $\rightarrow$ backend chặn ở tầng API. Hệ thống có 74 quyền, chia hai nhóm CORE (nền tảng, 43 quyền) và MODULE (nghiệp vụ, 31 quyền).
 
-Trong quá trình kiểm thử theo vai trò, nhóm phát hiện một số mã quyền được định nghĩa quá rộng khiến nguyên tắc đặc quyền tối thiểu (least privilege) bị vi phạm: quyền \texttt{asset.view} vốn chỉ nhằm cho phép tra cứu tài sản lại đang mở cả khối sổ sách kế toán tài sản cố định (khấu hao, chứng từ, thanh lý, nhật ký chung, sổ cái, báo cáo kế toán), còn \texttt{inventory.transaction} – quyền xuất/nhập kho mà kỹ thuật viên bắt buộc phải có để lĩnh vật tư – lại đồng thời cho phép sửa dữ liệu nền là danh mục vật tư và danh sách kho. Hệ quả là vai trò Kỹ thuật viên nhìn thấy và can thiệp được vào nhiều chức năng ngoài phạm vi công việc. Hệ thống đã được tinh chỉnh bằng cách tách bốn mã quyền mịn hơn: \texttt{asset.accounting} (khối sổ sách kế toán tài sản), \texttt{resident.access\_review} (camera giám sát và nhật ký người lạ ra/vào), \texttt{resident.face\_register} (đăng ký dữ liệu khuôn mặt) và \texttt{inventory.manage} (quản lý danh mục vật tư, danh sách kho). Bốn quyền này chỉ được gán cho các vai trò có trách nhiệm tương ứng, trong khi Kỹ thuật viên giữ nguyên phạm vi thi hành hiện trường.
+Khi kiểm thử theo vai trò, nhóm thực hiện ba điều chỉnh để bảo đảm nguyên tắc \textbf{đặc quyền tối thiểu} (least privilege):
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{Tách quyền quá rộng.} Vài quyền gộp nhầm nhiều chức năng: \texttt{asset.view} (tra cứu tài sản) lỡ mở cả khối sổ sách kế toán tài sản, còn \texttt{inventory.transaction} (xuất/nhập kho) lại cho sửa danh mục vật tư và danh sách kho. Đã tách thành các quyền mịn hơn — \texttt{asset.accounting}, \texttt{inventory.manage}, \texttt{resident.access\_review}, \texttt{resident.face\_register} — chỉ gán cho vai trò phụ trách, còn Kỹ thuật viên giữ đúng phạm vi thi hành hiện trường.
+  \item \textbf{Policy tổng hợp cho endpoint dùng chung.} Một endpoint cập nhật phiếu (\texttt{work-order/update}, \texttt{ticket/update}) phục vụ cả người quản lý (sửa nội dung) lẫn kỹ thuật viên (đẩy trạng thái khi check-in). Thay vì tách thêm endpoint, hệ thống dùng \textit{policy theo phép hoặc}: \texttt{WorkOrderWrite} = \texttt{create} $\vee$ \texttt{execute} và \texttt{TicketWrite} = \texttt{create} $\vee$ \texttt{resolve} (cài bằng \texttt{RequireAssertion}, không lưu trong CSDL). Tương tự, kỹ thuật viên chỉ được \texttt{procurement.request} để lập đề xuất mua vật tư và xem lại phiếu của mình qua \texttt{ProcurementRead} = \texttt{view} $\vee$ \texttt{request} (lọc theo \texttt{requestedByUserId}), không thấy toàn bộ hồ sơ mua sắm; quyền duyệt vẫn thuộc cấp trên nên tách bạch người đề xuất và người duyệt.
+  \item \textbf{Không siết quá tay.} Đặc quyền tối thiểu phải xác định theo \textit{luồng nghiệp vụ thực tế}, không theo tên phân hệ: Kế toán cần \texttt{inventory.view} để đối chiếu từng dòng hóa đơn với danh mục vật tư khi xác nhận hóa đơn (thiếu quyền này thì danh sách vật tư rỗng, mọi dòng đều "chưa khớp" và không lưu được), nhưng vẫn không có \texttt{inventory.transaction}, \texttt{inventory.manage} hay \texttt{inventory.audit}.
+\end{itemize}
 
-Một tình huống thiết kế đáng lưu ý phát sinh khi siết quyền: nghiệp vụ check-in hiện trường của kỹ thuật viên (chuyển Work Order sang trạng thái \textit{đang thực hiện}) và nghiệp vụ ghi nhận kết quả khắc phục sự cố đều thực hiện qua endpoint cập nhật đầy đủ của phiếu (\texttt{PUT /api/asset/work-order/update} và \texttt{/ticket/update}) – vốn được gác bằng quyền tạo phiếu \texttt{workorder.create} / \texttt{ticket.create} mà kỹ thuật viên không có, dẫn tới lỗi HTTP 403. Do một endpoint phục vụ hai nhóm người dùng với mục đích khác nhau (người quản lý sửa nội dung phiếu, kỹ thuật viên đẩy trạng thái), hệ thống bổ sung khái niệm \textit{policy tổng hợp} theo phép hoặc: \texttt{WorkOrderWrite} = \texttt{workorder.create} $\vee$ \texttt{workorder.execute} và \texttt{TicketWrite} = \texttt{ticket.create} $\vee$ \texttt{ticket.resolve}, cài đặt bằng \texttt{RequireAssertion} khi khởi tạo Authorization. Các policy tổng hợp không phải là quyền lưu trong cơ sở dữ liệu nên không được seed và không xuất hiện ở màn hình phân quyền; chúng chỉ đóng vai trò biểu thức kiểm tra ở tầng controller. Cách làm này giữ được đặc quyền tối thiểu (kỹ thuật viên vẫn không thể tạo hay xoá phiếu) mà không phải tách thêm endpoint riêng cho từng chuyển trạng thái. Một trường hợp tương tự là quyền đề xuất mua vật tư: kỹ thuật viên phát hiện thiếu vật tư ngay tại hiện trường nên cần lập phiếu đề xuất (\texttt{procurement.request}), nhưng không nên thấy toàn bộ hồ sơ mua sắm của khu đô thị (\texttt{procurement.view} – kèm đơn hàng và hoá đơn). Hệ thống vì vậy chỉ cấp \texttt{procurement.request} và mở đường đọc bằng policy tổng hợp \texttt{ProcurementRead} = \texttt{procurement.view} $\vee$ \texttt{procurement.request}, đồng thời lọc danh sách theo \texttt{requestedByUserId}: kỹ thuật viên xem lại được đúng phiếu do mình lập, còn quyền phê duyệt vẫn thuộc về cấp trên nên nguyên tắc tách quyền giữa người đề xuất và người duyệt không bị phá vỡ.
-
-Chiều ngược lại cũng cần lưu ý: siết quyền quá tay sẽ làm hỏng nghiệp vụ hợp lệ. Màn hình \textit{Đối chiếu \& xác nhận hoá đơn} yêu cầu kế toán ánh xạ từng dòng hoá đơn mà AI bóc tách sang đúng vật tư trong danh mục kho, nên phải đọc được danh mục vật tư; khi vai trò Kế toán chưa có \texttt{inventory.view}, lời gọi lấy danh mục trả về HTTP 403 và danh sách chọn vật tư rỗng khiến toàn bộ hạng mục đều ở trạng thái \textit{chưa khớp} và không lưu được vào hoá đơn. Nguyên tắc đặc quyền tối thiểu vì thế phải được xác định theo \textit{luồng nghiệp vụ thực tế} chứ không theo trực giác về tên phân hệ: kế toán được cấp \texttt{inventory.view} để tra cứu, nhưng vẫn không có \texttt{inventory.transaction} (xuất/nhập kho), \texttt{inventory.manage} (sửa danh mục) hay \texttt{inventory.audit} (kiểm kê).
-
-Ngoài phân quyền ở tầng endpoint (được hay không được gọi API), hệ thống còn cần giới hạn \textit{tầm nhìn dữ liệu} ở mức bản ghi: kỹ thuật viên chỉ được xem những phiếu bảo trì và phiếu sự cố mà mình được phân công, thay vì toàn bộ danh sách của khu đô thị. Quy tắc phân biệt tiếp tục dựa trên mã quyền chứ không dựa trên tên vai trò – vốn có thể thay đổi theo từng lần triển khai: người chỉ có quyền thi hành (\texttt{workorder.execute} / \texttt{ticket.resolve}) mà không có quyền điều phối (\texttt{assign}, \texttt{review}, \texttt{close}, \texttt{create}) được coi là người thừa hành và bị giới hạn theo phân công, trong khi kỹ sư trưởng – vốn có cả hai nhóm quyền – vẫn thấy toàn bộ. Việc lọc được cài đặt bằng một điều kiện \texttt{assignedToUserId} bổ sung vào truy vấn danh sách; song song đó, mọi endpoint thao tác theo định danh phiếu (xem chi tiết, cập nhật, ghi checklist, đổi trạng thái, đính kèm, xem lịch sử) đều đi qua một hàm kiểm tra chung trả về HTTP 403 kèm thông báo rõ ràng nếu phiếu không thuộc về người gọi. Nếu chỉ lọc ở danh sách mà bỏ qua bước này thì người dùng vẫn có thể truy cập phiếu của đồng nghiệp bằng cách đoán hoặc dò định danh.
-
-Về phía frontend, việc ẩn mục menu theo quyền là chưa đủ vì người dùng vẫn có thể truy cập trực tiếp bằng URL. Hệ thống vì vậy áp dụng hai lớp kiểm soát: lọc menu theo mã quyền và bọc toàn trang bằng thành phần \texttt{RequirePermission}, hiển thị thông báo từ chối truy cập thay vì để hàng loạt lời gọi API trả về lỗi 403. Với những trang chủ động bật thiết bị ngoại vi (ví dụ trang camera giám sát), thành phần kiểm tra quyền được đặt \textit{bao ngoài} component con để camera không bị khởi động trước khi quyền được xác nhận.
+Ngoài chặn ở tầng API, hệ thống còn giới hạn \textbf{tầm nhìn dữ liệu theo bản ghi}: kỹ thuật viên chỉ xem phiếu bảo trì và phiếu sự cố được phân công cho mình. Việc phân biệt dựa trên \emph{mã quyền} chứ không theo tên vai trò (vốn dễ đổi): người chỉ có quyền thi hành (\texttt{workorder.execute} / \texttt{ticket.resolve}) mà thiếu quyền điều phối (\texttt{assign}, \texttt{close}, \texttt{create}) bị giới hạn theo phân công, còn kỹ sư trưởng có cả hai nhóm quyền thì thấy toàn bộ. Bộ lọc cài bằng điều kiện \texttt{assignedToUserId} trong truy vấn danh sách; đồng thời mọi thao tác theo mã phiếu đều qua một hàm kiểm tra chung, trả về HTTP 403 nếu phiếu không thuộc người gọi (chống dò định danh). Ở frontend, ngoài ẩn menu theo quyền, mỗi trang được bọc bởi thành phần \texttt{RequirePermission} để chặn truy cập trực tiếp bằng URL; riêng trang bật camera giám sát, phần kiểm tra quyền đặt bao ngoài để thiết bị không khởi động trước khi quyền được xác nhận.
 
 Các nhóm API chính của phân hệ Xác thực và Tài khoản được tổng hợp ở Bảng 3.1.
 
@@ -756,12 +762,12 @@ Nhật ký & GET /auditLog/getbyuser/\{id\} & Truy vết hành động theo ngư
 
 Giao diện quản trị tài khoản người dùng và màn hình vai trò – quyền (RBAC) được thể hiện ở Hình 3.7 và Hình 3.8.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/real_users.png}
 \caption*{\small Hình 3.7. Giao diện Quản trị tài khoản người dùng}
 \addcontentsline{lof}{figure}{Hình 3.7. Giao diện Quản trị tài khoản người dùng}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/real_permissions.png}
 \caption*{\small Hình 3.8. Giao diện Danh mục quyền \& phân quyền theo vai trò (RBAC)}
 \addcontentsline{lof}{figure}{Hình 3.8. Giao diện Danh mục quyền \& phân quyền theo vai trò (RBAC)}
@@ -772,7 +778,7 @@ Giao diện quản trị tài khoản người dùng và màn hình vai trò –
 \addcontentsline{toc}{subsection}{3.4.3. Notification Engine - Thông báo}
 Phân hệ thông báo cho phép gửi thông báo đa kênh (push, email, SMS) qua NotificationController, quản lý mẫu thông báo tái sử dụng qua NotificationTemplateController và tra cứu lịch sử thông báo đã gửi. Mỗi thông báo lưu đối tượng nhận (audience), kênh gửi, số lượng gửi/thành công/thất bại và trạng thái (đã gửi, đã đọc), cho phép theo dõi tỉ lệ tiếp cận. Đây là dịch vụ dùng chung cho các phân hệ nghiệp vụ, ví dụ cảnh báo tồn kho thấp, nhắc hạn bảo trì hoặc cảnh báo sắp/đã quá hạn SLA — các phân hệ chỉ cần gọi dịch vụ thông báo với mã tham chiếu (referenceType, referenceId) mà không phải tự xây kênh gửi riêng. Giao diện soạn và theo dõi thông báo được thể hiện ở Hình 3.9.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/real_notifications.png}
 \caption*{\small Hình 3.9. Giao diện Quản lý \& lịch sử thông báo}
 \addcontentsline{lof}{figure}{Hình 3.9. Giao diện Quản lý \& lịch sử thông báo}
@@ -788,7 +794,7 @@ Phân hệ cấu hình quản lý các tham số chung của hệ thống và c�
 \addcontentsline{toc}{subsection}{3.4.5. Reporting - Dashboard và KPI}
 Phân hệ báo cáo tổng hợp số liệu toàn hệ thống thành dashboard trực quan và các báo cáo KPI, báo cáo chi phí (route /reports, /reports/kpi, /reports/cost; KpiSnapshotController, CostTrackingController). Bảng điều khiển hiển thị các chỉ số nhanh (tổng tài sản, sự cố đang mở, work order tới hạn, chi phí bảo trì trong tháng), biểu đồ dòng tiền theo tháng và thống kê sự cố theo loại. Báo cáo KPI theo dõi hiệu suất xử lý (tỉ lệ đúng hạn SLA, thời gian xử lý trung bình), còn báo cáo chi phí bóc tách chi phí bảo trì – vật tư – mua sắm theo kỳ. Số liệu được thu thập từ các phân hệ nghiệp vụ (tài sản, kho, sự cố) qua tham chiếu Guid cross-service, phục vụ ra quyết định vận hành. Giao diện Bảng điều khiển được thể hiện ở Hình 3.6.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img11.png}
 \caption*{\small Hình 3.6. Giao diện Bảng điều khiển (Dashboard) tổng quan}
 \addcontentsline{lof}{figure}{Hình 3.6. Giao diện Bảng điều khiển (Dashboard) tổng quan}
@@ -931,14 +937,14 @@ Luồng ghi tăng tài sản được minh họa ở Hình 4.2: người dùng n
 \figland{images/img13.pdf}{Hình 4.2. Biểu đồ tuần tự: Ghi tăng tài sản}{Hình 4.2. Biểu đồ tuần tự: Ghi tăng tài sản}
 Luồng khấu hao định kỳ được minh họa ở Hình 4.3: người quản lý chọn kỳ và bấm ``Chạy khấu hao kỳ''; hệ thống lấy các tài sản đủ điều kiện chưa trích trong kỳ, tính khấu hao đường thẳng, sinh một chứng từ khấu hao tổng kèm định khoản Nợ 642 / Có 2141 cho từng tài sản, ghi lịch sử khấu hao (trỏ tới chứng từ) và cập nhật khấu hao luỹ kế, giá trị còn lại trên tài sản. Lưu đồ cũng thể hiện hai nghiệp vụ kế toán còn lại: ghi tăng khi nhập tài sản (sinh chứng từ Nợ 211|213 / Có 111|112) và thanh lý (sinh chứng từ Nợ 2141+811 / Có 211, đổi trạng thái tài sản sang DISPOSED) lũy kế và giá trị còn lại, ghi lich\_su\_khau\_hao và sinh chứng từ (Nợ 627 / Có 214), lặp cho đến khi xử lý hết.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img14.pdf}
 \caption*{\small Hình 4.3. Lưu đồ nghiệp vụ kế toán tài sản: ghi tăng – khấu hao – thanh lý}
 \addcontentsline{lof}{figure}{Hình 4.3. Lưu đồ nghiệp vụ kế toán tài sản: ghi tăng – khấu hao – thanh lý}
 \end{figure}
 Với bảo trì phòng ngừa, quy trình khép kín từ tự động sinh Work Order khi tới hạn, phân công kỹ thuật viên, check-in bằng mã QR tại hiện trường, thực hiện checklist có ảnh minh chứng đến nghiệm thu được thể hiện ở Hình 4.4.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img15.pdf}
 \caption*{\small Hình 4.4. Lưu đồ nghiệp vụ: Bảo trì định kỳ (PM/Work Order)}
 \addcontentsline{lof}{figure}{Hình 4.4. Lưu đồ nghiệp vụ: Bảo trì định kỳ (PM/Work Order)}
@@ -946,7 +952,7 @@ Với bảo trì phòng ngừa, quy trình khép kín từ tự động sinh Wor
 \subsubsection*{c) Thiết kế cơ sở dữ liệu (schema asset)}
 Sơ đồ thực thể – liên kết của schema asset (Hình 4.5) lấy bảng tai\_san làm trung tâm, liên kết tới danh mục, lô, điều chuyển, bảo trì, thanh lý, lịch sử khấu hao và chứng từ kế toán.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{images/erd_asset.pdf}
 \caption*{\small Hình 4.5. Sơ đồ thực thể – liên kết (ERD) schema asset}
 \addcontentsline{lof}{figure}{Hình 4.5. Sơ đồ thực thể – liên kết (ERD) schema asset}
@@ -1004,17 +1010,17 @@ Hai policy \texttt{WorkOrderWrite} và \texttt{TicketWrite} là policy tổng h�
 \end{tabular}}\end{center}
 Một số màn hình tiêu biểu của phân hệ:
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img17.png}
 \caption*{\small Hình 4.6. Giao diện Danh sách tài sản}
 \addcontentsline{lof}{figure}{Hình 4.6. Giao diện Danh sách tài sản}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img18.png}
 \caption*{\small Hình 4.7. Giao diện Chi tiết tài sản (thông số, khấu hao, lịch sử)}
 \addcontentsline{lof}{figure}{Hình 4.7. Giao diện Chi tiết tài sản (thông số, khấu hao, lịch sử)}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img19.png}
 \caption*{\small Hình 4.8. Giao diện Lệnh công việc bảo trì (Work Order)}
 \addcontentsline{lof}{figure}{Hình 4.8. Giao diện Lệnh công việc bảo trì (Work Order)}
@@ -1057,7 +1063,7 @@ Khai báo kho (Warehouse), danh mục vật tư (Material) và mức tồn (Inve
 
 Quy trình kiểm kê kho định kỳ - chốt số liệu tồn hệ thống, đếm thực tế tại kho, đối chiếu chênh lệch và phê duyệt phiếu điều chỉnh - được minh họa ở Hình 4.9. Mỗi kỳ kiểm kê được lưu thành một phiếu \textbf{StockTake} (gồm phần đầu phiếu và các dòng chi tiết \textbf{StockTakeLine}), ghi lại kho, kỳ, người thực hiện (chọn từ danh sách nhân sự, không nhập tay) cùng số tồn sổ sách - thực đếm - chênh lệch của từng vật tư. Toàn bộ các kỳ kiểm kê đều được lưu để tra cứu \emph{lịch sử kiểm kê} - kể cả kỳ khớp sổ hoàn toàn (không có chênh lệch); với các dòng có chênh lệch, hệ thống tự sinh giao dịch điều chỉnh (ADJUST) tham chiếu về mã phiếu kiểm kê và cập nhật lại mức tồn.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img20.pdf}
 \caption*{\small Hình 4.9. Lưu đồ nghiệp vụ: Kiểm kê kho định kỳ}
 \addcontentsline{lof}{figure}{Hình 4.9. Lưu đồ nghiệp vụ: Kiểm kê kho định kỳ}
@@ -1065,7 +1071,7 @@ Quy trình kiểm kê kho định kỳ - chốt số liệu tồn hệ thống, 
 \subsubsection*{b) Quy trình mua sắm (PR $\rightarrow$ PO $\rightarrow$ Invoice)}
 Người dùng lập Đề xuất mua (PurchaseRequest) gồm nhiều dòng vật tư; quản lý duyệt hoặc từ chối. PR đã duyệt được chuyển thành Đơn mua (PurchaseOrder) gửi nhà cung cấp; khi nhận hàng/hóa đơn tạo Invoice để đối chiếu. Quy trình duyệt nhiều cấp được cấu hình qua PoApprovalWorkflow. Toàn bộ quy trình mua sắm và bước OCR hóa đơn được minh họa ở Hình 4.10.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img21.pdf}
 \caption*{\small Hình 4.10. Lưu đồ nghiệp vụ: Quy trình mua sắm PR $\rightarrow$ PO và OCR hóa đơn}
 \addcontentsline{lof}{figure}{Hình 4.10. Lưu đồ nghiệp vụ: Quy trình mua sắm PR $\rightarrow$ PO và OCR hóa đơn}
@@ -1102,11 +1108,11 @@ Tiêu chí thứ ba là cần thiết vì hai tiêu chí đầu có thể cùng 
 Mã use case & UC-OCR — Trích xuất hóa đơn tự động \\ \hline
 Tác nhân chính & Nhân viên kho / Nhân viên mua sắm (\emph{Người dùng}) \\ \hline
 Tác nhân phụ & Dịch vụ OCR (FastAPI), tiến trình nền \texttt{OcrProcessingWorker} \\ \hline
-Mục tiêu & Số hóa hóa đơn giấy/PDF thành các trường có cấu trúc (số hóa đơn, ngày, MST, tiền hàng, thuế, tổng) và bảng chi tiết hàng hóa, giảm nhập liệu thủ công và sai sót. \\ \hline
+Mục tiêu & Số hóa hóa đơn giấy (ảnh chụp hoặc scan) thành các trường có cấu trúc (số hóa đơn, ngày, MST, tiền hàng, thuế, tổng) và bảng chi tiết hàng hóa, giảm nhập liệu thủ công và sai sót. \\ \hline
 Tiền điều kiện & Người dùng đã đăng nhập, có quyền trên phân hệ Kho–Mua sắm; đã tồn tại PO cần đối chiếu (tùy chọn); dịch vụ OCR đang chạy. \\ \hline
-Kích hoạt & Người dùng chọn chức năng \emph{Upload hóa đơn} và tải lên tệp ảnh/PDF. \\ \hline
+Kích hoạt & Người dùng chọn chức năng \emph{Upload hóa đơn} và tải lên tệp ảnh (JPG/PNG). \\ \hline
 Luồng chính &
-1. Người dùng chọn engine OCR (mặc định \texttt{paddleocr}) và tải tệp hóa đơn lên.\newline
+1. Người dùng chọn engine OCR (một trong ba: \texttt{paddleocr} mặc định, \texttt{vietocr}, \texttt{paddledet\_viet}) và tải tệp hóa đơn lên.\newline
 2. Backend .NET tạo bản ghi \texttt{ocr\_jobs} (trạng thái \emph{pending}) và đẩy vào hàng đợi \texttt{OcrJobQueue}, trả về ngay \texttt{jobId} (không chặn giao diện).\newline
 3. \texttt{OcrProcessingWorker} lấy job khỏi hàng đợi, gọi \texttt{IInvoiceOcrEngine} $\rightarrow$ HTTP \texttt{POST /extract} sang dịch vụ OCR.\newline
 4. Dịch vụ OCR tiền xử lý ảnh, chạy phát hiện + nhận dạng theo engine đã chọn, hậu xử lý (khử nghiêng, gom hàng, trích trường/bảng) và trả về JSON \{fields, lineItems, confidence\}.\newline
@@ -1123,7 +1129,7 @@ Yêu cầu phi chức năng & Xử lý bất đồng bộ (không chặn UI); tr
 
 \noindent\textbf{Luồng xử lý theo thời gian.} Biểu đồ tuần tự dưới đây mô tả luồng của use case, làm rõ tính \emph{bất đồng bộ}: backend trả \texttt{jobId} cho người dùng ngay khi nhận tệp, còn việc gọi dịch vụ OCR và tạo \texttt{Invoice} diễn ra ở tiến trình nền; giao diện hỏi trạng thái theo chu kỳ (polling) cho tới khi job hoàn tất.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[font=\scriptsize\sffamily,>={Stealth[length=2mm]},
@@ -1174,12 +1180,12 @@ Yêu cầu phi chức năng & Xử lý bất đồng bộ (không chặn UI); tr
 \subsubsection*{a) Danh sách Use Case chính}
 Biểu đồ use case của phân hệ Kho – Mua sắm – Nhà cung cấp được thể hiện ở Hình 4.11.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img22.pdf}
 \caption*{\small Hình 4.11. Biểu đồ Use Case – Kho, Mua sắm và Nhà cung cấp}
 \addcontentsline{lof}{figure}{Hình 4.11. Biểu đồ Use Case – Kho, Mua sắm và Nhà cung cấp}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{images/erd_kho.pdf}
 \caption*{\small Hình 4.12. Sơ đồ thực thể – liên kết (ERD) phân hệ Kho, Mua sắm và Nhà cung cấp}
 \addcontentsline{lof}{figure}{Hình 4.12. Sơ đồ thực thể – liên kết (ERD) phân hệ Kho, Mua sắm và Nhà cung cấp}
@@ -1239,17 +1245,17 @@ Vendor, VendorContract, VendorContractService, VendorEvaluation & Nhà cung cấ
 \end{tabular}}\end{center}
 Một số màn hình tiêu biểu của phân hệ:
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img24.png}
 \caption*{\small Hình 4.13. Giao diện Tồn kho vật tư (cảnh báo tồn thấp)}
 \addcontentsline{lof}{figure}{Hình 4.13. Giao diện Tồn kho vật tư (cảnh báo tồn thấp)}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img25.png}
 \caption*{\small Hình 4.14. Giao diện Upload OCR hóa đơn}
 \addcontentsline{lof}{figure}{Hình 4.14. Giao diện Upload OCR hóa đơn}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img26.png}
 \caption*{\small Hình 4.15. Giao diện Danh sách nhà cung cấp}
 \addcontentsline{lof}{figure}{Hình 4.15. Giao diện Danh sách nhà cung cấp}
@@ -1260,7 +1266,7 @@ Một số màn hình tiêu biểu của phân hệ:
 Mục này trình bày chi tiết thành phần AI/OCR dùng để số hóa hóa đơn trong phân hệ Kho – Mua sắm: kiến trúc dịch vụ, cơ sở lý thuyết các mô hình, quá trình huấn luyện trên dữ liệu tự sinh và kết quả đánh giá – so sánh giữa các engine. Đây là phần đóng góp kỹ thuật của tác giả cho phân hệ.
 
 \subsubsection*{a) Kiến trúc dịch vụ OCR đa engine}
-Dịch vụ OCR được viết bằng Python/FastAPI, tách riêng khỏi backend .NET và gọi qua HTTP (POST /extract). Việc nhận dạng chạy bất đồng bộ: mỗi yêu cầu được đưa vào hàng đợi (OcrJobQueue) và một tiến trình nền (OcrProcessingWorker) lần lượt lấy ra xử lý, nhờ đó giao diện không phải chờ. Ảnh đầu vào có thể là JPG/PNG hoặc PDF quét (dịch vụ tự chuyển PDF thành ảnh 200 dpi trước khi nhận dạng). Dịch vụ cài đặt ba engine OCR tự chủ: \texttt{paddleocr}, \texttt{vietocr} và biến thể lai \texttt{paddledet\_viet}; trên giao diện người dùng chọn hai engine chính là \texttt{paddleocr} (mặc định) và \texttt{vietocr} (lưu ở cột ocr\_jobs.ocrEngine) để vừa so sánh mô hình vừa chọn engine phù hợp. Dù dùng engine nào, kết quả cũng được quy về một cấu trúc dòng chuẩn hóa [\{text, box, prob\}] rồi đưa vào chung một hàm bóc tách trường (dựa trên biểu thức chính quy và vị trí ô chữ), nên việc đổi engine không ảnh hưởng tới khâu lấy trường.
+Dịch vụ OCR được viết bằng Python/FastAPI, tách riêng khỏi backend .NET và gọi qua HTTP (POST /extract). Việc nhận dạng chạy bất đồng bộ: mỗi yêu cầu được đưa vào hàng đợi (OcrJobQueue) và một tiến trình nền (OcrProcessingWorker) lần lượt lấy ra xử lý, nhờ đó giao diện không phải chờ. Ảnh đầu vào là tệp ảnh JPG/PNG (ảnh chụp hoặc scan hóa đơn). Dịch vụ cài đặt \textbf{ba engine OCR tự chủ} và người dùng chọn trực tiếp trên giao diện (lưu ở cột \texttt{ocr\_jobs.ocrEngine}): \texttt{paddleocr} (mặc định), \texttt{vietocr} (EasyOCR phát hiện + VietOCR nhận dạng) và biến thể lai \texttt{paddledet\_viet} (DBNet của Paddle phát hiện + VietOCR nhận dạng) — vừa để so sánh mô hình vừa chọn engine phù hợp cho từng loại hóa đơn. Dù dùng engine nào, kết quả cũng được quy về một cấu trúc dòng chuẩn hóa [\{text, box, prob\}] rồi đưa vào chung một hàm bóc tách trường (dựa trên biểu thức chính quy và vị trí ô chữ), nên việc đổi engine không ảnh hưởng tới khâu lấy trường.
 
 \begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|}
@@ -1270,7 +1276,7 @@ vietocr & EasyOCR (CRAFT) & VietOCR (VGG + Transformer) & recognition & Tự ch�
 paddleocr & PaddleOCR (DBNet) & PP-OCRv4 (SVTR\_LCNet) & detect + recognize & Hợp nhất, nhẹ, fine-tune cả hai tầng \\ \hline
 paddledet\_viet & PaddleOCR (DBNet) & VietOCR (VGG + Transformer) & detect + recognition & Hybrid: DBNet mạnh + VietOCR đọc dấu tốt \\ \hline
 \end{tabular}}\end{center}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img27.pdf}
 \caption*{\small Hình 4.16. Kiến trúc pipeline trích xuất hóa đơn của dịch vụ OCR}
 \addcontentsline{lof}{figure}{Hình 4.16. Kiến trúc pipeline trích xuất hóa đơn của dịch vụ OCR}
@@ -1281,47 +1287,6 @@ paddledet\_viet & PaddleOCR (DBNet) & VietOCR (VGG + Transformer) & detect + rec
 \textbf{PaddleOCR (PP-OCRv4) - phát hiện + nhận dạng hợp nhất. }Ba bước: (1) DBNet (Differentiable Binarization) dự đoán bản đồ xác suất và bản đồ ngưỡng rồi nhị phân hóa khả vi ngay trong huấn luyện, tách biên vùng chữ gọn; (2) phân loại góc xoay dòng đúng chiều; (3) nhận dạng SVTR\_LCNet huấn luyện theo cơ chế GTC kết hợp CTC và NRTR (ghi nhận trong train.log qua CTCLoss/NRTRLoss), dùng bảng ký tự tiếng Việt dict\_vi.txt (137 ký tự). Ưu điểm: một bộ công cụ, det + rec đồng bộ, fine-tune được cả hai tầng, nhẹ, chạy offline.
 
 \textbf{EasyOCR (CRAFT). }Pipeline vietocr chỉ mượn bộ phát hiện CRAFT của EasyOCR để cắt dòng (nhận dạng giao cho VietOCR). Vì CRAFT không được fine-tune trên dữ liệu hóa đơn nên trở thành nút cổ chai của pipeline này – đây cũng là lý do đề tài thử nghiệm biến thể hybrid \texttt{paddledet\_viet} (DBNet đã fine-tune + VietOCR) ở mục h.
-
-% ==== INJECTED: model deep-dive (mục 4.2.7.b) ====
-\medskip
-\noindent\textbf{Chi tiết kiến trúc và công thức các mô hình.} Phần dưới đi sâu vào cơ chế toán học của từng thành phần để làm rõ vì sao mỗi mô hình phù hợp với một khâu của bài toán đọc hóa đơn (phát hiện vùng chữ, nhận dạng chuỗi, và huấn luyện đầu–cuối).
-
-\noindent\textit{(1) VietOCR — trích đặc trưng VGG19 và bộ giải mã Transformer.}
-Ảnh dòng chữ $I \in \mathbb{R}^{H\times W\times 3}$ được đưa qua CNN VGG19 (kèm batch-norm). Các tầng gộp (pooling) nén chiều cao về $1$ nhưng giữ chiều rộng, tạo chuỗi đặc trưng thị giác
-\[
-  X = (x_1, x_2, \dots, x_T), \qquad x_t \in \mathbb{R}^{d},
-\]
-với $T$ tỉ lệ theo bề rộng ảnh (mỗi $x_t$ ứng với một "lát" dọc của dòng chữ). Chuỗi này được bộ mã hóa Transformer tinh chỉnh bằng \emph{tự chú ý đa đầu} (multi-head self-attention):
-\[
-  \mathrm{Attention}(Q,K,V) = \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V,
-\]
-trong đó $Q,K,V$ là các phép chiếu tuyến tính của $X$ (kèm mã vị trí — positional encoding — để giữ thứ tự trái–phải của ký tự). Bộ giải mã sinh lần lượt từng ký tự $y_1,\dots,y_L$ theo cơ chế tự hồi quy, tối thiểu hóa hàm mất mát entropy chéo:
-\[
-  \mathcal{L}_{\text{seq2seq}} = -\sum_{t=1}^{L} \log P\!\left(y_t \mid y_{<t}, X\right).
-\]
-Khi suy luận, dịch vụ dùng giải mã tham lam (greedy): mỗi bước chọn $y_t=\arg\max_{y} P(y\mid y_{<t},X)$. Nhờ mô hình hóa phụ thuộc dài giữa các ký tự và có từ điển tiếng Việt riêng, VietOCR đọc dấu thanh (huyền, sắc, ngã, hỏi, nặng) rất chính xác; nhược điểm là mô hình \emph{chỉ nhận dạng}, buộc phải ghép một bộ phát hiện dòng bên ngoài.
-
-\noindent\textit{(2) PaddleOCR (PP-OCRv4) — phát hiện DBNet, phân loại góc, nhận dạng SVTR\_LCNet.}
-Tầng phát hiện dùng \emph{DBNet} với cơ chế nhị phân hóa khả vi (Differentiable Binarization). Thay cho phép nhị phân hóa cứng (không khả vi) trên bản đồ xác suất $P$, DBNet học đồng thời một bản đồ ngưỡng $T$ và xấp xỉ hàm bậc thang bằng một sigmoid dốc:
-\[
-  \hat{B}_{i,j} = \frac{1}{1 + e^{-k\,(P_{i,j} - T_{i,j})}},
-\]
-với $k$ là hệ số khuếch đại (thường $k=50$). Vì $\hat{B}$ khả vi nên biên vùng chữ được huấn luyện trực tiếp bằng lan truyền ngược; tổng mất mát gồm ba thành phần
-\[
-  \mathcal{L}_{\text{det}} = \mathcal{L}_{s} + \alpha\,\mathcal{L}_{b} + \beta\,\mathcal{L}_{t},
-\]
-lần lượt cho bản đồ xác suất, bản đồ nhị phân xấp xỉ và bản đồ ngưỡng. Sau phát hiện, một bộ phân loại góc (cls) xoay mỗi dòng về đúng chiều $0^{\circ}/180^{\circ}$. Tầng nhận dạng \emph{SVTR\_LCNet} kết hợp trộn đặc trưng cục bộ và toàn cục (local/global mixing) trên một xương sống nhẹ (LCNet), phù hợp chạy CPU. PP-OCRv4 huấn luyện recognizer theo cơ chế \emph{GTC} (Guided Training of CTC): nhánh chính dùng mất mát CTC
-\[
-  \mathcal{L}_{\text{CTC}} = -\log \!\!\sum_{\pi \in \mathcal{B}^{-1}(y)} \! P(\pi \mid X),
-\]
-trong đó $\mathcal{B}$ là toán tử gộp khung–bỏ ký tự trống (blank) ánh xạ đường căn chỉnh $\pi$ về chuỗi nhãn $y$; CTC cho phép huấn luyện không cần căn chỉnh ký tự–khung thủ công. Một nhánh chú ý phụ (NRTR) "dẫn dắt" nhánh CTC trong lúc huấn luyện (ghi nhận qua \texttt{CTCLoss}/\texttt{NRTRLoss} trong \texttt{train.log}) rồi được lược bỏ khi suy luận để giữ tốc độ. Ưu điểm nổi bật: một bộ công cụ hợp nhất, \emph{fine-tune được cả hai tầng} det+rec trên cùng dữ liệu tự gán nhãn, nhẹ và chạy offline.
-
-\noindent\textit{(3) EasyOCR/CRAFT.}
-Pipeline \texttt{vietocr} chỉ mượn bộ phát hiện \emph{CRAFT} của EasyOCR để định vị và cắt dòng (CRAFT dự đoán bản đồ vùng ký tự và bản đồ liên kết giữa các ký tự để gom thành từ/dòng), phần nhận dạng giao cho VietOCR. Vì CRAFT \emph{không được fine-tune} trên dữ liệu hóa đơn nên trở thành nút cổ chai của pipeline này — động lực dẫn tới biến thể hybrid \texttt{paddledet\_viet} ở mục h) (thay CRAFT bằng DBNet đã fine-tune, giữ recognizer VietOCR).
-
-\noindent\textbf{So sánh vai trò.} Tổng hợp lại: DBNet/CRAFT giải bài toán \emph{định vị} (đâu là dòng chữ), còn VietOCR/SVTR\_LCNet giải bài toán \emph{đọc} (dòng chữ đó là gì); CTC và seq2seq là hai họ hàm mất mát khác nhau cho khâu đọc — CTC căn chỉnh ngầm và suy luận nhanh (một lượt), seq2seq+attention chính xác dấu thanh nhưng suy luận tuần tự nên chậm hơn. Chính sự khác biệt này dẫn tới các đánh đổi định lượng ở mục d) và lý do chọn engine ở mục e).
-% ==== END INJECTED ====
-
 
 \figland{images/img28.png}{Hình 4.17. Luồng AI hai tầng (EasyOCR + VietOCR) so với PaddleOCR hợp nhất}{Hình 4.17. Luồng AI hai tầng (EasyOCR + VietOCR) so với PaddleOCR hợp nhất}
 \subsubsection*{c) Dữ liệu, huấn luyện và luồng xử lý}
@@ -1339,7 +1304,7 @@ PaddleOCR det & DBNet, từ PP-OCRv4 det & 150 & 8 & lr 0,001 \\ \hline
 
 \textbf{Kết quả huấn luyện PaddleOCR (số thật từ train.log). }Với nhận dạng (rec), loss giảm nhanh về gần 0 quanh bước \textasciitilde{}2 500 và độ chính xác huấn luyện tiến sát 1,0; trên tập val, accuracy toàn chuỗi đạt 0,9964 (99,64\%) và norm\_edit\_dis 0,9992 tại epoch 41. Với phát hiện (det), hmean tốt nhất trên val chỉ đạt 0,2298 (precision 0,228; recall 0,232) - cho thấy phát hiện bố cục hóa đơn học trên dữ liệu synthetic còn yếu; khuyến nghị bổ sung 50–150 hóa đơn thật gán bằng PPOCRLabel, hoặc kết hợp detector pretrain với recognizer đã fine-tune.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img29.png}
 \caption*{\small Hình 4.18. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}
 \addcontentsline{lof}{figure}{Hình 4.18. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}
@@ -1359,24 +1324,24 @@ EasyOCR (baseline) & 0,510 & 0,811 & 0,818 & 0,613 & 156 \\ \hline
 Ensemble (bỏ phiếu) & 0,920 & 0,974 & 0,974 & 0,933 & - \\ \hline
 Oracle (best-of-3, chặn trên) & 1,000 & - & - & - & - \\ \hline
 \end{tabular}}\end{center}\end{landscape}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img30.png}
 \caption*{\small Hình 4.19. Tác động của fine-tune (Sequence và Character accuracy)}
 \addcontentsline{lof}{figure}{Hình 4.19. Tác động của fine-tune (Sequence và Character accuracy)}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img31.png}
 \caption*{\small Hình 4.20. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}
 \addcontentsline{lof}{figure}{Hình 4.20. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}
 \end{figure}
 \textbf{Nhận xét. }(1) Fine-tune có tác động lớn: Seq-acc VietOCR tăng 0,870 $\rightarrow$ 1,000; PaddleOCR tăng 0,463 $\rightarrow$ 0,893 (PaddleOCR gốc pretrain tiếng Trung nên yếu trên tiếng Việt, hưởng lợi nhiều nhất). (2) Về độ chính xác nhận dạng, VietOCR fine-tune đứng đầu (đọc đúng cả 300/300 mẫu), trên PaddleOCR (0,893) và EasyOCR (0,510). (3) Về tốc độ, PaddleOCR nhanh nhất (65 ms/ảnh, nhanh hơn VietOCR \textasciitilde{}4,9 lần) và hợp nhất det+rec.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img32.png}
 \caption*{\small Hình 4.21. Độ trễ suy luận (ms/ảnh) và thông lượng (ảnh/giây) trên CPU}
 \addcontentsline{lof}{figure}{Hình 4.21. Độ trễ suy luận (ms/ảnh) và thông lượng (ảnh/giây) trên CPU}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img33.png}
 \caption*{\small Hình 4.22. Tính bổ trợ giữa các engine (mẫu nào engine nào đọc đúng)}
 \addcontentsline{lof}{figure}{Hình 4.22. Tính bổ trợ giữa các engine (mẫu nào engine nào đọc đúng)}
@@ -1397,7 +1362,7 @@ Sau bước này, mọi ô thuộc cùng một dòng vật lý có tung độ y$
 
 \textbf{Pha B – Tái tạo bảng theo cụm toạ độ. }Trên hệ toạ độ đã nắn thẳng, thuật toán lần lượt: (1) xác định biên bảng nằm giữa hàng tiêu đề và dòng ``Tổng/Thuế''; (2) gom dòng bằng phân cụm một chiều theo y$'$ với ngưỡng bằng 0,6 lần chiều cao dòng trung vị; (3) gán mỗi ô vào cột có tâm hoành độ gần nhất, riêng các cột số (SL, đơn giá, thành tiền) chọn ô gần tâm cột nhất thay vì nối chuỗi nhằm tránh dính các con số; (4) ghép mỗi cụm thành một dòng hàng và loại bỏ các dòng rác (không có mô tả chữ hoặc không có số tiền).
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img34.png}
 \caption*{\small Hình 4.23. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew).}
 \addcontentsline{lof}{figure}{Hình 4.23. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew).}
@@ -1437,11 +1402,11 @@ Thuật toán ExtractInvoiceTable(L)            \# L: tập ô OCR (văn bản +
 \subsubsection*{g) Tổng hợp luồng xử lý AI end-to-end}
 \textbf{Tổng quan. }Hình 4.24 tổng hợp toàn bộ luồng xử lý AI từ ảnh đầu vào đến JSON đầu ra, làm rõ dữ liệu đi qua những lớp nào, được xử lý và bóc tách ra sao, và vị trí của bước khử nghiêng.
 
-\textbf{Các lớp xử lý. }(1) Đầu vào là ảnh hoặc tệp PDF hóa đơn. (2) Tiền xử lý (\_to\_images) chuyển PDF thành ảnh 200 dpi hoặc chuẩn hóa ảnh về hệ màu RGB. (3) Tùy engine người dùng chọn (trường ocrEngine truyền từ backend .NET), luồng rẽ nhánh giữa hai engine tự chủ: pipeline \texttt{vietocr} và pipeline \texttt{paddleocr}, cả hai đều đi tiếp qua lớp Phát hiện rồi Nhận dạng. (4) Lớp Phát hiện: pipeline vietocr dùng EasyOCR/CRAFT để tìm và cắt từng dòng, pipeline paddleocr dùng DBNet kèm bộ phân loại góc (cls). (5) Lớp Nhận dạng: VietOCR (VGG19 + Transformer) hoặc SVTR\_LCNet (PP-OCRv4, đã fine-tune) đọc chữ, tạo ra danh sách ô OCR gồm văn bản, hộp bao (toạ độ) và độ tin cậy.
+\textbf{Các lớp xử lý. }(1) Đầu vào là ảnh hóa đơn (JPG/PNG). (2) Tiền xử lý (\texttt{\_to\_images}) chuẩn hóa ảnh về hệ màu RGB. (3) Tùy engine người dùng chọn (trường \texttt{ocrEngine} truyền từ backend .NET), luồng rẽ nhánh giữa ba engine tự chủ: pipeline \texttt{vietocr}, pipeline \texttt{paddleocr} và biến thể lai \texttt{paddledet\_viet} (DBNet phát hiện + VietOCR nhận dạng); cả ba đều đi tiếp qua lớp Phát hiện rồi Nhận dạng. (4) Lớp Phát hiện: pipeline vietocr dùng EasyOCR/CRAFT để tìm và cắt từng dòng, pipeline paddleocr dùng DBNet kèm bộ phân loại góc (cls). (5) Lớp Nhận dạng: VietOCR (VGG19 + Transformer) hoặc SVTR\_LCNet (PP-OCRv4, đã fine-tune) đọc chữ, tạo ra danh sách ô OCR gồm văn bản, hộp bao (toạ độ) và độ tin cậy.
 
 \textbf{Bóc tách và vị trí khử nghiêng. }(6) Lớp Hậu xử lý (parse) biến danh sách ô rời rạc thành dữ liệu có cấu trúc qua năm bước: \textcircled{\scriptsize 1} Khử nghiêng (deskew) — ước lượng độ nghiêng từ hàng tiêu đề và nắn toạ độ theo y$'$ = y $-$ a$\cdot$x; \textcircled{\scriptsize 2} Gom hàng theo y$'$ đã nắn; \textcircled{\scriptsize 3} Trích các trường bằng nhãn và biểu thức chính quy (số hóa đơn, ngày, MST, tiền hàng, thuế, tổng); \textcircled{\scriptsize 4} Trích bảng chi tiết bằng cách gán ô vào cột theo tâm hoành độ; \textcircled{\scriptsize 5} Chuẩn hóa con số và bù giá trị tổng. Đáng chú ý, khử nghiêng là bước ĐẦU TIÊN của lớp hậu xử lý, chạy ngay sau khi có danh sách ô OCR và trước mọi thao tác gom hàng, gán cột — vì các bước sau đều dựa trên toạ độ đã được nắn thẳng. (7) Đầu ra là JSON gồm fields, lineItems và confidence, được backend .NET lưu vào Invoice/InvoiceItem và hiển thị ở màn hình xác nhận.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img35.pdf}
 \caption*{\small Hình 4.24. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng.}
 \addcontentsline{lof}{figure}{Hình 4.24. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng.}
@@ -1467,21 +1432,21 @@ Bóc tách hóa đơn bằng AI là bài toán đã trưởng thành, có nhiề
   \item \textbf{Amazon Textract} (Hình 4.27): trích chữ, bảng, biểu mẫu; DetectDocumentText \textasciitilde{}1,5 USD/1.000 trang, còn AnalyzeDocument (bảng/biểu mẫu) lên tới \textasciitilde{}65 USD/1.000 trang.
 \end{itemize}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_google.png}
 \caption*{\small Hình 4.25. Google Cloud Vision AI — trích xuất văn bản/tài liệu qua API đám mây}
 \addcontentsline{lof}{figure}{Hình 4.25. Google Cloud Vision AI (API đám mây)}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://cloud.google.com/vision} (truy cập 07/2026).}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_azure.png}
 \caption*{\small Hình 4.26. Azure AI Document Intelligence — mô hình hóa đơn dựng sẵn}
 \addcontentsline{lof}{figure}{Hình 4.26. Azure AI Document Intelligence}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://azure.microsoft.com/en-us/products/ai-services/ai-document-intelligence} (truy cập 07/2026).}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_textract.png}
 \caption*{\small Hình 4.27. Amazon Textract — trích chữ, bảng và biểu mẫu từ tài liệu}
 \addcontentsline{lof}{figure}{Hình 4.27. Amazon Textract}
@@ -1490,7 +1455,7 @@ Bóc tách hóa đơn bằng AI là bài toán đã trưởng thành, có nhiề
 
 \textbf{b) Nhóm SDK thương mại cài tại chỗ.} Tiêu biểu là \textbf{ABBYY FineReader Engine} (Hình 4.28) -- bộ SDK OCR lâu đời, độ chính xác cao, chạy được on-premise (bảo mật tốt) nhưng chi phí bản quyền lớn và mô hình đóng, không tùy biến sâu cho hóa đơn tiếng Việt.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_abbyy.png}
 \caption*{\small Hình 4.28. ABBYY FineReader Engine — SDK OCR thương mại cài tại chỗ}
 \addcontentsline{lof}{figure}{Hình 4.28. ABBYY FineReader Engine (SDK thương mại)}
@@ -1503,14 +1468,14 @@ Bóc tách hóa đơn bằng AI là bài toán đã trưởng thành, có nhiề
   \item \textbf{PaddleOCR} (Hình 4.30): bộ công cụ OCR nhẹ, hợp nhất phát hiện + nhận dạng, hỗ trợ 100+ ngôn ngữ, fine-tune được cả hai tầng, nhanh (GPU \textasciitilde{}120 trang/phút) -- đây là engine nhóm chọn, kết hợp thêm \textbf{VietOCR} (recognizer mạnh về dấu tiếng Việt) và bộ phát hiện CRAFT của EasyOCR.
 \end{itemize}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_tesseract.png}
 \caption*{\small Hình 4.29. Tesseract OCR (mã nguồn mở) trên GitHub}
 \addcontentsline{lof}{figure}{Hình 4.29. Tesseract OCR (mã nguồn mở)}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://github.com/tesseract-ocr/tesseract} (truy cập 07/2026).}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_paddle.png}
 \caption*{\small Hình 4.30. PaddleOCR (mã nguồn mở, Apache-2.0, \textasciitilde{}86k sao GitHub) -- engine nhóm lựa chọn}
 \addcontentsline{lof}{figure}{Hình 4.30. PaddleOCR (mã nguồn mở) -- engine được chọn}
@@ -1547,7 +1512,7 @@ Tesseract & Mã nguồn mở & Trung bình–thấp & Miễn phí & Có & Có (k
 13 & Gemini 3 Pro \textit{(tham chiếu)} & VLM thương mại & 92,91 \\ \hline
 \end{tabular}}\end{center}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/ocr_leaderboard_omnidocbench.png}
 \caption*{\small Hình 4.30b. Bảng xếp hạng AI công khai OmniDocBench (CVPR 2025) — họ engine PaddleOCR dẫn đầu bảng xếp hạng bóc tách tài liệu}
 \addcontentsline{lof}{figure}{Hình 4.30b. Bảng xếp hạng AI công khai OmniDocBench — PaddleOCR dẫn đầu}
@@ -1603,7 +1568,7 @@ Loại sự cố: Điện, Nước, HVAC, Thang máy, PCCC, Khác. Mỗi mức �
 \subsubsection*{c) Tiếp nhận, phân công và xử lý}
 Quy trình: Báo sự cố (tạo ticket) $\rightarrow$ tiếp nhận \& phân công KTV (TicketAssignment) $\rightarrow$ KTV xử lý, cập nhật trạng thái, xuất vật tư/tạo PR nếu thiếu, chụp ảnh trước/sau (TicketAttachment) $\rightarrow$ đóng sự cố khi khắc phục xong. Luồng xử lý sự cố và giám sát SLA được minh họa ở Hình 4.31.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img36.pdf}
 \caption*{\small Hình 4.31. Lưu đồ nghiệp vụ: Xử lý sự cố và giám sát SLA}
 \addcontentsline{lof}{figure}{Hình 4.31. Lưu đồ nghiệp vụ: Xử lý sự cố và giám sát SLA}
@@ -1641,7 +1606,7 @@ UC-CM-05 & Đánh giá mức độ hài lòng & Cư dân \\ \hline
 \subsubsection*{b) Sơ đồ trạng thái (state machine) của ticket}
 Vòng đời trạng thái của một ticket sự cố được thể hiện ở Hình 4.33, trong đó trạng thái "Đang xử lý" có thể chuyển sang "Chờ vật tư" khi thiếu vật tư và quay lại khi đã có.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img38.pdf}
 \caption*{\small Hình 4.33. Sơ đồ trạng thái vòng đời ticket sự cố}
 \addcontentsline{lof}{figure}{Hình 4.33. Sơ đồ trạng thái vòng đời ticket sự cố}
@@ -1660,6 +1625,7 @@ TicketRating & Đánh giá mức độ hài lòng \\ \hline
 SlaConfig & Cấu hình SLA theo mức ưu tiên \\ \hline
 SlaEscalationLog & Nhật ký leo thang khi trễ hạn \\ \hline
 \end{tabular}}\end{center}
+\noindent\textbf{Quan hệ liên kết. }Ticket là thực thể trung tâm: tham chiếu \textbf{Asset} (assetId — tài sản gặp sự cố, xem Hình 4.5), \textbf{PurchaseRequest} (purchaseRequestId — đề xuất mua sinh ra khi cần vật tư, xem Hình 4.12) và \textbf{SlaConfig} (slaConfigId — cam kết thời gian theo mức ưu tiên). Các bảng con TicketAssignment, TicketAttachment, TicketRating, TicketStatusHistory và SlaEscalationLog đều tham chiếu Ticket. Người báo/kỹ thuật viên/người leo thang là định danh cross-service sang Auth (không đặt khóa ngoại trực tiếp). Toàn bộ được thể hiện trên Hình 4.34 (nút viền đứt là bảng liên kết chi tiết ở ERD khác).
 \subsubsection*{d) Thiết kế API}
 \begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
@@ -1688,12 +1654,12 @@ GET .../get-status-history, get-escalation-logs/\{id\} & Lịch sử trạng th�
 \end{tabular}}\end{center}
 Một số màn hình tiêu biểu của phân hệ:
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img40.png}
 \caption*{\small Hình 4.35. Giao diện Danh sách phiếu sự cố (CM)}
 \addcontentsline{lof}{figure}{Hình 4.35. Giao diện Danh sách phiếu sự cố (CM)}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img41.png}
 \caption*{\small Hình 4.36. Giao diện Bảng theo dõi SLA}
 \addcontentsline{lof}{figure}{Hình 4.36. Giao diện Bảng theo dõi SLA}
@@ -1728,12 +1694,12 @@ Redis / Cloudinary / Email & Dịch vụ ngoài qua cấu hình kết nối \\ \
 \addcontentsline{toc}{section}{5.2. Kết quả triển khai module Base}
 Với phần chung, nhóm đã phối hợp triển khai module Base hoạt động ổn định với các chức năng nền tảng: đăng nhập đa phương thức (email/mật khẩu, Google, có MFA), quản lý người dùng – vai trò – quyền theo RBAC, quản lý phiên đa thiết bị, gửi thông báo, cấu hình – danh mục dùng chung và dashboard báo cáo. Các phân hệ nghiệp vụ kế thừa trực tiếp những dịch vụ này. Giao diện đăng nhập và dashboard đã trình bày ở Hình 3.5 và 3.6; giao diện quản trị tài khoản và phân quyền được thể hiện ở Hình 5.1 và 7.2.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img42.png}
 \caption*{\small Hình 5.1. Giao diện Quản trị Tài khoản người dùng}
 \addcontentsline{lof}{figure}{Hình 5.1. Giao diện Quản trị Tài khoản người dùng}
 \end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img43.png}
 \caption*{\small Hình 5.2. Giao diện Vai trò \& phân quyền (RBAC)}
 \addcontentsline{lof}{figure}{Hình 5.2. Giao diện Vai trò \& phân quyền (RBAC)}
@@ -1769,7 +1735,7 @@ TC07 & Ticket quá hạn SLA & ticket trễ hạn & Ghi SlaEscalationLog & Đạ
 \end{tabular}}\end{center}
 Toàn bộ ca kiểm thử và nhật ký lỗi được quản lý chi tiết trên tệp Excel dùng chung (mỗi lỗi kèm ảnh chụp, theo dõi qua 3 vòng test), minh họa ở Hình 5.3.
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img44.png}
 \caption*{\small Hình 5.3. Nhật ký lỗi \& kiểm thử trên Excel (sheet Lỗi Base)}
 \addcontentsline{lof}{figure}{Hình 5.3. Nhật ký lỗi \& kiểm thử trên Excel (sheet Lỗi Base)}
@@ -1930,30 +1896,17 @@ python analyze.py --data ./dataset/rec --label ./dataset/rec/val.txt \\
 
 \textbf{c) Chỉ số đo.} \emph{Seq-acc}: tỉ lệ đọc đúng \emph{toàn bộ} chuỗi (khắt khe nhất). \emph{Char-acc} $= 1 - $ CER, với CER là khoảng cách Levenshtein chia độ dài nhãn. \emph{NED}: tương đồng mức ký tự. \emph{CER<0,1}: tỉ lệ mẫu có CER dưới 0,1. \emph{ms/ảnh}: độ trễ suy luận trung bình (đo trên CPU). Mỗi chỉ số được tính lại độc lập cho từng engine trên \emph{cùng một} tập kiểm định nên so sánh là công bằng.
 
-\textbf{d) Bảng kết quả (trích \texttt{metrics\_summary.csv}).} Đây chính là dữ liệu gốc sinh ra bảng và biểu đồ ở mục 4.2.7:
+\textbf{d) Bảng kết quả (trích \texttt{metrics\_summary.csv}).} Số liệu gốc do \texttt{analyze.py} sinh ra chính là bảng so sánh bảy cấu hình engine (VietOCR/PaddleOCR trước–sau fine-tune, EasyOCR, Ensemble, Oracle) đã trình bày ở \textbf{mục 4.2.7.d}; không lặp lại ở đây để tránh trùng lặp.
 
-\begin{center}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr0.30\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.13\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.14\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.12\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.14\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.13\linewidth-2\tabcolsep-\arrayrulewidth\relax}|}
-\hline
-\textbf{Cấu hình} & \textbf{Seq-acc} & \textbf{Char-acc} & \textbf{NED} & \textbf{CER<0,1} & \textbf{ms/ảnh} \\ \hline
-VietOCR gốc (trước) & 0,870 & 0,976 & 0,977 & 0,903 & - \\ \hline
-VietOCR fine-tune (sau) & 1,000 & 1,000 & 1,000 & 1,000 & 317 \\ \hline
-PaddleOCR gốc (trước) & 0,463 & 0,882 & 0,882 & 0,513 & - \\ \hline
-PaddleOCR fine-tune (sau) & 0,893 & 0,967 & 0,968 & 0,913 & 65 \\ \hline
-EasyOCR (baseline) & 0,510 & 0,811 & 0,818 & 0,613 & 156 \\ \hline
-Ensemble (bỏ phiếu) & 0,920 & 0,974 & 0,974 & 0,933 & - \\ \hline
-Oracle (best-of-3, chặn trên) & 1,000 & - & - & - & - \\ \hline
-\end{tabular}}\end{center}
+Hai biểu đồ dưới đây được sinh trực tiếp từ bảng số liệu đó (bằng \texttt{analyze.py}), minh họa trực quan hai kết luận chính: PaddleOCR nằm ở góc "nhanh mà vẫn chính xác cao" (Hình PL.1) và bức tranh tổng hợp các chỉ số của ba engine (Hình PL.2).
 
-Hai biểu đồ dưới đây được sinh trực tiếp từ bảng số liệu trên (bằng \texttt{analyze.py}), minh họa trực quan hai kết luận chính: PaddleOCR nằm ở góc "nhanh mà vẫn chính xác cao" (Hình PL.1) và bức tranh tổng hợp các chỉ số của ba engine (Hình PL.2).
-
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/bench_acc_latency.png}
 \caption*{\small Hình PL.1. Đánh đổi chính xác $\leftrightarrow$ tốc độ: PaddleOCR nhanh nhất (65 ms) với độ chính xác cao (0,893); VietOCR chính xác tuyệt đối nhưng chậm hơn (317 ms)}
 \addcontentsline{lof}{figure}{Hình PL.1. Đánh đổi chính xác – tốc độ giữa ba engine OCR}
 \end{figure}
 
-\begin{figure}[H]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/bench_radar.png}
 \caption*{\small Hình PL.2. Radar tổng hợp ba engine trên 5 trục (Seq-acc, Char-acc, NED, Tốc độ, CER<0,1); mọi trục: càng ra ngoài càng tốt}
 \addcontentsline{lof}{figure}{Hình PL.2. Radar tổng hợp ba engine OCR}

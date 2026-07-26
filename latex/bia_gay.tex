@@ -1,0 +1,23 @@
+% =====================================================================
+%  GÁY SÁCH (spine) cho bìa cứng ĐATN — Mẫu ĐATN-14
+%  Biên dịch riêng:  xelatex bia_gay.tex  -> bia_gay.pdf
+%  Chiều rộng gáy (paperwidth) tùy độ dày quyển — chỉnh cho khớp khi đóng bìa.
+% =====================================================================
+\documentclass{article}
+\usepackage{fontspec}
+\IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{\setmainfont{TeX Gyre Termes}}
+\usepackage[paperwidth=2.2cm,paperheight=29.7cm,top=8mm,bottom=8mm,left=2mm,right=2mm]{geometry}
+\usepackage{graphicx}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+\centering
+\rotatebox{90}{%
+  \begin{minipage}[c][2cm][c]{28.1cm}
+  \centering\bfseries\small
+  Nguyễn Xuân Thưởng \hfill
+  XÂY DỰNG HỆ THỐNG QUẢN LÝ VẬN HÀNH TÒA NHÀ -- TOWNHUB \hfill
+  2026
+  \end{minipage}}
+\end{document}

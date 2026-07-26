@@ -60,6 +60,22 @@ digraph auth {
       <tr><td align="left" balign="left">PK id<br/>code (AssetCreate…)<br/>resource + action</td></tr>
     </table>>];
 
+  mfa_secret [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>mfa_secret (AuthMfaSecret)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK mfaID<br/>FK userID<br/>type (TOTP)<br/>status, secret<br/>recoveryCodes<br/>enabledAt, lastVerifiedAt</td></tr>
+    </table>>];
+  email_verification [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>email_verification (AuthEmailVerification)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK emailVerificationID<br/>FK userID<br/>codeHash<br/>createdAt, expiresAt<br/>consumedAt</td></tr>
+    </table>>];
+  password_reset [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>password_reset (AuthPasswordReset)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK passwordResetID<br/>FK userID<br/>codeHash, purpose<br/>createdAt, expiresAt<br/>consumedAt</td></tr>
+    </table>>];
+
   // Quan hệ: con (giữ FK) -> cha (được tham chiếu), mũi tên ở phía cha
   ho_so             -> nguoi_dung;
   nhat_ky           -> nguoi_dung;
@@ -69,4 +85,7 @@ digraph auth {
   nguoi_dung_vai_tro -> vai_tro;
   vai_tro_quyen     -> vai_tro;
   vai_tro_quyen     -> quyen;
+  mfa_secret        -> nguoi_dung;
+  email_verification -> nguoi_dung;
+  password_reset    -> nguoi_dung;
 }

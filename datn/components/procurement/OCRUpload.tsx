@@ -27,8 +27,9 @@ const DOC_LABEL: Record<string, string> = Object.fromEntries(DOC_TYPES.map((d) =
 
 // Engine OCR — khớp với service Python (field "model") và backend .NET.
 const OCR_ENGINES = [
-  { value: "paddleocr", label: "PaddleOCR (tự train)" },
-  { value: "vietocr", label: "VietOCR (tự train)" },
+  { value: "paddleocr", label: "PaddleOCR thuần (tự train)" },
+  { value: "vietocr", label: "VietOCR + EasyOCR (tự train)" },
+  { value: "paddledet_viet", label: "PaddleOCR DBNet + VietOCR (hybrid)" },
 ];
 const ENGINE_LABEL: Record<string, string> = Object.fromEntries(
   OCR_ENGINES.map((e) => [e.value, e.label]),

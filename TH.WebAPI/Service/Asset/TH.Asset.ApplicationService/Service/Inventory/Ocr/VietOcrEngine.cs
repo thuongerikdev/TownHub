@@ -37,7 +37,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         {
             try
             {
-                // Gửi kèm "model" để service Python chọn engine (paddleocr | vietocr | pdf).
+                // Gửi kèm "model" để service Python chọn engine (paddleocr | vietocr | paddledet_viet).
                 using var req = new HttpRequestMessage(HttpMethod.Post, "extract")
                 {
                     Content = JsonContent.Create(new { fileUrl, model })
