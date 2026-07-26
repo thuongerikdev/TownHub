@@ -171,9 +171,8 @@ Kết quả, nhóm đã hoàn thiện hệ thống chạy được với đầy 
 5 & Kiểm thử, hoàn thiện, viết thuyết minh và bảo vệ & Tuần 8 – 9 &  \\ \hline
 \end{tabular}}\end{center}
 \begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-2\tabcolsep-\arrayrulewidth\relax}|}
-\hline
-\textbf{Sinh viên} \newline \textit{(Ký, ghi rõ họ tên)} & \textbf{GV hướng dẫn} \newline \textit{(Ký, ghi rõ họ tên)} & \textbf{Chủ tịch Hội đồng} \newline \textit{(Ký, ghi rõ họ tên)} \\ \hline
+\begin{tabular}{>{\centering\arraybackslash}p{\dimexpr\linewidth/3-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/3-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/3-2\tabcolsep\relax}}
+\textbf{Sinh viên} \newline \textit{(Ký, ghi rõ họ tên)} & \textbf{GV hướng dẫn} \newline \textit{(Ký, ghi rõ họ tên)} & \textbf{Chủ tịch Hội đồng} \newline \textit{(Ký, ghi rõ họ tên)} \\
 \end{tabular}}\end{center}
 \phantomsection
 \chapter*{Lời nói đầu}
@@ -453,6 +452,32 @@ Tiêu chí & Quản lý thủ công (Excel) & PM thương mại (Building Care /
 \textbf{Nhận xét.} Ba phần mềm thương mại đều đã trưởng thành và triển khai ở quy mô lớn, mạnh về quản lý tài sản -- bảo trì, tương tác cư dân qua App di động và (với Landsoft, CyHome) thu phí -- thanh toán trực tuyến. Tuy nhiên chúng chủ yếu là sản phẩm đóng, chi phí bản quyền/thuê bao cao và khó tùy biến theo đặc thù từng đơn vị; phần lớn tập trung vào tài sản -- phí dịch vụ mà ít hoặc chưa có: (a) bóc tách hóa đơn mua sắm bằng OCR tiếng Việt; (b) tích hợp kế toán tài sản với bút toán Nợ/Có (ghi tăng, khấu hao, thanh lý); (c) kiểm soát ra vào bằng nhận diện khuôn mặt. Đây chính là những điểm khác biệt mà TownHub hướng tới. Ở chiều ngược lại, các sản phẩm thương mại đang vượt trội hơn TownHub ở: tích hợp cổng thanh toán và tự động gạch nợ (Landsoft), ứng dụng di động gốc cho cư dân/kỹ thuật viên (CyHome, Building Care) và mức độ triển khai thực tế ở hàng trăm dự án -- đây là những hướng hoàn thiện TownHub có thể kế thừa trong tương lai. Quản lý thủ công (Excel) tuy rẻ nhưng rời rạc và dễ sai sót trên cả ba phân hệ. Tựu trung, TownHub định vị là nền tảng \textit{module hóa, tự chủ mã nguồn, chi phí thấp}, tích hợp sẵn OCR -- kế toán -- nhận diện khuôn mặt và liên thông cả ba phân hệ tài sản, dân cư, dịch vụ; đó là khoảng trống mà các giải pháp hiện có chưa lấp đầy trọn vẹn.
 
 \phantomsection
+\subsection*{1.3.3. Tham chiếu mô hình quy trình nghiệp vụ và điểm khác biệt của TownHub}
+\addcontentsline{toc}{subsection}{1.3.3. Tham chiếu mô hình quy trình nghiệp vụ và điểm khác biệt của TownHub}
+Các luồng nghiệp vụ lõi của phân hệ Tài sản không được thiết kế tùy tiện mà \emph{kế thừa những mô hình quy trình đã chuẩn hóa và kiểm chứng trong thực tế}, sau đó điều chỉnh cho bối cảnh quản lý vận hành tòa nhà tại Việt Nam. Việc bám theo các chuẩn mở, phổ biến giúp quy trình đúng thông lệ ngành, dễ bảo trì – mở rộng và tránh "phát minh lại bánh xe"; đồng thời làm rõ đóng góp riêng của đề tài nằm ở đâu. Nhóm chọn nguồn tham chiếu chính là bộ ERP mã nguồn mở \textbf{Odoo} (vì mở, tài liệu đầy đủ, được dùng rộng rãi và có thể đối chiếu trực tiếp mã nguồn) và khung \textbf{ITIL/ITSM} cho quản lý sự cố. Bốn luồng chính và lý do lựa chọn:
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+  \item \textbf{Mua sắm (PR $\rightarrow$ PO $\rightarrow$ hóa đơn):} tham chiếu quy trình \emph{Procure-to-Pay} của Odoo Purchase — mô hình mua sắm nhiều cấp phổ biến nhất, tách bạch đề xuất – đơn mua – đối chiếu hóa đơn, phù hợp yêu cầu kiểm soát chi và phê duyệt của ban quản lý tòa nhà.
+  \item \textbf{Bảo trì phòng ngừa (lịch bảo trì $\rightarrow$ lệnh công việc $\rightarrow$ checklist $\rightarrow$ nghiệm thu):} tham chiếu Odoo Maintenance (corrective \& preventive) — chuẩn tách bạch bảo trì phòng ngừa và khắc phục, gắn thiết bị với đội/kỹ thuật viên phụ trách.
+  \item \textbf{Sự cố \& SLA (tiếp nhận $\rightarrow$ phân công $\rightarrow$ xử lý $\rightarrow$ giám sát SLA/leo thang):} tham chiếu \emph{ITIL Incident Management} và chính sách \emph{escalation} theo tài liệu ITSM của Atlassian — chuẩn de-facto cho vòng đời ticket và cam kết thời gian xử lý.
+  \item \textbf{Kiểm kê kho (đếm tồn $\rightarrow$ đối chiếu $\rightarrow$ điều chỉnh):} tham chiếu \emph{Cycle Count / Inventory Adjustment} của Odoo Inventory — chuẩn kiểm kê định kỳ theo kho, đối chiếu tồn hệ thống với tồn thực đếm.
+\end{itemize}
+
+Bảng dưới đây tóm tắt: mỗi luồng kế thừa gì từ chuẩn tham chiếu và \emph{TownHub bổ sung/khác biệt ở đâu} so với nguồn tham khảo:
+
+\begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{5.0cm}|>{\raggedright\arraybackslash}p{6.4cm}|}
+\hline
+\textbf{Luồng} & \textbf{Kế thừa từ chuẩn tham chiếu} & \textbf{Điểm khác biệt / bổ sung của TownHub} \\ \hline
+Mua sắm (P2P) & Odoo Purchase: PR $\rightarrow$ duyệt $\rightarrow$ PO $\rightarrow$ hóa đơn; phê duyệt nhiều cấp; đối chiếu hóa đơn. & Thêm \textbf{OCR hóa đơn tiếng Việt} (VietOCR/PaddleOCR) và \textbf{đối chiếu ba chiều tự động} (nhà cung cấp qua MST / tổng tiền / danh mục vật tư) giữa hóa đơn AI bóc tách và PO; hóa đơn mua liên thông thẳng sang \textbf{ghi tăng tài sản} kèm bút toán Nợ/Có. \\ \hline
+Bảo trì phòng ngừa (WO) & Odoo Maintenance: tách bảo trì phòng ngừa/khắc phục; lịch bảo trì; gán đội – KTV; lệnh công việc. & Gắn lệnh công việc với \textbf{checklist template + nghiệm thu}, \textbf{xuất vật tư trực tiếp từ kho} và \textbf{tự tạo PR khi thiếu vật tư}; liên thông với \textbf{khấu hao \& chi phí tài sản} trong cùng một hệ (không tách rời module). \\ \hline
+Sự cố \& SLA & ITIL Incident Management (Atlassian): vòng đời ticket, phân loại ưu tiên, chính sách leo thang, cam kết SLA. & Áp cho \textbf{vận hành tòa nhà} (không phải IT): cấu hình SLA riêng, \textbf{nhật ký leo thang} tự động, \textbf{ticket $\rightarrow$ PR} khi cần vật tư, chụp ảnh trước/sau và \textbf{đánh giá của cư dân}; liên thông trực tiếp với kho, mua sắm và tài sản. \\ \hline
+Kiểm kê kho & Odoo Inventory: cycle count theo kho; đối chiếu tồn hệ thống với tồn thực đếm; điều chỉnh tồn. & Bổ sung \textbf{phiếu kiểm kê có mã kỳ}, tính \textbf{chênh lệch số lượng \& giá trị}, \textbf{lưu lịch sử kiểm kê} và \textbf{tự sinh giao dịch điều chỉnh tồn}; gắn vật tư kiểm kê với luồng bảo trì – sự cố của cùng phân hệ. \\ \hline
+\end{tabular}}\end{center}
+\noindent\textit{\small Nguồn tham chiếu (truy cập 07/2026): Mua sắm — Odoo Purchase, \url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/purchase.html}; Bảo trì — Odoo Maintenance, \url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/maintenance/maintenance_requests.html}; Sự cố \& SLA — ITIL/ITSM Incident Management, \url{https://www.atlassian.com/incident-management} và \url{https://www.atlassian.com/incident-management/on-call/escalation-policies}; Kiểm kê — Odoo Inventory (Cycle counts), \url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/warehouses_storage/inventory_management/cycle_counts.html}.}
+
+\noindent Tóm lại, TownHub \emph{không sao chép} các quy trình tham chiếu mà kế thừa bộ khung đã chuẩn hóa rồi \emph{tích hợp liên thông bốn luồng trong một phân hệ} và bổ sung các thành phần đặc thù (OCR hóa đơn tiếng Việt, đối chiếu ba chiều, bút toán kế toán tài sản, SLA cho vận hành tòa nhà, lịch sử kiểm kê) — đây là phần đóng góp làm nên khác biệt so với việc dùng trực tiếp các sản phẩm sẵn có.
+
+\phantomsection
 \section*{1.4. Đề xuất giải pháp và kiến trúc module hoá}
 \addcontentsline{toc}{section}{1.4. Đề xuất giải pháp và kiến trúc module hoá}
 Trên cơ sở khảo sát, nhóm chúng em đề xuất xây dựng hệ thống TownHub theo kiến trúc module hóa – phân chia module độc lập nhưng liên thông. Về mặt nghiệp vụ, hệ thống gồm ba phân hệ ngang hàng – Tài sản, Dân cư và Dịch vụ – cùng kế thừa lớp nền tảng Base (lõi dùng chung: xác thực – phân quyền, người dùng, thông báo, cấu hình, báo cáo, cùng dữ liệu nền dân cư và dịch vụ). Về triển khai, backend được chia thành ba module Auth, Base và Asset tương ứng ba schema cơ sở dữ liệu auth, base và asset (nghiệp vụ dân cư và dịch vụ nằm trong Base); các module giao tiếp qua định danh cross-service dạng Guid, không phụ thuộc chặt vào nhau.
@@ -617,7 +642,11 @@ Kỹ thuật viên & Đăng nhập, nhận việc/​thông báo, cập nhật x
 \addcontentsline{toc}{section}{3.3. Thiết kế cơ sở dữ liệu lõi (schema auth)}
 Cơ sở dữ liệu lõi của Base tập trung ở schema auth, quản lý người dùng, phân quyền theo vai trò (RBAC), phiên đăng nhập và nhật ký hoạt động. Sơ đồ thực thể – liên kết (ERD) được trình bày ở Hình 3.3.
 
-\figland{images/img08.pdf}{Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}{Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{images/erd_auth.pdf}
+\caption*{\small Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}
+\addcontentsline{lof}{figure}{Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}
+\end{figure}
 Các thực thể chính và quan hệ:
 
 \begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
@@ -772,7 +801,7 @@ Base định ra các quy ước kỹ thuật để các phân hệ riêng tích 
 \begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
   \item Mọi API trả về cấu trúc ResponseDto<T> \{ ErrorCode, ErrorMessage, Data \} để chuẩn hóa xử lý phản hồi và lỗi.
   \item Mọi endpoint yêu cầu xác thực JWT và kiểm tra quyền bằng policy RBAC gắn ở controller.
-  \item Các phân hệ tham chiếu định danh cross-service bằng Guid (ví dụ buildingId, floorId của Base; createdBy, assignedTo của Auth) và KHÔNG dùng navigation property xuyên module, giữ cho ba module độc lập, dễ bảo trì và triển khai.
+  \item Các phân hệ tham chiếu định danh cross-service bằng Guid (ví dụ buildingId, floorId của Base) và KHÔNG dùng navigation property xuyên module, giữ cho ba module độc lập, dễ bảo trì và triển khai. Riêng tham chiếu tới \textit{người dùng} là ngoại lệ: khóa chính của tài khoản trong module Auth là số nguyên chứ không phải Guid, nên các cột trỏ về người dùng được thiết kế thành cặp \texttt{<vaiTrò>UserId} (số nguyên, để tra ngược về tài khoản) kèm \texttt{<vaiTrò>Name} (tên hiển thị, để không phải gọi chéo module chỉ để hiện tên) – áp dụng thống nhất cho kỹ thuật viên được phân công của Work Order và phiếu sự cố, người đề xuất mua hàng và người xác nhận thanh toán hóa đơn. Cách này thay cho việc lưu tên do người dùng gõ tay vào trường ghi chú: tên gõ tay không truy vết được về tài khoản nào đã thực hiện thao tác, dễ sai chính tả và không dùng được để thống kê hay đối soát trách nhiệm.
   \item Thông báo, audit log, cấu hình và danh mục được cung cấp dưới dạng dịch vụ dùng lại cho mọi phân hệ.
 \end{itemize}
 \phantomsection
@@ -1503,6 +1532,29 @@ Tesseract & Mã nguồn mở & Trung bình–thấp & Miễn phí & Có & Có (k
 \textbf{VietOCR (chọn)} & Mã nguồn mở & \textbf{Rất cao} (1,000 seq) & Miễn phí & \textbf{Có} & \textbf{Có (rec)} & \textbf{Rất phù hợp} \\ \hline
 \end{tabular}}\end{center}\end{landscape}
 \noindent\textit{\small Nguồn số liệu giá: tổng hợp từ trang giá chính thức của Google Cloud Vision, Azure AI Document Intelligence và \url{https://aws.amazon.com/textract/pricing/} (07/2026); số liệu độ chính xác/tốc độ engine lấy từ thực nghiệm của nhóm ở mục 4.2.7.d.}
+
+\textbf{Đối chiếu với bảng xếp hạng AI công khai (OmniDocBench).} Ngoài bảng chấm điểm theo tiêu chí riêng ở trên, nhóm còn đối chiếu lựa chọn của mình với một \emph{bảng xếp hạng độc lập, công khai} do cộng đồng nghiên cứu duy trì để tăng tính khách quan. \textbf{OmniDocBench} (công bố tại hội nghị CVPR 2025, nhóm OpenDataLab) là bộ benchmark chuẩn cho bài toán bóc tách tài liệu (document parsing), chấm điểm end-to-end trên nhiều loại tài liệu (gồm bảng, công thức, chữ) và duy trì bảng xếp hạng cập nhật liên tục cho cả mô hình mã nguồn mở lẫn mô hình thương mại. Điều đáng chú ý cho đề tài là \textbf{PaddleOCR — chính là họ engine mà đề tài sử dụng — góp mặt và hiện dẫn đầu bảng xếp hạng này}: biến thể pipeline \texttt{PP-StructureV3} và các mô hình \texttt{PaddleOCR-VL} do cùng nhóm PaddleOCR phát triển đạt điểm tổng cao nhất, vượt cả các mô hình đa phương thức thương mại như GPT-5.2 hay Gemini~3~Pro. Trích một phần bảng xếp hạng (điểm tổng \emph{Overall}, thang 100, tại thời điểm khảo sát 07/2026):
+
+\begin{center}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|c|>{\raggedright\arraybackslash}p{5.0cm}|>{\raggedright\arraybackslash}p{3.4cm}|c|}
+\hline
+\textbf{Hạng} & \textbf{Mô hình / công cụ} & \textbf{Loại} & \textbf{Overall} \\ \hline
+1 & \textbf{PaddleOCR-VL-1.6} \textit{(họ PaddleOCR)} & Mã nguồn mở & \textbf{96,34} \\ \hline
+2 & MinerU2.5-Pro & Mã nguồn mở & 95,75 \\ \hline
+3 & GLM-OCR & Mã nguồn mở & 95,22 \\ \hline
+4 & \textbf{PaddleOCR-VL-1.5} \textit{(họ PaddleOCR)} & Mã nguồn mở & \textbf{94,93} \\ \hline
+5 & \textbf{PaddleOCR-VL} \textit{(họ PaddleOCR)} & Mã nguồn mở & \textbf{94,18} \\ \hline
+13 & Gemini 3 Pro \textit{(tham chiếu)} & VLM thương mại & 92,91 \\ \hline
+\end{tabular}}\end{center}
+
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/ocr_leaderboard_omnidocbench.png}
+\caption*{\small Hình 4.30b. Bảng xếp hạng AI công khai OmniDocBench (CVPR 2025) — họ engine PaddleOCR dẫn đầu bảng xếp hạng bóc tách tài liệu}
+\addcontentsline{lof}{figure}{Hình 4.30b. Bảng xếp hạng AI công khai OmniDocBench — PaddleOCR dẫn đầu}
+\end{figure}
+\noindent\textit{\small Nguồn: OmniDocBench, OpenDataLab (CVPR 2025). Kho mã và bảng xếp hạng: \url{https://github.com/opendatalab/OmniDocBench}; trang xếp hạng trực tuyến: \url{https://opendatalab.com/OmniDocBench}; bài báo: \url{https://huggingface.co/papers/2412.07626} (truy cập 07/2026).}
+
+\noindent Việc engine mà đề tài lựa chọn cũng chính là engine đang đứng đầu một bảng xếp hạng AI độc lập, công khai củng cố thêm cho quyết định kỹ thuật ở trên: PaddleOCR không chỉ phù hợp về chi phí và khả năng tùy biến, mà còn nằm trong nhóm dẫn đầu về độ chính xác bóc tách tài liệu theo đánh giá khách quan của cộng đồng.
 
 \textbf{Lý do lựa chọn PaddleOCR + VietOCR (tự triển khai).} Trên cơ sở khảo sát, nhóm chọn hướng \emph{tự triển khai mã nguồn mở} thay vì API đám mây hay SDK thương mại, vì:
 \begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]

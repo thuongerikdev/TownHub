@@ -1,0 +1,113 @@
+// ERD Phân hệ Kho, Mua sắm & Nhà cung cấp — style Graphviz giống erd_asset.pdf
+// Render:  dot -Tpdf src_erd_kho.dot -o erd_kho.pdf
+digraph kho {
+  graph [rankdir=LR, splines=true, nodesep=0.5, ranksep=0.95, bgcolor="white",
+         label=<<b>ERD — Phân hệ Kho, Mua sắm &amp; Nhà cung cấp</b>>,
+         labelloc=t, fontname="Arial", fontsize=15];
+  node  [shape=plaintext, fontname="Arial", fontsize=10];
+  edge  [color="#666666", arrowsize=0.7, penwidth=1.0];
+
+  material_categories [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>material_categories</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK parentId<br/>code, name</td></tr></table>>];
+  warehouses [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>warehouses</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>code, name<br/>FK buildingId<br/>FK managerId</td></tr></table>>];
+  materials [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>materials</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK categoryId<br/>FK preferredVendorId<br/>materialCode, name<br/>unitPrice, minStock</td></tr></table>>];
+  inventory_levels [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>inventory_levels</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK warehouseId<br/>FK materialId<br/>quantityOnHand</td></tr></table>>];
+  inventory_transactions [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>inventory_transactions</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK warehouseId<br/>FK materialId<br/>txnCode, txnType<br/>referenceType<br/>referenceId (Guid)<br/>quantity, unitCost</td></tr></table>>];
+  stock_takes [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>stock_takes</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK warehouseId<br/>stkCode, period<br/>countDate, status<br/>performedByUserId<br/>performedByName<br/>totalItems, diffItems<br/>totalDiffValue</td></tr></table>>];
+  stock_take_lines [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>stock_take_lines</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK stockTakeId<br/>FK materialId<br/>systemQty, countedQty<br/>diff, unitPrice<br/>diffValue, note</td></tr></table>>];
+  purchase_requests [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>purchase_requests</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK ticketId, woId<br/>prCode, status<br/>title<br/>requestedByUserId</td></tr></table>>];
+  purchase_request_items [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>purchase_request_items</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK prId<br/>FK materialId<br/>FK targetWarehouseId</td></tr></table>>];
+  purchase_orders [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>purchase_orders</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK prId<br/>FK vendorId<br/>poCode, status<br/>totalAmount</td></tr></table>>];
+  purchase_order_items [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>purchase_order_items</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK poId<br/>FK materialId<br/>FK targetWarehouseId</td></tr></table>>];
+  po_approval_workflow [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>po_approval_workflow</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK poId<br/>status, approvalLevel</td></tr></table>>];
+  invoices [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>invoices</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK vendorId<br/>FK poId<br/>FK ocrJobId<br/>invoiceCode<br/>status, paymentStatus</td></tr></table>>];
+  invoice_items [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>invoice_items</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK invoiceId<br/>FK materialId<br/>FK poItemId</td></tr></table>>];
+  ocr_jobs [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>ocr_jobs</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>documentType, status<br/>ocrEngine<br/>confidenceScore</td></tr></table>>];
+  vendors [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>vendors</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>vendorCode, name<br/>taxId, status</td></tr></table>>];
+  vendor_contracts [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>vendor_contracts</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK vendorId<br/>contractCode, status<br/>contractValue</td></tr></table>>];
+  vendor_contract_services [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>vendor_contract_services</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK contractId</td></tr></table>>];
+  vendor_evaluations [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>vendor_evaluations</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK vendorId<br/>FK contractId</td></tr></table>>];
+
+  // Quan hệ: con (giữ FK) -> cha (được tham chiếu)
+  materials -> material_categories;
+  materials -> vendors;
+  stock_takes -> warehouses;
+  stock_take_lines -> stock_takes;
+  stock_take_lines -> materials;
+  inventory_levels -> warehouses;
+  inventory_levels -> materials;
+  inventory_transactions -> warehouses;
+  inventory_transactions -> materials;
+  vendor_contracts -> vendors;
+  vendor_contract_services -> vendor_contracts;
+  vendor_evaluations -> vendors;
+  vendor_evaluations -> vendor_contracts;
+  purchase_request_items -> purchase_requests;
+  purchase_request_items -> materials;
+  purchase_orders -> purchase_requests;
+  purchase_orders -> vendors;
+  purchase_order_items -> purchase_orders;
+  purchase_order_items -> materials;
+  po_approval_workflow -> purchase_orders;
+  invoices -> vendors;
+  invoices -> purchase_orders;
+  invoices -> ocr_jobs;
+  invoice_items -> invoices;
+  invoice_items -> materials;
+}

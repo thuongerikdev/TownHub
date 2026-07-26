@@ -1,0 +1,123 @@
+// ERD schema asset — style Graphviz đồng bộ với erd_auth/erd_kho/erd_sla
+// Render:  dot -Tpdf src_erd_asset.dot -o erd_asset.pdf
+digraph asset {
+  graph [rankdir=LR, splines=true, overlap=false, nodesep=0.55, ranksep=1.1, bgcolor="white",
+         label="ERD schema asset — Phân hệ Quản lý tài sản & bảo trì", labelloc=t, fontname="Arial", fontsize=15];
+  node  [shape=plaintext, fontname="Arial", fontsize=10];
+  edge  [color="#666666", arrowsize=0.7, penwidth=1.0];
+
+  assets [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>assets</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK categoryId<br/>FK locationId<br/>FK parentAssetId<br/>FK vendorContractId<br/>FK vendorId<br/>accountCode<br/>assetCode</td></tr></table>>];
+  asset_categories [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_categories</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK defaultChecklistTemplateId<br/>FK parentId<br/>name</td></tr></table>>];
+  asset_locations [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_locations</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK buildingId<br/>FK floorId<br/>areaCode</td></tr></table>>];
+  checklist_templates [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>checklist_templates</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK categoryId<br/>name</td></tr></table>>];
+  checklist_template_items [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>checklist_template_items</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK templateId<br/>itemCode</td></tr></table>>];
+  work_orders [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>work_orders</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK checklistTemplateId<br/>FK scheduleId<br/>status, title<br/>woCode</td></tr></table>>];
+  work_order_checklist_responses [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>work_order_checklist_responses</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK templateItemId<br/>FK woId</td></tr></table>>];
+  work_order_attachments [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>work_order_attachments</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK woId</td></tr></table>>];
+  work_order_materials_used [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>work_order_materials_used</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK inventoryTransactionId<br/>FK materialId<br/>FK warehouseId<br/>FK woId</td></tr></table>>];
+  work_order_assignments [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>work_order_assignments</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK woId</td></tr></table>>];
+  maintenance_schedules [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>maintenance_schedules</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK checklistTemplateId<br/>FK lastWoId</td></tr></table>>];
+  asset_document [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_document</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>documentCode<br/>status</td></tr></table>>];
+  asset_document_line [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_document_line</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK documentId</td></tr></table>>];
+  asset_depreciation_log [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_depreciation_log</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK documentId</td></tr></table>>];
+  asset_disposal [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_disposal</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK documentId<br/>status</td></tr></table>>];
+  iot_sensor_readings [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>iot_sensor_readings</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>sensorCode</td></tr></table>>];
+  asset_qr_codes [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_qr_codes</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>qrCode</td></tr></table>>];
+  asset_transfers [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>asset_transfers</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK fromLocationId<br/>FK toLocationId<br/>FK workOrderId</td></tr></table>>];
+  cost_tracking [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>cost_tracking</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK categoryId<br/>referenceId</td></tr></table>>];
+  kpi_daily_snapshots [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>kpi_daily_snapshots</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id</td></tr></table>>];
+
+  // Quan hệ: con (giữ FK) -> cha (được tham chiếu); chỉ vẽ FK trong cùng schema asset
+  assets -> asset_categories;
+  assets -> asset_locations;
+  assets -> assets;
+  asset_categories -> checklist_templates;
+  asset_categories -> asset_categories;
+  checklist_templates -> asset_categories;
+  checklist_template_items -> checklist_templates;
+  work_orders -> assets;
+  work_orders -> checklist_templates;
+  work_orders -> maintenance_schedules;
+  work_order_checklist_responses -> checklist_template_items;
+  work_order_checklist_responses -> work_orders;
+  work_order_attachments -> work_orders;
+  work_order_materials_used -> work_orders;
+  work_order_assignments -> work_orders;
+  maintenance_schedules -> assets;
+  maintenance_schedules -> checklist_templates;
+  maintenance_schedules -> work_orders;
+  asset_document_line -> assets;
+  asset_document_line -> asset_document;
+  asset_depreciation_log -> assets;
+  asset_depreciation_log -> asset_document;
+  asset_disposal -> assets;
+  asset_disposal -> asset_document;
+  iot_sensor_readings -> assets;
+  asset_qr_codes -> assets;
+  asset_transfers -> assets;
+  asset_transfers -> asset_locations;
+  asset_transfers -> asset_locations;
+  asset_transfers -> work_orders;
+  cost_tracking -> assets;
+  cost_tracking -> asset_categories;
+}

@@ -1,0 +1,72 @@
+// ERD schema auth — style Graphviz giống erd_asset.pdf (Hình 4.5)
+// Render:  dot -Tpdf src_erd_auth.dot -o erd_auth.pdf
+digraph auth {
+  graph [rankdir=LR, splines=true, nodesep=0.55, ranksep=0.9, bgcolor="white",
+         label="ERD schema auth — Quản lý người dùng & phân quyền", labelloc=t, fontname="Arial", fontsize=15];
+  node  [shape=plaintext, fontname="Arial", fontsize=10];
+  edge  [color="#666666", arrowsize=0.7, penwidth=1.0];
+
+  nguoi_dung [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>nguoi_dung (AuthUser)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id: Guid<br/>email, mat_khau_hash<br/>googleSub<br/>trang_thai<br/>tokenVersion</td></tr>
+    </table>>];
+
+  ho_so [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>ho_so (AuthProfile)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK nguoi_dung_id<br/>ho_ten, avatar<br/>gioi_tinh, ngay_sinh</td></tr>
+    </table>>];
+
+  nhat_ky [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>nhat_ky (AuthAuditLog)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK nguoi_dung_id<br/>action, result<br/>ip, thoi_diem</td></tr>
+    </table>>];
+
+  phien [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>phien (AuthUserSession)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK nguoi_dung_id<br/>thiet_bi, ip<br/>trang_thai</td></tr>
+    </table>>];
+
+  refresh_token [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>refresh_token</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK phien_id<br/>token_hash<br/>het_han (rotation)</td></tr>
+    </table>>];
+
+  nguoi_dung_vai_tro [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>nguoi_dung_vai_tro</b></td></tr><hr/>
+      <tr><td align="left" balign="left">FK nguoi_dung_id<br/>FK vai_tro_id</td></tr>
+    </table>>];
+
+  vai_tro [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>vai_tro (AuthRole)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>ten (Admin, BQL, Cư dân…)<br/>mo_ta</td></tr>
+    </table>>];
+
+  vai_tro_quyen [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>vai_tro_quyen</b></td></tr><hr/>
+      <tr><td align="left" balign="left">FK vai_tro_id<br/>FK quyen_id</td></tr>
+    </table>>];
+
+  quyen [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>quyen (AuthPermission)</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>code (AssetCreate…)<br/>resource + action</td></tr>
+    </table>>];
+
+  // Quan hệ: con (giữ FK) -> cha (được tham chiếu), mũi tên ở phía cha
+  ho_so             -> nguoi_dung;
+  nhat_ky           -> nguoi_dung;
+  phien             -> nguoi_dung;
+  refresh_token     -> phien;
+  nguoi_dung_vai_tro -> nguoi_dung;
+  nguoi_dung_vai_tro -> vai_tro;
+  vai_tro_quyen     -> vai_tro;
+  vai_tro_quyen     -> quyen;
+}

@@ -1,0 +1,45 @@
+// ERD Phân hệ Quản lý sự cố & SLA — style Graphviz giống erd_asset.pdf
+// Render:  dot -Tpdf src_erd_sla.dot -o img39.pdf
+digraph sla {
+  graph [rankdir=LR, splines=true, nodesep=0.5, ranksep=1.0, bgcolor="white",
+         label="ERD — Phân hệ Quản lý sự cố & SLA", labelloc=t, fontname="Arial", fontsize=15];
+  node  [shape=plaintext, fontname="Arial", fontsize=10];
+  edge  [color="#666666", arrowsize=0.7, penwidth=1.0];
+
+  tickets [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>tickets</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK assetId<br/>FK purchaseRequestId<br/>FK slaConfigId<br/>status<br/>ticketCode<br/>title</td></tr></table>>];
+  ticket_assignments [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>ticket_assignments</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK ticketId</td></tr></table>>];
+  ticket_attachments [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>ticket_attachments</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK ticketId</td></tr></table>>];
+  ticket_ratings [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>ticket_ratings</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK ticketId</td></tr></table>>];
+  sla_escalation_log [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>sla_escalation_log</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK ticketId</td></tr></table>>];
+  ticket_status_history [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>ticket_status_history</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>FK ticketId</td></tr></table>>];
+  sla_configs [label=<
+    <table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0">
+      <tr><td bgcolor="#C9D4EC"><b>sla_configs</b></td></tr><hr/>
+      <tr><td align="left" balign="left">PK id<br/>name</td></tr></table>>];
+
+  // Quan hệ: con (giữ FK) -> cha (được tham chiếu)
+  ticket_assignments -> tickets;
+  ticket_attachments -> tickets;
+  ticket_ratings -> tickets;
+  sla_escalation_log -> tickets;
+  ticket_status_history -> tickets;
+  tickets -> sla_configs;
+}
