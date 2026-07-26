@@ -435,10 +435,17 @@ Nhóm đã khảo sát hai nhóm đối tượng: (i) các \textbf{phần mềm 
 \addcontentsline{toc}{subsection}{1.3.2. So sánh tổng hợp và định vị TownHub}
 Bảng dưới đây so sánh ba nhóm giải pháp -- quản lý thủ công (Excel), phần mềm thương mại (đại diện là Building Care, Landsoft Control, CyHome) và TownHub đề xuất -- theo các tiêu chí trải đều ba phân hệ tài sản, dân cư và dịch vụ:
 
-\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|}
+{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-2\tabcolsep-\arrayrulewidth\relax}|}
 \hline
-Tiêu chí & Quản lý thủ công (Excel) & PM thương mại (Building Care / Landsoft / CyHome) & TownHub (đề xuất) \\ \hline
+\textbf{Tiêu chí} & \textbf{Quản lý thủ công (Excel)} & \textbf{PM thương mại (Building Care / Landsoft / CyHome)} & \textbf{TownHub (đề xuất)} \\ \hline
+\endfirsthead
+\hline
+\textbf{Tiêu chí} & \textbf{Quản lý thủ công (Excel)} & \textbf{PM thương mại (Building Care / Landsoft / CyHome)} & \textbf{TownHub (đề xuất)} \\ \hline
+\endhead
+\hline \multicolumn{4}{r}{\footnotesize\textit{(tiếp trang sau)}} \\
+\endfoot
+\endlastfoot
 \textbf{Tài sản – }Vòng đời \& khấu hao & Thủ công, dễ sai & Có & Có, tự động \\ \hline
 \textbf{Tài sản – }Bảo trì phòng ngừa (PM/​WO) & Không & Có & Có \\ \hline
 \textbf{Tài sản – }Kho vật tư \& mua sắm (PR/​PO) & Rời rạc & Một phần & Có, liên thông \\ \hline
@@ -452,7 +459,7 @@ Tiêu chí & Quản lý thủ công (Excel) & PM thương mại (Building Care /
 \textbf{Nền tảng – }Ứng dụng di động cư dân/KTV & Không & \textbf{Có} (App gốc) & Web responsive \\ \hline
 \textbf{Nền tảng – }Chi phí \& khả năng tùy biến & Thấp/Rời rạc & Cao, đóng, khó tùy biến & Thấp, tự chủ mã nguồn \\ \hline
 \textbf{Nền tảng – }Quy mô đã triển khai thực tế & -- & \textbf{Lớn} (60–200+ dự án) & Đồ án/nguyên mẫu \\ \hline
-\end{tabular}}\end{center}
+\end{longtable}}
 \textbf{Nhận xét.} Ba phần mềm thương mại đều đã trưởng thành và triển khai ở quy mô lớn, mạnh về quản lý tài sản -- bảo trì, tương tác cư dân qua App di động và (với Landsoft, CyHome) thu phí -- thanh toán trực tuyến. Tuy nhiên chúng chủ yếu là sản phẩm đóng, chi phí bản quyền/thuê bao cao và khó tùy biến theo đặc thù từng đơn vị; phần lớn tập trung vào tài sản -- phí dịch vụ mà ít hoặc chưa có: (a) bóc tách hóa đơn mua sắm bằng OCR tiếng Việt; (b) tích hợp kế toán tài sản với bút toán Nợ/Có (ghi tăng, khấu hao, thanh lý); (c) kiểm soát ra vào bằng nhận diện khuôn mặt. Đây chính là những điểm khác biệt mà TownHub hướng tới. Ở chiều ngược lại, các sản phẩm thương mại đang vượt trội hơn TownHub ở: tích hợp cổng thanh toán và tự động gạch nợ (Landsoft), ứng dụng di động gốc cho cư dân/kỹ thuật viên (CyHome, Building Care) và mức độ triển khai thực tế ở hàng trăm dự án -- đây là những hướng hoàn thiện TownHub có thể kế thừa trong tương lai. Quản lý thủ công (Excel) tuy rẻ nhưng rời rạc và dễ sai sót trên cả ba phân hệ. Tựu trung, TownHub định vị là nền tảng \textit{module hóa, tự chủ mã nguồn, chi phí thấp}, tích hợp sẵn OCR -- kế toán -- nhận diện khuôn mặt và liên thông cả ba phân hệ tài sản, dân cư, dịch vụ; đó là khoảng trống mà các giải pháp hiện có chưa lấp đầy trọn vẹn.
 
 \phantomsection
@@ -468,15 +475,22 @@ Các luồng nghiệp vụ lõi của phân hệ Tài sản không được thi�
 
 Bảng dưới đây tóm tắt: mỗi luồng kế thừa gì từ chuẩn tham chiếu và \emph{TownHub bổ sung/khác biệt ở đâu} so với nguồn tham khảo:
 
-\begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{5.0cm}|>{\raggedright\arraybackslash}p{6.4cm}|}
+{\small\singlespacing\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{5.0cm}|>{\raggedright\arraybackslash}p{6.4cm}|}
 \hline
 \textbf{Luồng} & \textbf{Kế thừa từ chuẩn tham chiếu} & \textbf{Điểm khác biệt / bổ sung của TownHub} \\ \hline
+\endfirsthead
+\hline
+\textbf{Luồng} & \textbf{Kế thừa từ chuẩn tham chiếu} & \textbf{Điểm khác biệt / bổ sung của TownHub} \\ \hline
+\endhead
+\hline \multicolumn{3}{r}{\footnotesize\textit{(tiếp trang sau)}} \\
+\endfoot
+\endlastfoot
 Mua sắm (P2P) & Odoo Purchase: PR $\rightarrow$ duyệt $\rightarrow$ PO $\rightarrow$ hóa đơn; phê duyệt nhiều cấp; đối chiếu hóa đơn. & Thêm \textbf{OCR hóa đơn tiếng Việt} (VietOCR/PaddleOCR) và \textbf{đối chiếu ba chiều tự động} (nhà cung cấp qua MST / tổng tiền / danh mục vật tư) giữa hóa đơn AI bóc tách và PO; hóa đơn mua liên thông thẳng sang \textbf{ghi tăng tài sản} kèm bút toán Nợ/Có. \\ \hline
 Bảo trì phòng ngừa (WO) & Odoo Maintenance: tách bảo trì phòng ngừa/khắc phục; lịch bảo trì; gán đội – KTV; lệnh công việc. & Gắn lệnh công việc với \textbf{checklist template + nghiệm thu}, \textbf{xuất vật tư trực tiếp từ kho} và \textbf{tự tạo PR khi thiếu vật tư}; liên thông với \textbf{khấu hao \& chi phí tài sản} trong cùng một hệ (không tách rời module). \\ \hline
 Sự cố \& SLA & ITIL Incident Management (Atlassian): vòng đời ticket, phân loại ưu tiên, chính sách leo thang, cam kết SLA. & Áp cho \textbf{vận hành tòa nhà} (không phải IT): cấu hình SLA riêng, \textbf{nhật ký leo thang} tự động, \textbf{ticket $\rightarrow$ PR} khi cần vật tư, chụp ảnh trước/sau và \textbf{đánh giá của cư dân}; liên thông trực tiếp với kho, mua sắm và tài sản. \\ \hline
 Kiểm kê kho & Odoo Inventory: cycle count theo kho; đối chiếu tồn hệ thống với tồn thực đếm; điều chỉnh tồn. & Bổ sung \textbf{phiếu kiểm kê có mã kỳ}, tính \textbf{chênh lệch số lượng \& giá trị}, \textbf{lưu lịch sử kiểm kê} và \textbf{tự sinh giao dịch điều chỉnh tồn}; gắn vật tư kiểm kê với luồng bảo trì – sự cố của cùng phân hệ. \\ \hline
-\end{tabular}}\end{center}
+\end{longtable}}
 \noindent\textit{\small Nguồn tham chiếu (truy cập 07/2026): Mua sắm — Odoo Purchase, \url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/purchase.html}; Bảo trì — Odoo Maintenance, \url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/maintenance/maintenance_requests.html}; Sự cố \& SLA — ITIL/ITSM Incident Management, \url{https://www.atlassian.com/incident-management} và \url{https://www.atlassian.com/incident-management/on-call/escalation-policies}; Kiểm kê — Odoo Inventory (Cycle counts), \url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/warehouses_storage/inventory_management/cycle_counts.html}.}
 
 \noindent Tóm lại, TownHub \emph{không sao chép} các quy trình tham chiếu mà kế thừa bộ khung đã chuẩn hóa rồi \emph{tích hợp liên thông bốn luồng trong một phân hệ} và bổ sung các thành phần đặc thù (OCR hóa đơn tiếng Việt, đối chiếu ba chiều, bút toán kế toán tài sản, SLA cho vận hành tòa nhà, lịch sử kiểm kê) — đây là phần đóng góp làm nên khác biệt so với việc dùng trực tiếp các sản phẩm sẵn có.

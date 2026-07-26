@@ -21,11 +21,11 @@
 \contentsline {section}{1.3. Khảo sát các giải pháp hiện có}{10}{section*.37}%
 \contentsline {subsection}{1.3.1. Các phần mềm thương mại đang triển khai thực tế}{10}{section*.38}%
 \contentsline {subsection}{1.3.2. So sánh tổng hợp và định vị TownHub}{12}{section*.45}%
-\contentsline {subsection}{1.3.3. Tham chiếu mô hình quy trình nghiệp vụ và điểm khác biệt của TownHub}{15}{section*.46}%
-\contentsline {section}{1.4. Đề xuất giải pháp và kiến trúc module hoá}{18}{section*.47}%
+\contentsline {subsection}{1.3.3. Tham chiếu mô hình quy trình nghiệp vụ và điểm khác biệt của TownHub}{14}{section*.46}%
+\contentsline {section}{1.4. Đề xuất giải pháp và kiến trúc module hoá}{17}{section*.47}%
 \contentsline {section}{1.5. Mục tiêu, phạm vi và yêu cầu hệ thống}{18}{section*.48}%
 \contentsline {subsection}{1.5.1. Yêu cầu chức năng}{18}{section*.49}%
-\contentsline {subsection}{1.5.2. Yêu cầu phi chức năng}{18}{section*.50}%
+\contentsline {subsection}{1.5.2. Yêu cầu phi chức năng}{19}{section*.50}%
 \contentsline {section}{1.6. Kết luận chương}{19}{section*.51}%
 \contentsline {chapter}{Chương 2. Cơ sở lý thuyết và công nghệ sử dụng}{20}{chapter*.53}%
 \contentsline {section}{2.1. Kiến trúc phần mềm áp dụng}{20}{section*.54}%
