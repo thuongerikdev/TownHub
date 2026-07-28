@@ -245,7 +245,9 @@
       "Bash(pandoc -t markdown \"D:\\\\DATN\\\\TownHub\\\\Báo_cáo_thực_tập_Nguyễn_Xuân_Thưởng_đã_sửa.docx\" -o report.md)",
       "Bash(pandoc -t markdown \"E:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\Báo cáo\\\\Biểu mẫu_Quy định Tổ chức và Đánh giá TTTN HUCE.docx\" -o bieumau.md)",
       "PowerShell(Get-Command pandoc,soffice,python -ErrorAction SilentlyContinue)",
-      "Bash(grep -iv \"using\\\\|//\")"
+      "Bash(grep -iv \"using\\\\|//\")",
+      "Bash(python -c \"import markitdown; print\\('markitdown ok'\\)\")",
+      "Bash(cd \"/c/Users/ADMIN/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/7559cbf1-47fb-4cf5-b644-383cf13e4b7b/7f810f91-8159-4168-9212-da6a7c3da2f0/skills/pptx\" && ls scripts/ && echo \"---\" && which markitdown node python soffice pdftoppm 2>&1)"
     ]
   }
 }

@@ -9,6 +9,7 @@ using TH.TownHub.ApplicationService.Common;
 using TH.TownHub.Domain.Entities;
 using TH.TownHub.Dtos;
 using TH.TownHub.Infrastructure.Database;
+using TH.Auth.ApplicationService.Service.Email;
 
 namespace TH.TownHub.ApplicationService.Service
 {
@@ -185,12 +186,15 @@ namespace TH.TownHub.ApplicationService.Service
         Task<ResponseDto<bool>> SendAsync(int id);
         Task<ResponseDto<List<NotificationResponse>>> GetAllAsync(string? status = null);
         Task<ResponseDto<NotificationResponse>> GetByIdAsync(int id);
+        Task<ResponseDto<List<NotificationInboxResponse>>> GetInboxAsync(int authUserId);
     }
 
     public class NotificationService : TownHubServiceBase, INotificationService
     {
-        public NotificationService(ILogger<NotificationService> logger, TownHubDbContext dbContext)
-            : base(logger, dbContext) { }
+        private readonly IEmailService _emailService;
+
+        public NotificationService(ILogger<NotificationService> logger, TownHubDbContext dbContext, IEmailService emailService)
+            : base(logger, dbContext) => _emailService = emailService;
 
         public async Task<ResponseDto<bool>> CreateAsync(CreateNotificationRequestDto request)
         {
@@ -281,33 +285,69 @@ namespace TH.TownHub.ApplicationService.Service
                 if (entity.Status == "sent")
                     return ResponseConst.Error<bool>(400, "Thông báo đã được gửi trước đó.");
 
+                var isEmail = string.Equals(entity.Channel, "email", StringComparison.OrdinalIgnoreCase);
                 var recipients = await GetRecipientsAsync(entity.Audience);
-                var logs = recipients.Select(resident => new NotificationLog
+
+                var logs = new List<NotificationLog>();
+                foreach (var resident in recipients)
                 {
-                    NotificationId = entity.Id,
-                    ResidentId = resident.Id,
-                    Channel = entity.Channel,
-                    // The delivery worker can replace this with a device token.  Keeping
-                    // the address in the log makes each targeted recipient auditable.
-                    Recipient = entity.Channel == "email"
-                        ? resident.Email ?? resident.Phone
-                        : resident.Phone,
-                    Status = "delivered",
-                    SentAt = DateTime.UtcNow
-                }).ToList();
+                    var address = isEmail ? resident.Email : resident.Phone;
+                    var log = new NotificationLog
+                    {
+                        NotificationId = entity.Id,
+                        ResidentId = resident.Id,
+                        Channel = entity.Channel,
+                        // Lưu địa chỉ đích để mỗi người nhận đều truy vết được.
+                        Recipient = address ?? resident.Phone ?? "",
+                        Status = "delivered",
+                        SentAt = DateTime.UtcNow
+                    };
+
+                    if (isEmail)
+                    {
+                        // Kênh Email: gửi thật qua SMTP đã cấu hình sẵn (IEmailService).
+                        if (string.IsNullOrWhiteSpace(resident.Email))
+                        {
+                            log.Status = "failed";
+                            log.ErrorMessage = "Cư dân chưa có địa chỉ email.";
+                            log.SentAt = null;
+                        }
+                        else
+                        {
+                            try
+                            {
+                                await _emailService.SendEmailAsync(resident.Email, entity.Title, BuildEmailBody(entity));
+                            }
+                            catch (Exception mailEx)
+                            {
+                                log.Status = "failed";
+                                log.ErrorMessage = mailEx.Message;
+                                log.SentAt = null;
+                                _logger.LogWarning(mailEx, "Gửi email thông báo thất bại tới {Email}", resident.Email);
+                            }
+                        }
+                    }
+                    // Kênh Push App (in-app): chỉ cần dòng log này để hộp thư cá nhân
+                    // của cư dân đọc được — không cần dịch vụ ngoài.
+
+                    logs.Add(log);
+                }
                 _dbContext.NotificationLogs.AddRange(logs);
 
-                // Delivery integration is handled by the queue worker; this transaction
-                // records the exact audience and delivery result immediately.
+                var failed = logs.Count(l => l.Status == "failed");
                 entity.Status = "sent";
                 entity.SentAt = DateTime.UtcNow;
                 entity.TotalRecipients = recipients.Count;
-                entity.SentCount = recipients.Count;
-                entity.FailedCount = 0;
+                entity.SentCount = recipients.Count - failed;
+                entity.FailedCount = failed;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
-                return ResponseConst.Success("Gửi thông báo thành công.", true);
+
+                var msg = failed == 0
+                    ? "Gửi thông báo thành công."
+                    : $"Gửi thông báo hoàn tất: {entity.SentCount} thành công, {failed} thất bại.";
+                return ResponseConst.Success(msg, true);
             }
             catch (Exception ex)
             {
@@ -340,6 +380,49 @@ namespace TH.TownHub.ApplicationService.Service
             else if (audience == "staff") return new List<Resident>();
 
             return await query.ToListAsync();
+        }
+
+        // Bọc nội dung thông báo vào một khung HTML tối giản cho email.
+        private static string BuildEmailBody(Notification n)
+        {
+            var content = System.Net.WebUtility.HtmlEncode(n.Content).Replace("\n", "<br/>");
+            return $@"<div style=""font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:auto;padding:20px"">
+                <h2 style=""color:#111"">{System.Net.WebUtility.HtmlEncode(n.Title)}</h2>
+                <div style=""color:#333;line-height:1.6;font-size:15px"">{content}</div>
+                <hr style=""border:none;height:1px;background:#eee;margin:20px 0""/>
+                <small style=""color:#888"">TownHub — Ban Quản Lý Toà Nhà</small>
+            </div>";
+        }
+
+        // Hộp thư cá nhân: các thông báo đã được GỬI tới cư dân gắn với tài khoản này.
+        // Vì log chỉ sinh khi bấm "Gửi", nháp/chưa gửi sẽ không xuất hiện.
+        public async Task<ResponseDto<List<NotificationInboxResponse>>> GetInboxAsync(int authUserId)
+        {
+            try
+            {
+                var result = await _dbContext.NotificationLogs
+                    .Where(l => l.Resident != null && l.Resident.AuthUserId == authUserId)
+                    .OrderByDescending(l => l.SentAt ?? l.CreatedAt)
+                    .Select(l => new NotificationInboxResponse
+                    {
+                        id = l.NotificationId,
+                        logId = l.Id,
+                        title = l.Notification.Title,
+                        content = l.Notification.Content,
+                        channel = l.Notification.Channel,
+                        audience = l.Notification.Audience,
+                        sentAt = l.SentAt,
+                        createdAt = l.Notification.CreatedAt
+                    })
+                    .ToListAsync();
+
+                return ResponseConst.Success("Lấy hộp thư thông báo thành công.", result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy hộp thư thông báo cho authUserId={AuthUserId}", authUserId);
+                return ResponseConst.Error<List<NotificationInboxResponse>>(500, "Lỗi hệ thống: " + ex.Message);
+            }
         }
 
         public async Task<ResponseDto<List<NotificationResponse>>> GetAllAsync(string? status = null)

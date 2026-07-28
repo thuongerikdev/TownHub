@@ -211,6 +211,14 @@ namespace TH.TownHub.WebAPI.Controllers
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);
         }
+
+        // Hộp thư cá nhân — chỉ thông báo đã gửi tới tài khoản đang đăng nhập.
+        [HttpGet("inbox/{authUserId}")]
+        public async Task<IActionResult> GetInbox(int authUserId)
+        {
+            var result = await _service.GetInboxAsync(authUserId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
     }
 
     // ============================================================

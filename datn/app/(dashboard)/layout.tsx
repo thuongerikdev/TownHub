@@ -170,17 +170,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user]);
 
   useEffect(() => {
-    if (!isResident && !hasResidentProfile) return;
+    if (!user || (!isResident && !hasResidentProfile)) return;
     const seenAt = Number(localStorage.getItem("townhub.resident.seen-at") ?? "0");
     const hasNewPoll = (() => {
       try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).some((poll) => poll.id > seenAt); }
       catch { return false; }
     })();
-    notifications.getAll().then((response) => {
-      const hasNewNotification = response.errorCode === 200 && Boolean(response.data?.some((item) => new Date(item.createdAt).getTime() > seenAt));
+    // Chỉ tính thông báo ĐÃ gửi tới đúng tài khoản này (hộp thư cá nhân).
+    notifications.inbox(user.userID).then((response) => {
+      const hasNewNotification = response.errorCode === 200 && Boolean(response.data?.some((item) => new Date(item.sentAt ?? item.createdAt).getTime() > seenAt));
       setHasResidentUpdates(hasNewPoll || hasNewNotification);
     });
-  }, [hasResidentProfile, isResident, pathname]);
+  }, [hasResidentProfile, isResident, pathname, user]);
 
   function openResidentUpdates() {
     localStorage.setItem("townhub.resident.seen-at", String(Date.now()));

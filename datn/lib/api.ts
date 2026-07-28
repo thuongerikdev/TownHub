@@ -64,6 +64,10 @@ export interface NotificationResponse {
   status: string; totalRecipients: number; sentCount: number; failedCount: number;
   scheduledAt?: string; sentAt?: string; createdByAuthUserId: number; createdAt: string;
 }
+export interface NotificationInboxResponse {
+  id: number; logId: number; title: string; content: string;
+  channel: string; audience: string; sentAt?: string; createdAt: string;
+}
 export interface FaceProfileResponse {
   id: number; residentId: number; residentName: string; imageUrl: string;
   aiStatus: string; failureReason?: string; registeredAt: string;
@@ -564,6 +568,9 @@ export const notifications = {
   update: (body: { id: number; title: string; content: string; channel: string; audience: string; templateId?: number; scheduledAt?: string; createdByAuthUserId: number }) =>
     apiFetch<boolean>("/api/Notification/update", { method: "PUT", body: JSON.stringify(body) }),
   send: (id: number) => apiFetch<boolean>(`/api/Notification/send/${id}`, { method: "POST" }),
+  // Hộp thư cá nhân: chỉ thông báo đã gửi tới đúng tài khoản đang đăng nhập.
+  inbox: (authUserId: number) =>
+    apiFetch<NotificationInboxResponse[]>(`/api/Notification/inbox/${authUserId}`),
 };
 
 // ─── System Config ─────────────────────────────────────────────────────────────

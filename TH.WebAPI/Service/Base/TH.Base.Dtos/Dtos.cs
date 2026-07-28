@@ -232,6 +232,20 @@ namespace TH.TownHub.Dtos
         public int id { get; set; }
     }
 
+    // Thông báo đã được gửi tới ĐÚNG tài khoản đang đăng nhập (hộp thư cá nhân).
+    // Lọc theo audience → cư dân → AuthUserId, dựa trên notification_logs.
+    public class NotificationInboxResponse
+    {
+        public int id { get; set; }               // Id của Notification (chiến dịch)
+        public int logId { get; set; }            // Id dòng log gửi tới người này
+        public string title { get; set; } = null!;
+        public string content { get; set; } = null!;
+        public string channel { get; set; } = null!;
+        public string audience { get; set; } = null!;
+        public DateTime? sentAt { get; set; }
+        public DateTime createdAt { get; set; }
+    }
+
     public class NotificationResponse
     {
         public int id { get; set; }

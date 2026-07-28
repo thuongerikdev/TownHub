@@ -1,0 +1,103 @@
+% =====================================================================
+%  Nguồn vector cho Hình 4.24 — Luồng xử lý AI end-to-end (dịch vụ OCR)
+%  Khớp ĐÚNG code app.py: 3 engine tự chủ (vietocr / paddleocr / paddledet_viet).
+%  KHÔNG có engine Gemini (đã loại bỏ để nhất quán với 4.2.7).
+%  Biên dịch: xelatex src_img35.tex -> src_img35.pdf -> copy sang img35.pdf
+% =====================================================================
+\documentclass[border=12pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc}
+
+\tikzset{
+  lab/.style={font=\bfseries\small, text=blue!45!black, align=left, text width=3.4cm},
+  inp/.style={rounded corners=10pt, draw=blue!55!black, fill=blue!12, line width=0.8pt,
+              align=center, inner sep=6pt, font=\small, text width=4.6cm, minimum height=1cm},
+  pre/.style={draw=violet!55!black, fill=violet!12, line width=0.8pt,
+              align=center, inner sep=6pt, font=\small, text width=5.4cm, minimum height=1cm},
+  dec/.style={diamond, aspect=2.4, draw=orange!75!black, fill=orange!15, line width=0.8pt,
+              align=center, inner sep=1pt, font=\small},
+  grn/.style={draw=green!45!black, fill=green!14, line width=0.8pt,
+              align=center, inner sep=5pt, font=\small, text width=4.6cm, minimum height=0.95cm},
+  lst/.style={draw=orange!70!black, fill=yellow!25, line width=0.9pt,
+              align=center, inner sep=6pt, font=\small, text width=10cm, minimum height=0.9cm},
+  hi/.style={draw=red!60!black, fill=red!14, line width=1pt,
+              align=center, inner sep=6pt, font=\small\bfseries, text width=10cm, minimum height=0.95cm},
+  stp/.style={draw=blue!55!black, fill=blue!10, line width=0.8pt,
+              align=center, inner sep=6pt, font=\small, text width=10cm, minimum height=0.8cm},
+  outp/.style={rounded corners=8pt, draw=green!45!black, fill=green!22, line width=1pt,
+              align=center, inner sep=6pt, font=\small\bfseries, text width=8cm, minimum height=0.95cm},
+  bke/.style={draw=gray!60!black, fill=gray!10, line width=0.8pt,
+              align=center, inner sep=6pt, font=\small, text width=9.5cm, minimum height=0.9cm},
+  hyb/.style={draw=violet!65!black, dashed, fill=violet!10, line width=0.8pt,
+              align=center, inner sep=4pt, font=\footnotesize, text width=3.3cm},
+  fl/.style={-{Stealth[length=6pt]}, line width=0.8pt, gray!45!black},
+  fld/.style={-{Stealth[length=6pt]}, line width=0.8pt, dashed, violet!60!black},
+  el/.style={font=\footnotesize\bfseries, text=gray!30!black, fill=white, inner sep=1.5pt},
+}
+
+\begin{document}
+\begin{tikzpicture}
+% ---- main flow nodes ----
+\node[inp] at (11,0)      (input) {Ảnh / PDF hóa đơn};
+\node[pre] at (11,-2)     (pre)   {Tiền xử lý (\_to\_images):\\ PDF $\rightarrow$ ảnh 200 dpi · ảnh $\rightarrow$ RGB};
+\node[dec] at (11,-4)     (route) {Chọn engine\\ (ocrEngine từ .NET)};
+
+% ---- 2 nhánh engine tự chủ ----
+\node[grn] at (6,-6.2)    (vd) {Phát hiện dòng:\\ EasyOCR / CRAFT};
+\node[grn] at (16,-6.2)   (pd) {Phát hiện:\\ PaddleOCR DBNet};
+\node[grn] at (6,-7.8)    (vc) {Cắt dòng (crop từng ô chữ)};
+\node[grn] at (16,-7.8)   (pa) {Xoay góc: angle classifier (cls)};
+\node[grn] at (6,-9.5)    (vr) {Nhận dạng: VietOCR\\ (VGG19 $\rightarrow$ Transformer)};
+\node[grn] at (16,-9.5)   (pr) {Nhận dạng: SVTR\_LCNet\\ (PP-OCRv4, fine-tune)};
+\node[hyb] at (11,-7.8)   (hy) {HYBRID (paddledet\_viet):\\ DBNet $\rightarrow$ VietOCR};
+
+% ---- hợp nhất & hậu xử lý ----
+\node[lst] at (11,-11.4)  (list) {Danh sách ô OCR: \{ text, box = toạ độ hộp, prob \}};
+\node[hi]  at (11,-13.1)  (dsk)  {1. KHỬ NGHIÊNG (deskew): ước lượng độ nghiêng từ hàng tiêu đề (hồi quy) $\rightarrow$ nắn y$'$ = y $-$ a·x};
+\node[stp] at (11,-14.4)  (s2)   {2. Gom hàng theo y$'$ (phân cụm 1-D)};
+\node[stp] at (11,-15.5)  (s3)   {3. Trích TRƯỜNG: nhãn + regex (số HĐ, ngày, MST, tiền hàng, thuế, tổng)};
+\node[stp] at (11,-16.6)  (s4)   {4. Trích BẢNG: gán ô vào cột theo tâm-x $\rightarrow$ line items};
+\node[stp] at (11,-17.7)  (s5)   {5. Chuẩn hóa số (\_num) + fallback tổng = subtotal + thuế};
+\node[outp] at (11,-19.4)  (out)  {ĐẦU RA: JSON \{ fields, lineItems, confidence \}};
+\node[bke] at (11,-20.9)  (bk)   {Backend .NET: lưu Invoice / InvoiceItem + màn xác nhận};
+
+% ---- nhãn tầng (bên trái) ----
+\node[lab] at (0,0)      {ĐẦU VÀO};
+\node[lab] at (0,-2)     {TIỀN XỬ LÝ};
+\node[lab] at (0,-4)     {CHỌN ENGINE};
+\node[lab] at (0,-7)     {PHÁT HIỆN (Detection)};
+\node[lab] at (0,-9.5)   {NHẬN DẠNG (Recognition)};
+\node[lab] at (0,-15.5)  {HẬU XỬ LÝ (Parse)};
+\node[lab] at (0,-19.4)  {ĐẦU RA};
+
+% ---- luồng chính ----
+\draw[fl] (input) -- (pre);
+\draw[fl] (pre) -- (route);
+\draw[fl] (route.south) -- ++(0,-0.5) coordinate (m);
+\draw[fl] (m) -| (vd.north) node[el,pos=0.25]{vietocr};
+\draw[fl] (m) -| (pd.north) node[el,pos=0.25]{paddleocr};
+
+\draw[fl] (vd) -- (vc);   \draw[fl] (vc) -- (vr);
+\draw[fl] (pd) -- (pa);   \draw[fl] (pa) -- (pr);
+
+% ---- biến thể lai (dashed) ----
+\draw[fld] (pd.west) -- (hy.east);
+\draw[fld] (hy.west) -- (vr.north east);
+
+% ---- hợp nhất về danh sách ô OCR ----
+\draw[fl] (vr.south) .. controls +(0,-1) and +(-2.2,1.1) .. (list.north);
+\draw[fl] (pr.south) .. controls +(0,-1) and +(2.2,1.1) .. (list.north);
+
+% ---- chuỗi hậu xử lý ----
+\draw[fl] (list) -- (dsk);
+\draw[fl] (dsk) -- (s2);
+\draw[fl] (s2) -- (s3);
+\draw[fl] (s3) -- (s4);
+\draw[fl] (s4) -- (s5);
+\draw[fl] (s5) -- (out);
+\draw[fl] (out) -- (bk);
+
+\end{tikzpicture}
+\end{document}

@@ -1,7 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  BellRing, Send, Mail, MessageSquare, Smartphone,
+  BellRing, Send, Mail, Smartphone,
   History, CheckCircle2, Clock, Loader2,
   RefreshCw, AlertCircle, Users, Edit2, X, Save,
 } from "lucide-react";
@@ -10,9 +10,8 @@ import { notifications, type NotificationResponse } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CHANNELS = [
-  { key: "push",  label: "Push App",    icon: Smartphone,    color: "rose" },
-  { key: "email", label: "Email",        icon: Mail,          color: "blue" },
-  { key: "sms",   label: "SMS (Có phí)", icon: MessageSquare, color: "emerald" },
+  { key: "push",  label: "Push App", icon: Smartphone, color: "rose" },
+  { key: "email", label: "Email",    icon: Mail,       color: "blue" },
 ];
 
 const AUDIENCES = [
