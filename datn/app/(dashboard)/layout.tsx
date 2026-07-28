@@ -16,13 +16,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { notifications, residents } from "@/lib/api";
 
-type NavChild = { label: string; path: string; perm?: string; residentOnly?: boolean; adminOnly?: boolean };
+type NavChild = { label: string; path: string; perm?: string; residentOnly?: boolean; adminOnly?: boolean; staffOnly?: boolean };
 type NavItem = {
   icon: React.ElementType;
   label: string;
   path: string;
   residentOnly?: boolean;
   adminOnly?: boolean;
+  staffOnly?: boolean;      // chỉ hiện cho tài khoản KHÔNG phải cư dân (nhân viên/BQL)
   perm?: string;            // quyền tối thiểu để thấy mục này
   children?: NavChild[];
 };
@@ -32,7 +33,10 @@ type NavItem = {
 const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   {
     section: "TỔNG QUAN",
-    items: [{ icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" }],
+    items: [
+      { icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" },
+      { icon: BellRing, label: "Hộp thư thông báo", path: "/inbox", staffOnly: true },
+    ],
   },
   {
     section: "CƯ DÂN & CĂN HỘ",
@@ -169,16 +173,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user]);
 
   useEffect(() => {
-    if (!user || (!isResident && !hasResidentProfile)) return;
+    if (!user) return;
+    const isResidentAcct = isResident || hasResidentProfile;
     const seenAt = Number(localStorage.getItem("townhub.resident.seen-at") ?? "0");
-    const hasNewPoll = (() => {
+    // Khảo sát cộng đồng chỉ áp dụng cho cư dân.
+    const hasNewPoll = isResidentAcct && (() => {
       try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).some((poll) => poll.id > seenAt); }
       catch { return false; }
     })();
-    // Chỉ tính thông báo ĐÃ gửi tới đúng tài khoản này (hộp thư cá nhân).
+    // Chấm đỏ cho MỌI tài khoản (cư dân lẫn nhân viên) khi có thông báo mới trong hộp thư.
     notifications.inbox(user.userID).then((response) => {
       const hasNewNotification = response.errorCode === 200 && Boolean(response.data?.some((item) => new Date(item.sentAt ?? item.createdAt).getTime() > seenAt));
-      setHasResidentUpdates(hasNewPoll || hasNewNotification);
+      setHasResidentUpdates(Boolean(hasNewPoll) || hasNewNotification);
     });
   }, [hasResidentProfile, isResident, pathname, user]);
 
@@ -189,13 +195,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Lọc menu theo quyền: mục/đề mục không đủ quyền sẽ bị ẩn.
   // (admin là siêu quản trị → hasPermission luôn true → thấy đủ.)
+  const isStaff = !isResident && !hasResidentProfile;
   const visibleSections = NAV_SECTIONS.map((section) => {
     const items: NavItem[] = [];
     for (const item of section.items) {
       if (item.children?.length) {
-        const kids = item.children.filter((c) => (!c.perm || hasPermission(c.perm)) && (!c.residentOnly || isResident || hasResidentProfile) && (!c.adminOnly || isAdmin));
+        const kids = item.children.filter((c) => (!c.perm || hasPermission(c.perm)) && (!c.residentOnly || isResident || hasResidentProfile) && (!c.adminOnly || isAdmin) && (!c.staffOnly || isStaff));
         if (kids.length > 0) items.push({ ...item, children: kids });
-      } else if ((!item.perm || hasPermission(item.perm)) && (!item.residentOnly || isResident || hasResidentProfile) && (!item.adminOnly || isAdmin)) {
+      } else if ((!item.perm || hasPermission(item.perm)) && (!item.residentOnly || isResident || hasResidentProfile) && (!item.adminOnly || isAdmin) && (!item.staffOnly || isStaff)) {
         items.push(item);
       }
     }
@@ -395,7 +402,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link href={isResident || hasResidentProfile ? "/community" : "/notifications"} onClick={openResidentUpdates} className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+            <Link href={isResident || hasResidentProfile ? "/community" : "/inbox"} onClick={openResidentUpdates} className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
               <BellRing className="size-4" />
               {hasResidentUpdates && <span className="absolute right-1.5 top-1.5 size-1.5 animate-pulse rounded-full bg-danger" />}
             </Link>
