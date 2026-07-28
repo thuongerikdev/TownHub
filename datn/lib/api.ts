@@ -574,6 +574,28 @@ export const notifications = {
     apiFetch<NotificationInboxResponse[]>(`/api/Notification/inbox/${authUserId}`),
 };
 
+// ─── Incidents (phiếu sự cố cư dân) ─────────────────────────────────────────────
+export interface CreateIncidentInput {
+  title: string; description?: string; location?: string; apartmentId?: number;
+  category: string; priority: string; reportedByAuthUserId: number; attachments?: string;
+}
+export interface IncidentResponse {
+  id: number; title: string; description?: string; location?: string; apartmentId?: number;
+  category: string; priority: string; status: string;
+  reportedByAuthUserId: number; assignedToAuthUserId?: number;
+  resolutionNote?: string; resolvedAt?: string; createdAt: string; updatedAt: string;
+}
+export const incidents = {
+  getAll: (params?: { status?: string; priority?: string }) => {
+    const q = new URLSearchParams(
+      Object.entries(params ?? {}).filter(([, v]) => v != null) as [string, string][]
+    ).toString();
+    return apiFetch<IncidentResponse[]>(`/api/Incident/get-all${q ? `?${q}` : ""}`);
+  },
+  create: (body: CreateIncidentInput) =>
+    apiFetch<boolean>("/api/Incident/create", { method: "POST", body: JSON.stringify(body) }),
+};
+
 // ─── System Config ─────────────────────────────────────────────────────────────
 export const systemConfig = {
   getAll: (isPublic?: boolean) => {

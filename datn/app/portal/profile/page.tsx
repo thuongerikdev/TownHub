@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { users } from "@/lib/api";
+import MfaCard from "@/components/settings/MfaCard";
 import {
   Pencil, X, Check, Loader2, User, Mail, AtSign,
   ShieldCheck, ShieldOff, CalendarDays, Venus, Mars, CircleHelp,
@@ -234,6 +235,12 @@ export default function ProfilePage() {
             </>
           )}
         </div>
+      </div>
+
+      {/* ── Bảo mật / MFA ────────────────────────────────── */}
+      <div id="mfa" className="scroll-mt-20">
+        <p className="text-sm font-semibold text-white mb-2 px-1">Bảo mật</p>
+        <MfaCard />
       </div>
 
       {/* Success toast */}

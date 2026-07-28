@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldAlert, LogOut, Loader2, Store, User, Briefcase } from "lucide-react";
+import { ShieldAlert, LogOut, Loader2, Store, User, Briefcase, BellRing, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { notifications } from "@/lib/api";
+import ReportIncidentModal from "@/components/portal/ReportIncidentModal";
 
 const NAV = [
   { href: "/portal",          label: "Nhà cung cấp", icon: Store },
@@ -17,10 +19,26 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const router   = useRouter();
   const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [loading, user, router]);
+
+  // Đếm thông báo mới (chưa xem) cho badge trên chuông.
+  const refreshUnread = useCallback(() => {
+    if (!user) return;
+    const seenAt = Number(localStorage.getItem("townhub.portal.notif-seen-at") ?? "0");
+    notifications.inbox(user.userID).then((res) => {
+      const count = res.errorCode === 200
+        ? (res.data?.filter((n) => new Date(n.sentAt ?? n.createdAt).getTime() > seenAt).length ?? 0)
+        : 0;
+      setUnread(count);
+    });
+  }, [user]);
+
+  useEffect(() => { refreshUnread(); }, [refreshUnread, pathname]);
 
   if (loading) {
     return (
@@ -77,8 +95,42 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             })}
           </nav>
 
-          {/* Right: avatar + logout */}
+          {/* Right: actions + avatar + logout */}
           <div className="flex items-center gap-1.5">
+            {/* Tạo phiếu sự cố */}
+            <button
+              onClick={() => setShowReport(true)}
+              title="Tạo phiếu sự cố"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-colors"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span className="hidden sm:inline">Tạo phiếu sự cố</span>
+            </button>
+
+            {/* Chuông thông báo + badge */}
+            <Link
+              href="/portal/notifications"
+              onClick={() => setUnread(0)}
+              aria-label={unread > 0 ? `${unread} thông báo mới` : "Thông báo"}
+              className={`relative p-2 rounded-lg transition-colors hover:bg-white/5 ${unread > 0 ? "text-amber-400" : "text-zinc-500 hover:text-zinc-200"}`}
+            >
+              <BellRing className={`w-4 h-4 ${unread > 0 ? "animate-[wiggle_2.5s_ease-in-out_infinite] origin-top" : ""}`} />
+              {unread > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[#0a0a0a]">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </Link>
+
+            {/* Cấu hình MFA (trang Cá nhân) */}
+            <Link
+              href="/portal/profile#mfa"
+              title="Cấu hình bảo mật / MFA"
+              className="p-2 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-white/5 transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+            </Link>
+
             <Link
               href="/portal/profile"
               className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors min-w-0"
@@ -135,6 +187,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           })}
         </div>
       </nav>
+
+      {/* Modal tạo phiếu sự cố */}
+      {showReport && <ReportIncidentModal onClose={() => setShowReport(false)} />}
     </div>
   );
 }
