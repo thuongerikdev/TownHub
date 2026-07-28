@@ -44,7 +44,7 @@ const TICKET_STATUS: Record<string, StatusDef> = {
 const CATEGORY: Record<string, string> = {
   ELECTRICAL: "Điện", PLUMBING: "Nước", HVAC: "HVAC", ELEVATOR: "Thang máy", FIRE: "PCCC", OTHER: "Khác",
 };
-const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT", RECEPTION: "Lễ tân", PHONE: "Điện thoại", EMAIL: "Email", APP: "Ứng dụng" };
+const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", RECEPTION: "Lễ tân", PHONE: "Điện thoại", EMAIL: "Email", APP: "Ứng dụng" };
 
 const SLA_HOURS: Record<string, number> = { CRITICAL: 4, HIGH: 8, MEDIUM: 24, LOW: 72 };
 const isClosed = (t: TicketResponse) => t.status === "RESOLVED" || t.status === "CLOSED";

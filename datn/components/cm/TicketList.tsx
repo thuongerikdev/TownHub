@@ -43,7 +43,7 @@ const CATEGORY: Record<string, string> = {
 };
 const CATEGORY_OPTIONS = Object.keys(CATEGORY);
 const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT" };
+const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống" };
 
 // SLA resolution window (giờ) suy theo độ ưu tiên — để tô màu badge khi mock.
 const SLA_HOURS: Record<string, number> = { CRITICAL: 4, HIGH: 8, MEDIUM: 24, LOW: 72 };

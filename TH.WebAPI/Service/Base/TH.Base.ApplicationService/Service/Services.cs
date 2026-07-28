@@ -10,6 +10,9 @@ using TH.TownHub.Domain.Entities;
 using TH.TownHub.Dtos;
 using TH.TownHub.Infrastructure.Database;
 using TH.Auth.ApplicationService.Service.Email;
+using TH.Auth.ApplicationService.Service.User;
+using TH.Auth.Dtos.User;
+using System.Threading;
 
 namespace TH.TownHub.ApplicationService.Service
 {
@@ -192,9 +195,24 @@ namespace TH.TownHub.ApplicationService.Service
     public class NotificationService : TownHubServiceBase, INotificationService
     {
         private readonly IEmailService _emailService;
+        private readonly IAuthUserService _authUserService;
 
-        public NotificationService(ILogger<NotificationService> logger, TownHubDbContext dbContext, IEmailService emailService)
-            : base(logger, dbContext) => _emailService = emailService;
+        public NotificationService(ILogger<NotificationService> logger, TownHubDbContext dbContext,
+            IEmailService emailService, IAuthUserService authUserService)
+            : base(logger, dbContext)
+        {
+            _emailService = emailService;
+            _authUserService = authUserService;
+        }
+
+        // Một người nhận đã chuẩn hoá: cư dân (có ResidentId) hoặc nhân viên/BQL (chỉ có AuthUserId).
+        private sealed class NotifTarget
+        {
+            public int? ResidentId { get; init; }
+            public int? AuthUserId { get; init; }
+            public string? Email { get; init; }
+            public string? Phone { get; init; }
+        }
 
         public async Task<ResponseDto<bool>> CreateAsync(CreateNotificationRequestDto request)
         {
@@ -286,19 +304,20 @@ namespace TH.TownHub.ApplicationService.Service
                     return ResponseConst.Error<bool>(400, "Thông báo đã được gửi trước đó.");
 
                 var isEmail = string.Equals(entity.Channel, "email", StringComparison.OrdinalIgnoreCase);
-                var recipients = await GetRecipientsAsync(entity.Audience);
+                // Người nhận gồm CẢ cư dân lẫn nhân viên/BQL (audience "staff").
+                var targets = await ResolveTargetsAsync(entity.Audience);
 
                 var logs = new List<NotificationLog>();
-                foreach (var resident in recipients)
+                foreach (var target in targets)
                 {
-                    var address = isEmail ? resident.Email : resident.Phone;
+                    var address = isEmail ? target.Email : target.Phone;
                     var log = new NotificationLog
                     {
                         NotificationId = entity.Id,
-                        ResidentId = resident.Id,
+                        ResidentId = target.ResidentId,
                         Channel = entity.Channel,
                         // Lưu địa chỉ đích để mỗi người nhận đều truy vết được.
-                        Recipient = address ?? resident.Phone ?? "",
+                        Recipient = address ?? target.Phone ?? target.Email ?? "",
                         Status = "delivered",
                         SentAt = DateTime.UtcNow
                     };
@@ -306,29 +325,29 @@ namespace TH.TownHub.ApplicationService.Service
                     if (isEmail)
                     {
                         // Kênh Email: gửi thật qua SMTP đã cấu hình sẵn (IEmailService).
-                        if (string.IsNullOrWhiteSpace(resident.Email))
+                        if (string.IsNullOrWhiteSpace(target.Email))
                         {
                             log.Status = "failed";
-                            log.ErrorMessage = "Cư dân chưa có địa chỉ email.";
+                            log.ErrorMessage = "Người nhận chưa có địa chỉ email.";
                             log.SentAt = null;
                         }
                         else
                         {
                             try
                             {
-                                await _emailService.SendEmailAsync(resident.Email, entity.Title, BuildEmailBody(entity));
+                                await _emailService.SendEmailAsync(target.Email, entity.Title, BuildEmailBody(entity));
                             }
                             catch (Exception mailEx)
                             {
                                 log.Status = "failed";
                                 log.ErrorMessage = mailEx.Message;
                                 log.SentAt = null;
-                                _logger.LogWarning(mailEx, "Gửi email thông báo thất bại tới {Email}", resident.Email);
+                                _logger.LogWarning(mailEx, "Gửi email thông báo thất bại tới {Email}", target.Email);
                             }
                         }
                     }
-                    // Kênh Push App (in-app): chỉ cần dòng log này để hộp thư cá nhân
-                    // của cư dân đọc được — không cần dịch vụ ngoài.
+                    // Kênh Push App (in-app): hộp thư cá nhân đọc theo audience nên
+                    // không cần dịch vụ ngoài; log ở đây chỉ để kiểm toán.
 
                     logs.Add(log);
                 }
@@ -337,8 +356,8 @@ namespace TH.TownHub.ApplicationService.Service
                 var failed = logs.Count(l => l.Status == "failed");
                 entity.Status = "sent";
                 entity.SentAt = DateTime.UtcNow;
-                entity.TotalRecipients = recipients.Count;
-                entity.SentCount = recipients.Count - failed;
+                entity.TotalRecipients = targets.Count;
+                entity.SentCount = targets.Count - failed;
                 entity.FailedCount = failed;
                 entity.UpdatedAt = DateTime.UtcNow;
 
@@ -375,11 +394,77 @@ namespace TH.TownHub.ApplicationService.Service
                 if (parts.Length == 2 && int.TryParse(parts[1], out floor))
                     query = query.Where(x => x.Apartment != null && x.Apartment.Building == building && x.Apartment.Floor == floor);
             }
-            // `staff` is intentionally not resolved from Residents; it is delivered by
-            // the authentication service's staff directory.
+            // `staff` được phân giải riêng từ danh bạ tài khoản Auth (xem ResolveTargetsAsync).
             else if (audience == "staff") return new List<Resident>();
 
             return await query.ToListAsync();
+        }
+
+        // Phân giải người nhận theo "đối tượng": cư dân (mọi audience trừ staff) hoặc
+        // nhân viên/BQL (audience = "staff" → tài khoản Auth KHÔNG phải cư dân).
+        private async Task<List<NotifTarget>> ResolveTargetsAsync(string audience)
+        {
+            if (audience == "staff")
+                return await ResolveStaffTargetsAsync();
+
+            var residents = await GetRecipientsAsync(audience);
+            return residents.Select(r => new NotifTarget
+            {
+                ResidentId = r.Id,
+                AuthUserId = r.AuthUserId,
+                Email = r.Email,
+                Phone = r.Phone
+            }).ToList();
+        }
+
+        // Nhân viên/BQL = tài khoản Auth không gắn với hồ sơ cư dân nào.
+        private async Task<List<NotifTarget>> ResolveStaffTargetsAsync()
+        {
+            var residentAuthIds = (await _dbContext.Residents
+                .Where(r => r.AuthUserId != null)
+                .Select(r => r.AuthUserId!.Value)
+                .ToListAsync()).ToHashSet();
+
+            var usersResp = await _authUserService.GetAllSlimAsync(CancellationToken.None);
+            var users = usersResp?.Data ?? new List<UserSlimDto>();
+
+            return users
+                .Where(u => !residentAuthIds.Contains(u.userID))
+                .Select(u => new NotifTarget
+                {
+                    ResidentId = null,
+                    AuthUserId = u.userID,
+                    Email = u.email,
+                    Phone = null
+                })
+                .ToList();
+        }
+
+        // Kiểm tra một tài khoản (đã biết là cư dân hay staff) có thuộc "đối tượng" của
+        // thông báo hay không. Dùng cho hộp thư cá nhân (delivery theo audience).
+        private static bool AudienceMatches(string audience, Resident? resident, bool isStaff)
+        {
+            if (audience == "staff") return isStaff;
+            if (resident == null) return false; // các audience còn lại đều dành cho cư dân
+
+            switch (audience)
+            {
+                case "all": return true;
+                case "owners": return resident.IsOwner;
+                case "building_a": return resident.Apartment?.Building == "Tòa A";
+                case "building_b": return resident.Apartment?.Building == "Tòa B";
+                case "villa": return resident.Apartment?.Building == "Villa";
+            }
+            if (audience.StartsWith("floor:") && int.TryParse(audience[6..], out var floor))
+                return resident.Apartment?.Floor == floor;
+            if (audience.StartsWith("building:") && audience.Contains("|floor:"))
+            {
+                var parts = audience.Split("|floor:", StringSplitOptions.RemoveEmptyEntries);
+                var building = parts[0].Replace("building:", "Tòa ");
+                if (parts.Length == 2 && int.TryParse(parts[1], out var f))
+                    return resident.Apartment?.Building == building && resident.Apartment?.Floor == f;
+            }
+            return false;
         }
 
         // Bọc nội dung thông báo vào một khung HTML tối giản cho email.
@@ -394,27 +479,37 @@ namespace TH.TownHub.ApplicationService.Service
             </div>";
         }
 
-        // Hộp thư cá nhân: các thông báo đã được GỬI tới cư dân gắn với tài khoản này.
-        // Vì log chỉ sinh khi bấm "Gửi", nháp/chưa gửi sẽ không xuất hiện.
+        // Hộp thư cá nhân: các thông báo ĐÃ GỬI mà tài khoản này thuộc "đối tượng" nhận.
+        // Xác định theo audience + hồ sơ (cư dân → toà/tầng/chủ hộ; ngược lại → staff).
+        // Nháp/chưa gửi không xuất hiện. Chỉ lấy thông báo broadcast (RecipientId == null).
         public async Task<ResponseDto<List<NotificationInboxResponse>>> GetInboxAsync(int authUserId)
         {
             try
             {
-                var result = await _dbContext.NotificationLogs
-                    .Where(l => l.Resident != null && l.Resident.AuthUserId == authUserId)
-                    .OrderByDescending(l => l.SentAt ?? l.CreatedAt)
-                    .Select(l => new NotificationInboxResponse
-                    {
-                        id = l.NotificationId,
-                        logId = l.Id,
-                        title = l.Notification.Title,
-                        content = l.Notification.Content,
-                        channel = l.Notification.Channel,
-                        audience = l.Notification.Audience,
-                        sentAt = l.SentAt,
-                        createdAt = l.Notification.CreatedAt
-                    })
+                var resident = await _dbContext.Residents
+                    .Include(r => r.Apartment)
+                    .FirstOrDefaultAsync(r => r.AuthUserId == authUserId && r.MoveOutDate == null);
+                var isStaff = resident == null;
+
+                var sent = await _dbContext.Notifications
+                    .Where(n => n.Status == "sent" && n.RecipientId == null)
+                    .OrderByDescending(n => n.SentAt ?? n.CreatedAt)
                     .ToListAsync();
+
+                var result = sent
+                    .Where(n => AudienceMatches(n.Audience, resident, isStaff))
+                    .Select(n => new NotificationInboxResponse
+                    {
+                        id = n.Id,
+                        logId = n.Id,
+                        title = n.Title,
+                        content = n.Content,
+                        channel = n.Channel,
+                        audience = n.Audience,
+                        sentAt = n.SentAt,
+                        createdAt = n.CreatedAt
+                    })
+                    .ToList();
 
                 return ResponseConst.Success("Lấy hộp thư thông báo thành công.", result);
             }
