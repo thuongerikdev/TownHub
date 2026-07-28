@@ -174,8 +174,8 @@ namespace TH.Auth.ApplicationService.Service.MFA
             {
                 var bytes = Base32Encoding.ToBytes(base32Secret);
                 var totp = new Totp(bytes, step: 30, mode: OtpHashMode.Sha1, totpSize: 6);
-                // chấp nhận lệch 1 step để đỡ fail
-                return totp.VerifyTotp(code.Trim(), out _, window: new VerificationWindow(previous: 1, future: 1));
+                // chấp nhận lệch 2 step (~±60s) để dung sai đồng hồ thiết bị bị trôi
+                return totp.VerifyTotp(code.Trim(), out _, window: new VerificationWindow(previous: 2, future: 2));
             }
             catch { return false; }
         }
