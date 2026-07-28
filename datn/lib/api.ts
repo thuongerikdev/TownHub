@@ -34,6 +34,7 @@ export interface LoginResponse {
 export interface GetUserResponse {
   userID: number; userName: string; email: string; status: string; isEmailVerified: boolean;
   profile?: { firstName?: string; lastName?: string; avatar?: string; gender?: string; dateOfBirth?: string; };
+  scope?: string; // "user" = cư dân, "staff" = nhân sự/BQL (gắn ở FE khi gộp danh sách)
 }
 export interface UserSlim {
   userID: number; userName: string; email: string; status: string; isEmailVerified: boolean;

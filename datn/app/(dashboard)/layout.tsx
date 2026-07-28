@@ -155,7 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loggingOut, setLoggingOut] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [hasResidentProfile, setHasResidentProfile] = useState(false);
-  const [hasResidentUpdates, setHasResidentUpdates] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const { user, loading, logout, hasPermission, roles } = useAuth();
   const router = useRouter();
@@ -177,20 +177,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const isResidentAcct = isResident || hasResidentProfile;
     const seenAt = Number(localStorage.getItem("townhub.resident.seen-at") ?? "0");
     // Khảo sát cộng đồng chỉ áp dụng cho cư dân.
-    const hasNewPoll = isResidentAcct && (() => {
-      try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).some((poll) => poll.id > seenAt); }
-      catch { return false; }
-    })();
-    // Chấm đỏ cho MỌI tài khoản (cư dân lẫn nhân viên) khi có thông báo mới trong hộp thư.
+    const newPolls = isResidentAcct ? (() => {
+      try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).filter((poll) => poll.id > seenAt).length; }
+      catch { return 0; }
+    })() : 0;
+    // Đếm thông báo MỚI (chưa xem) cho MỌI tài khoản (cư dân lẫn nhân viên).
     notifications.inbox(user.userID).then((response) => {
-      const hasNewNotification = response.errorCode === 200 && Boolean(response.data?.some((item) => new Date(item.sentAt ?? item.createdAt).getTime() > seenAt));
-      setHasResidentUpdates(Boolean(hasNewPoll) || hasNewNotification);
+      const newNotifs = response.errorCode === 200
+        ? (response.data?.filter((item) => new Date(item.sentAt ?? item.createdAt).getTime() > seenAt).length ?? 0)
+        : 0;
+      setUnreadCount(newPolls + newNotifs);
     });
   }, [hasResidentProfile, isResident, pathname, user]);
 
   function openResidentUpdates() {
     localStorage.setItem("townhub.resident.seen-at", String(Date.now()));
-    setHasResidentUpdates(false);
+    setUnreadCount(0);
   }
 
   // Lọc menu theo quyền: mục/đề mục không đủ quyền sẽ bị ẩn.
@@ -402,9 +404,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link href={isResident || hasResidentProfile ? "/community" : "/inbox"} onClick={openResidentUpdates} className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-              <BellRing className="size-4" />
-              {hasResidentUpdates && <span className="absolute right-1.5 top-1.5 size-1.5 animate-pulse rounded-full bg-danger" />}
+            <Link
+              href={isResident || hasResidentProfile ? "/community" : "/inbox"}
+              onClick={openResidentUpdates}
+              aria-label={unreadCount > 0 ? `${unreadCount} thông báo mới` : "Thông báo"}
+              className={`relative rounded-full p-2 transition-colors hover:bg-accent hover:text-foreground ${
+                unreadCount > 0 ? "text-brand" : "text-muted-foreground"
+              }`}
+            >
+              <BellRing className={`size-4 origin-top ${unreadCount > 0 ? "animate-[wiggle_2.5s_ease-in-out_infinite]" : ""}`} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white ring-2 ring-card">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           </div>
         </header>
