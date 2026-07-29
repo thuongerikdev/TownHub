@@ -179,7 +179,8 @@ namespace TH.Auth.Infrastructure
                 {
                     "apartment.view","apartment.create","apartment.update","apartment.delete",
                     "resident.view","resident.create","resident.update","resident.delete",
-                    "asset.view","asset.update",
+                    "resident.face_register","resident.access_review",
+                    "asset.view","asset.update","asset.accounting",
                     "workorder.view","workorder.create","workorder.assign","workorder.review","workorder.close",
                     "ticket.view","ticket.assign","ticket.close",
                     "inventory.view",
@@ -194,23 +195,37 @@ namespace TH.Auth.Infrastructure
                     "asset.view","asset.create","asset.update","asset.delete",
                     "workorder.view","workorder.create","workorder.assign","workorder.execute","workorder.review","workorder.close",
                     "ticket.view","ticket.create","ticket.assign","ticket.resolve","ticket.close",
-                    "inventory.view","inventory.transaction","inventory.audit",
+                    "inventory.view","inventory.transaction","inventory.manage","inventory.audit",
                     "procurement.view","procurement.request",
                     "vendor.view","vendor.evaluate",
                     "report.kpi",
                     "notification.view",
                 },
+                // KTV chỉ thi hành hiện trường: xem tài sản, thực hiện WO/ticket, xuất vật tư,
+                // và ĐỀ XUẤT mua vật tư khi thiếu (procurement.request) — người duyệt vẫn là
+                // cấp trên (procurement.approve) nên không phá vỡ nguyên tắc tách quyền.
+                // KHÔNG có asset.accounting (khấu hao/chứng từ/thanh lý/sổ sách), KHÔNG có
+                // resident.access_review (camera & người lạ), KHÔNG có quyền sửa danh mục
+                // (asset.create/update, workorder.create, inventory.manage).
                 ["Kỹ thuật viên"] = new[]
                 {
                     "asset.view",
                     "workorder.view","workorder.execute",
                     "ticket.view","ticket.resolve",
                     "inventory.view","inventory.transaction",
+                    // CHỈ procurement.request, KHÔNG procurement.view: menu Mua sắm vẫn ẩn và
+                    // KTV chỉ thấy PR do chính mình đề xuất (policy ProcurementRead + lọc theo
+                    // requestedByUserId), thay vì toàn bộ PR/PO của khu đô thị.
+                    "procurement.request",
                     "notification.view",
                 },
+                // Kế toán cần ĐỌC danh mục vật tư để đối chiếu dòng hoá đơn OCR sang vật tư
+                // trong kho (màn "Đối chiếu & xác nhận hoá đơn"). Chỉ inventory.view — không
+                // có inventory.transaction (xuất/nhập) lẫn inventory.manage (sửa danh mục).
                 ["Kế toán"] = new[]
                 {
-                    "asset.view","asset.update",
+                    "asset.view","asset.update","asset.accounting",
+                    "inventory.view",
                     "procurement.view","procurement.order","procurement.invoice",
                     "vendor.view",
                     "report.cost","report.kpi",
@@ -302,6 +317,94 @@ namespace TH.Auth.Infrastructure
             }
 
             Console.WriteLine("[SEED] ✅ Quy hoạch vai trò nghiệp vụ hoàn tất.");
+        }
+
+        // =========================================================
+        // SEED NHÂN SỰ + CƯ DÂN DEMO (idempotent theo userName)
+        //   • 6 nhân sự vận hành (BQL / Kỹ sư trưởng / Kế toán / 3 KTV)
+        //     — tên khớp với AssetDataSeeder (Nguyễn Văn A/Trần Văn B/Lê Văn C…)
+        //   • 30 cư dân (cudan01..cudan30) gán vai trò "Cư dân".
+        //   Mỗi user gồm AuthUser + AuthProfile + AuthUserRole.
+        //   Trả về map userName→userID để module Base liên kết Resident.AuthUserId.
+        // =========================================================
+        public static async Task<Dictionary<string, int>> SeedDemoUsersAsync(
+            AuthDbContext context, IServiceProvider serviceProvider)
+        {
+            var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("SeedDemoUsers");
+            var hasher = serviceProvider.GetRequiredService<IPasswordHasher>();
+            var now = DateTime.UtcNow;
+
+            var roles = await context.authRoles.ToListAsync();
+            int? RoleId(string name) => roles.FirstOrDefault(r => r.roleName == name)?.roleID;
+
+            // Bảo đảm đã có các vai trò nghiệp vụ (SeedPermissionsAsync chạy trước là đủ,
+            // nhưng gọi lại cho chắc khi seed độc lập).
+            if (RoleId("Cư dân") == null || RoleId("Kỹ thuật viên") == null)
+            {
+                await SeedBusinessRolesAsync(context);
+                roles = await context.authRoles.ToListAsync();
+            }
+
+            var result = new Dictionary<string, int>();
+
+            async Task<int> EnsureUser(string userName, string firstName, string lastName,
+                string email, string phone, string gender, string roleName, string scope, string password)
+            {
+                var existing = await context.authUsers.IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.userName == userName);
+                if (existing != null)
+                {
+                    result[userName] = existing.userID;
+                    return existing.userID;
+                }
+                var user = new AuthUser
+                {
+                    userName = userName, email = email, phoneNumber = phone,
+                    passwordHash = hasher.Hash(password), isEmailVerified = true, status = "active",
+                    tokenVersion = 1, scope = scope, createdAt = now, updatedAt = now,
+                    profile = new AuthProfile
+                    {
+                        firstName = firstName, lastName = lastName, gender = gender,
+                        dateOfBirth = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        avatar = $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(firstName + " " + lastName)}"
+                    }
+                };
+                context.authUsers.Add(user);
+                await context.SaveChangesAsync();
+
+                var rid = RoleId(roleName);
+                if (rid != null)
+                {
+                    context.authUserRoles.Add(new AuthUserRole { userID = user.userID, roleID = rid.Value, assignedAt = now });
+                    await context.SaveChangesAsync();
+                }
+                result[userName] = user.userID;
+                return user.userID;
+            }
+
+            // ── Nhân sự vận hành (staff) ──
+            await EnsureUser("tkbql",        "Trần Thị", "Quản Lý",    "bql@townhub.vn",     "0911000001", "female", "Ban quản lý",    "staff", "TownHub@123");
+            await EnsureUser("ksut",         "Lê",       "Kỹ Sư Trưởng","ksut@townhub.vn",   "0911000002", "male",   "Kỹ sư trưởng",   "staff", "TownHub@123");
+            await EnsureUser("ketoan",       "Phạm",     "Kế Toán",    "ketoan@townhub.vn",  "0911000003", "female", "Kế toán",        "staff", "TownHub@123");
+            await EnsureUser("nguyen.van.a", "Nguyễn Văn","A",         "ktv.a@townhub.vn",   "0911000004", "male",   "Kỹ thuật viên",  "staff", "TownHub@123");
+            await EnsureUser("tran.van.b",   "Trần Văn", "B",          "ktv.b@townhub.vn",   "0911000005", "male",   "Kỹ thuật viên",  "staff", "TownHub@123");
+            await EnsureUser("le.van.c",     "Lê Văn",   "C",          "ktv.c@townhub.vn",   "0911000006", "male",   "Kỹ thuật viên",  "staff", "TownHub@123");
+
+            // ── Cư dân (30) ──
+            var ho = new[] { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Vũ", "Đặng", "Bùi", "Đỗ", "Hồ" };
+            var tenDem = new[] { "Văn", "Thị", "Minh", "Hữu", "Thu", "Quang", "Ngọc", "Đức", "Hồng", "Anh" };
+            var ten = new[] { "An", "Bình", "Cường", "Dung", "Em", "Giang", "Hải", "Khoa", "Lan", "Mai", "Nam", "Oanh", "Phúc", "Quân", "Sơn", "Trang", "Uyên", "Vinh", "Xuân", "Yến" };
+            for (int i = 1; i <= 30; i++)
+            {
+                var first = $"{ho[i % ho.Length]} {tenDem[i % tenDem.Length]}";
+                var last = ten[i % ten.Length];
+                var gender = (i % 2 == 0) ? "male" : "female";
+                await EnsureUser($"cudan{i:00}", first, last, $"cudan{i:00}@townhub.vn",
+                    $"0922{i:000000}", gender, "Cư dân", "user", "TownHub@123");
+            }
+
+            logger.LogInformation("[SEED] Demo users hoàn tất — {n} tài khoản (6 nhân sự + 30 cư dân).", result.Count);
+            return result;
         }
 
         public static async Task SeedAdminUserAsync(AuthDbContext context, IServiceProvider serviceProvider)

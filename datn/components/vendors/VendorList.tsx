@@ -10,6 +10,7 @@ import {
   type VendorResponse, type CreateVendorInput, type VendorContractResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockVendors, mockVendorContracts } from "@/lib/mock/vendor";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
@@ -39,6 +40,8 @@ const emptyForm: FormState = {
 };
 
 export default function VendorList() {
+  const { hasPermission } = useAuth();
+  const mayCreate = hasPermission("vendor.create");
   const q = useApiList<VendorResponse>(() => vendorsApi.getAll(), { mock: mockVendors });
   const contractsQ = useApiList<VendorContractResponse>(() => vendorContracts.getAll(), { mock: mockVendorContracts });
   const list = q.items;
@@ -170,7 +173,7 @@ export default function VendorList() {
         title="Quản lý nhà thầu"
         description="Danh sách nhà cung cấp, đối tác và hợp đồng khung"
         icon={Building2}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Thêm nhà thầu</Button>}
+        actions={mayCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Thêm nhà thầu</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}

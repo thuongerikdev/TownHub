@@ -105,7 +105,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
                 }
             }
 
-            var model = string.IsNullOrWhiteSpace(job.ocrEngine) ? "gemini" : job.ocrEngine;
+            var model = string.IsNullOrWhiteSpace(job.ocrEngine) ? "paddleocr" : job.ocrEngine;
             var result = await engine.ExtractAsync(job.fileUrl, model, ct);
 
             if (result.Success)

@@ -1,0 +1,194 @@
+% =====================================================================
+%  ĐỒ ÁN TỐT NGHIỆP — TownHub: Hệ thống quản lý vận hành tòa nhà
+%  Bản LaTeX (biên dịch bằng XeLaTeX). Sinh tự động từ báo cáo .docx,
+%  phần OCR (§4.2.5.d và §4.2.7) đã được viết sâu thêm.
+%
+%  Biên dịch:  xelatex main.tex   (chạy 2–3 lần để cập nhật mục lục)
+%  Khuyến nghị: Overleaf (chọn compiler XeLaTeX) hoặc MiKTeX/TeX Live.
+% =====================================================================
+\documentclass[a4paper,oneside]{report}
+% scrextend mang cơ chế cỡ chữ của KOMA vào class report chuẩn -> đặt 13pt CHÍNH XÁC
+% (report gốc chỉ hỗ trợ 10/11/12pt), mà không kéo theo typearea/scrlayer.
+\usepackage[fontsize=13pt]{scrextend}
+
+\usepackage{lmodern}             % font toán Latin Modern (co giãn) -> hết cảnh báo size 13pt cho cmm/cmsy/cmr
+\usepackage{fontspec}
+% --- Font chữ ---
+% Biên dịch LOCAL trên Windows (máy có sẵn Times New Roman) -> đúng chuẩn ĐATN:
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+\setmonofont{Consolas}[Scale=0.92]
+% Nếu biên dịch trên OVERLEAF (không có font Windows), thay 3 dòng trên bằng:
+%   \setmainfont{TeX Gyre Termes}\setsansfont{TeX Gyre Heros}\setmonofont{TeX Gyre Cursor}
+\newfontfamily\vietfont{Times New Roman}
+
+\usepackage{geometry}
+\geometry{a4paper,left=3cm,right=2cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{setspace}
+\setstretch{1.3}                 % dãn dòng 1,3 theo quy định ĐATN
+
+\usepackage{amsmath,amssymb}
+
+\usepackage{graphicx}
+\usepackage{float}               % môi trường [H]
+\usepackage{pdflscape}           % trang ngang cho bảng rộng (Nhật ký ĐATN)
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{ragged2e}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\usepackage{enumitem}
+% Bullet lấy trực tiếp từ font chữ (Times) -> tránh tra OMS symbol font (hết Font Warning)
+\setlist[itemize,1]{label={•}}
+\setlist[itemize,2]{label={--}}
+\setlist[itemize,3]{label={•}}
+\usepackage{caption}
+\captionsetup{font=small,labelformat=empty,justification=centering}
+
+% --- Hình khổ lớn: chiếm TRỌN một trang NGANG (landscape) ---------------
+% Sơ đồ rộng (use case, tuần tự, ERD, lưu đồ) khi để dọc bị thu nhỏ -> chữ
+% không đọc được lúc in. Xoay ngang cho chiều rộng ~702pt (thay vì 455pt),
+% chữ to hơn ~55%. Dùng: \figland{images/imgNN.pdf}{Chú thích}{Mục lục hình}
+\newcommand{\figland}[3]{%
+  \begin{landscape}%
+  \thispagestyle{fancy}%
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{#1}%
+  \caption*{\small #2}%
+  \addcontentsline{lof}{figure}{#3}%
+  \end{figure}%
+  \end{landscape}%
+}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[table]{xcolor}
+\usepackage{microtype}           % nhả chữ (protrusion) giảm Overfull trên XeLaTeX
+
+% --- Nén khoảng trắng quanh tiêu đề (quy định KHÔNG quy định khoảng cách tiêu đề;
+%     chỉ bắt buộc font 13pt + dãn dòng 1,3, đều được giữ nguyên) ---
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]{\normalfont\LARGE\bfseries}{}{0pt}{}
+\titlespacing*{\chapter}{0pt}{0pt}{10pt}        % bỏ ~50pt khoảng trống đầu chương
+\titlespacing*{\section}{0pt}{8pt plus 2pt minus 2pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt plus 2pt minus 2pt}{3pt}
+\titlespacing*{\subsubsection}{0pt}{5pt plus 1pt minus 1pt}{2pt}
+% Giảm khoảng cách quanh hình/bảng nổi
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{2pt}
+% Nới tham số float: cho phép hình "thả nổi" lấp đầy trang, giảm khoảng trắng
+% khi ảnh/bảng to bị đẩy sang trang sau (dùng [htbp] thay [H]).
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.88}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.72}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+
+\setcounter{tocdepth}{2}         % mục lục tới cấp \subsection (mục X.Y)
+
+% Bảng: giảm đệm cột; emergencystretch + hfuzz nuốt các overfull nhỏ -> log sạch
+\setlength{\tabcolsep}{4pt}
+\setlength{\hfuzz}{2pt}
+\setlength{\emergencystretch}{2.5em}
+\raggedbottom                    % tránh Overfull \vbox + Infinite glue khi ngắt trang longtable
+
+\usepackage[unicode,hidelinks]{hyperref}
+\hypersetup{pdftitle={Do an tot nghiep - TownHub},pdfauthor={Nguyen Xuan Thuong}}
+\usepackage{bookmark}            % xử lý bookmark chắc chắn, hết cảnh báo anchor trùng
+\usepackage{xurl}                % cho phép \url ngắt dòng ở mọi ký tự -> URL nguồn dài không tràn lề
+
+% Ngắt dòng tốt cho tiếng Việt
+\XeTeXlinebreaklocale "vi"
+\XeTeXlinebreakskip=0pt plus 1pt
+
+% Căn đều hai bên
+\justifying
+
+% Tên mục lục / danh mục hình theo tiếng Việt
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh mục hình vẽ}
+
+% Header/footer đơn giản
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+% ------------------------- TRANG BÌA & PHỤ BÌA (Mẫu ĐATN-14) -------------------------
+% Logo trường: đặt file images/logo_huce.png (hoặc .pdf). Chưa có -> hiện ô placeholder.
+\newcommand{\huceLogo}{%
+  \IfFileExists{images/logo_huce.png}{\includegraphics[height=2.9cm]{images/logo_huce.png}}{%
+  \IfFileExists{images/logo_huce.pdf}{\includegraphics[height=2.9cm]{images/logo_huce.pdf}}{%
+  \fbox{\begin{minipage}[c][2.7cm][c]{3.2cm}\centering\footnotesize LOGO\\ ĐHXD HÀ NỘI\\[2pt]\tiny(đặt images/logo\_huce.png)\end{minipage}}}}}
+% Khối chung thân bìa
+\newcommand{\huceHeader}{%
+  {BỘ GIÁO DỤC VÀ ĐÀO TẠO\par}
+  {\bfseries TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI\par}
+  \vspace{2pt}{\rule{6.6cm}{0.6pt}\par}}
+\newcommand{\huceTitle}{%
+  {\large\bfseries XÂY DỰNG HỆ THỐNG QUẢN LÝ VẬN HÀNH TÒA NHÀ -- TOWNHUB\par}
+  \vspace{0.25cm}
+  {\itshape (Building Operation \& Maintenance Management System -- TownHub)\par}}
+
+% --- Trang bìa (bìa cứng) ---
+\begin{titlepage}
+\centering
+\setlength{\parindent}{0pt}
+\huceHeader
+\vspace{0.8cm}
+\huceLogo
+\par\vspace{0.5cm}
+{\bfseries Nguyễn Xuân Thưởng\par}
+\vfill
+\huceTitle
+\vfill
+{\Large\bfseries ĐỒ ÁN TỐT NGHIỆP\par}
+\vspace{0.4cm}
+{\bfseries Ngành: Công nghệ thông tin\par}
+{\bfseries Chuyên ngành: Công nghệ thông tin\par}
+\vfill
+{\bfseries HÀ NỘI -- 2026\par}
+\end{titlepage}
+
+% --- Trang phụ bìa ---
+\begin{titlepage}
+\centering
+\setlength{\parindent}{0pt}
+\huceHeader
+\vspace{0.8cm}
+\huceLogo
+\par\vspace{0.5cm}
+{\bfseries Nguyễn Xuân Thưởng\par}
+\vfill
+\huceTitle
+\vfill
+{\Large\bfseries ĐỒ ÁN TỐT NGHIỆP\par}
+\vspace{0.4cm}
+{\bfseries Ngành: Công nghệ thông tin\par}
+{\bfseries Chuyên ngành: Công nghệ thông tin\par}
+\vspace{1.2cm}
+{\large
+\begin{tabular}{@{}l@{\hspace{6pt}}l@{}}
+Giảng viên hướng dẫn: & TS. Hoàng Nam Thắng\\[4pt]
+Sinh viên thực hiện: & Nguyễn Xuân Thưởng\\[4pt]
+Mã số sinh viên: & 0220766\\[4pt]
+Lớp: & 66KSCS\\
+\end{tabular}\par}
+\vfill
+{\bfseries HÀ NỘI -- 2026\par}
+\end{titlepage}
+
+% ------------------- PHẦN ĐẦU (đánh số La Mã) -------------------
+\pagenumbering{roman}
+
+\input{body.tex}
+
+\end{document}

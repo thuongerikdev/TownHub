@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency, formatDate, daysUntil } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
+import { isWorkOrderOwnerScoped } from "@/lib/rbac";
 
 const WO_STATUS: Record<string, StatusDef> = {
   DRAFT: { label: "Nháp", tone: "neutral" },
@@ -62,7 +63,10 @@ function DueCell({ value, done }: { value?: string; done?: boolean }) {
 
 export default function WorkOrderList(_props: { userRole?: string }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const mayCreate = hasPermission("workorder.create");
+  // Backend chỉ trả về phiếu được phân công cho KTV — nói rõ để tránh hiểu nhầm là mất dữ liệu.
+  const ownScoped = isWorkOrderOwnerScoped(hasPermission);
   const q = useApiList<WorkOrderResponse>(() => workOrders.getAll(), { mock: mockWorkOrders });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const tplQ = useApiList(() => checklistTemplates.getAll(), { mock: mockChecklistTemplates });
@@ -183,9 +187,11 @@ export default function WorkOrderList(_props: { userRole?: string }) {
     <div>
       <PageHeader
         title="Work Order — Bảo trì định kỳ"
-        description="Quản lý lệnh công việc PM/CM theo vòng đời"
+        description={ownScoped
+          ? "Các lệnh công việc được phân công cho bạn"
+          : "Quản lý lệnh công việc PM/CM theo vòng đời"}
         icon={ClipboardList}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo Work Order</Button>}
+        actions={mayCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo Work Order</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}
@@ -268,7 +274,7 @@ export default function WorkOrderList(_props: { userRole?: string }) {
             </Select>
           </Field>
           <Field label="Ước tính (giờ)">
-            <Input type="number" value={form.estimatedHours} onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" />
+            <Input type="number" min="0" value={form.estimatedHours} onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" />
           </Field>
           <Field label="Ngày thực hiện">
             <Input type="date" value={form.scheduledDate} onChange={(e) => setForm((f) => ({ ...f, scheduledDate: e.target.value }))} />

@@ -8,7 +8,7 @@ import {
   LogOut, Search, Menu, X, ShieldAlert, Loader2,
   Shield, ClipboardList, FileText, Wrench, Ticket,
   Package, ShoppingCart, Handshake, BarChart3,
-  Monitor, ChevronDown, ChevronRight, Boxes,
+  ChevronDown, ChevronRight, Boxes,
   ScanFace, Cctv, KeyRound, Briefcase, Layers,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -16,13 +16,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { notifications, residents } from "@/lib/api";
 
-type NavChild = { label: string; path: string; perm?: string; residentOnly?: boolean; adminOnly?: boolean };
+type NavChild = { label: string; path: string; perm?: string; residentOnly?: boolean; adminOnly?: boolean; staffOnly?: boolean };
 type NavItem = {
   icon: React.ElementType;
   label: string;
   path: string;
   residentOnly?: boolean;
   adminOnly?: boolean;
+  staffOnly?: boolean;      // chỉ hiện cho tài khoản KHÔNG phải cư dân (nhân viên/BQL)
   perm?: string;            // quyền tối thiểu để thấy mục này
   children?: NavChild[];
 };
@@ -32,7 +33,10 @@ type NavItem = {
 const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   {
     section: "TỔNG QUAN",
-    items: [{ icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" }],
+    items: [
+      { icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" },
+      { icon: BellRing, label: "Hộp thư thông báo", path: "/inbox", staffOnly: true },
+    ],
   },
   {
     section: "CƯ DÂN & CĂN HỘ",
@@ -42,8 +46,8 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       { icon: Building2, label: "Căn hộ", path: "/apartments", perm: "apartment.view" },
       { icon: Users, label: "Tài khoản cư dân", path: "/residents", perm: "resident.view" },
       { icon: Briefcase, label: "Nhà cung cấp dịch vụ", path: "/providers" },
-      { icon: Cctv, label: "Camera giám sát", path: "/cameras", perm: "notification.view" },
-      { icon: ScanFace, label: "Người lạ ra / vào", path: "/access-alerts", perm: "notification.view" },
+      { icon: Cctv, label: "Camera giám sát", path: "/cameras", perm: "resident.access_review" },
+      { icon: ScanFace, label: "Người lạ ra / vào", path: "/access-alerts", perm: "resident.access_review" },
       { icon: BellRing, label: "Cộng đồng cư dân", path: "/community", residentOnly: true },
       { icon: ClipboardList, label: "Tương tác cư dân", path: "/admin/engagement", adminOnly: true },
       { icon: Building2, label: "Quản lý tiện ích cư dân", path: "/admin/resident-cards", adminOnly: true },
@@ -60,10 +64,14 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
           { label: "Quét mã QR", path: "/assets/scan", perm: "asset.view" },
           { label: "Danh mục", path: "/assets/categories", perm: "asset.view" },
           { label: "Vị trí tài sản", path: "/assets/locations", perm: "asset.view" },
-          { label: "Cấu hình Checklist", path: "/assets/checklists", perm: "asset.view" },
-          { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.view" },
-          { label: "Chứng từ kế toán", path: "/assets/documents", perm: "asset.view" },
-          { label: "Thanh lý", path: "/assets/disposals", perm: "asset.view" },
+          { label: "Cấu hình Checklist", path: "/assets/checklists", perm: "workorder.create" },
+          // Khối sổ sách kế toán TSCĐ — chỉ Kế toán/BQL/Admin, KTV không thấy.
+          { label: "Khấu hao", path: "/assets/depreciation", perm: "asset.accounting" },
+          { label: "Chứng từ kế toán", path: "/assets/documents", perm: "asset.accounting" },
+          { label: "Thanh lý", path: "/assets/disposals", perm: "asset.accounting" },
+          { label: "Nhật ký chung", path: "/assets/journal", perm: "asset.accounting" },
+          { label: "Sổ cái", path: "/assets/ledger", perm: "asset.accounting" },
+          { label: "Báo cáo kế toán", path: "/assets/reports", perm: "asset.accounting" },
         ],
       },
       {
@@ -85,7 +93,9 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
         children: [
           { label: "Tồn kho", path: "/inventory", perm: "inventory.view" },
           { label: "Danh mục vật tư", path: "/inventory/catalog", perm: "inventory.view" },
+          { label: "Danh sách kho", path: "/inventory/warehouses", perm: "inventory.view" },
           { label: "Kiểm kê", path: "/inventory/stock-taking", perm: "inventory.audit" },
+          { label: "Lịch sử kiểm kê", path: "/inventory/stock-taking/history", perm: "inventory.audit" },
         ],
       },
       {
@@ -136,7 +146,6 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       { icon: Settings, label: "Cấu hình SLA", path: "/settings/sla", perm: "ticket.view" },
       { icon: KeyRound, label: "Mã MCP", path: "/settings/mcp-tokens" },
       { icon: FileText, label: "Nhật ký (Audit)", path: "/audit-logs", perm: "audit_log.manage" },
-      { icon: Monitor, label: "Tác vụ hệ thống", path: "/admin/system-jobs", perm: "audit_log.manage" },
     ],
   },
 ];
@@ -146,7 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loggingOut, setLoggingOut] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [hasResidentProfile, setHasResidentProfile] = useState(false);
-  const [hasResidentUpdates, setHasResidentUpdates] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const { user, loading, logout, hasPermission, roles } = useAuth();
   const router = useRouter();
@@ -164,32 +173,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user]);
 
   useEffect(() => {
-    if (!isResident && !hasResidentProfile) return;
+    if (!user) return;
+    const isResidentAcct = isResident || hasResidentProfile;
     const seenAt = Number(localStorage.getItem("townhub.resident.seen-at") ?? "0");
-    const hasNewPoll = (() => {
-      try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).some((poll) => poll.id > seenAt); }
-      catch { return false; }
-    })();
-    notifications.getAll().then((response) => {
-      const hasNewNotification = response.errorCode === 200 && Boolean(response.data?.some((item) => new Date(item.createdAt).getTime() > seenAt));
-      setHasResidentUpdates(hasNewPoll || hasNewNotification);
+    // Khảo sát cộng đồng chỉ áp dụng cho cư dân.
+    const newPolls = isResidentAcct ? (() => {
+      try { return (JSON.parse(localStorage.getItem("townhub.community.polls") ?? "[]") as { id: number }[]).filter((poll) => poll.id > seenAt).length; }
+      catch { return 0; }
+    })() : 0;
+    // Đếm thông báo MỚI (chưa xem) cho MỌI tài khoản (cư dân lẫn nhân viên).
+    notifications.inbox(user.userID).then((response) => {
+      const newNotifs = response.errorCode === 200
+        ? (response.data?.filter((item) => new Date(item.sentAt ?? item.createdAt).getTime() > seenAt).length ?? 0)
+        : 0;
+      setUnreadCount(newPolls + newNotifs);
     });
-  }, [hasResidentProfile, isResident, pathname]);
+  }, [hasResidentProfile, isResident, pathname, user]);
 
   function openResidentUpdates() {
     localStorage.setItem("townhub.resident.seen-at", String(Date.now()));
-    setHasResidentUpdates(false);
+    setUnreadCount(0);
   }
 
   // Lọc menu theo quyền: mục/đề mục không đủ quyền sẽ bị ẩn.
   // (admin là siêu quản trị → hasPermission luôn true → thấy đủ.)
+  const isStaff = !isResident && !hasResidentProfile;
   const visibleSections = NAV_SECTIONS.map((section) => {
     const items: NavItem[] = [];
     for (const item of section.items) {
       if (item.children?.length) {
-        const kids = item.children.filter((c) => (!c.perm || hasPermission(c.perm)) && (!c.residentOnly || isResident || hasResidentProfile) && (!c.adminOnly || isAdmin));
+        const kids = item.children.filter((c) => (!c.perm || hasPermission(c.perm)) && (!c.residentOnly || isResident || hasResidentProfile) && (!c.adminOnly || isAdmin) && (!c.staffOnly || isStaff));
         if (kids.length > 0) items.push({ ...item, children: kids });
-      } else if ((!item.perm || hasPermission(item.perm)) && (!item.residentOnly || isResident || hasResidentProfile) && (!item.adminOnly || isAdmin)) {
+      } else if ((!item.perm || hasPermission(item.perm)) && (!item.residentOnly || isResident || hasResidentProfile) && (!item.adminOnly || isAdmin) && (!item.staffOnly || isStaff)) {
         items.push(item);
       }
     }
@@ -389,9 +404,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link href={isResident || hasResidentProfile ? "/community" : "/notifications"} onClick={openResidentUpdates} className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-              <BellRing className="size-4" />
-              {hasResidentUpdates && <span className="absolute right-1.5 top-1.5 size-1.5 animate-pulse rounded-full bg-danger" />}
+            <Link
+              href={isResident || hasResidentProfile ? "/community" : "/inbox"}
+              onClick={openResidentUpdates}
+              aria-label={unreadCount > 0 ? `${unreadCount} thông báo mới` : "Thông báo"}
+              className={`relative rounded-full p-2 transition-colors hover:bg-accent hover:text-foreground ${
+                unreadCount > 0 ? "text-brand" : "text-muted-foreground"
+              }`}
+            >
+              <BellRing className={`size-4 origin-top ${unreadCount > 0 ? "animate-[wiggle_2.5s_ease-in-out_infinite]" : ""}`} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white ring-2 ring-card">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           </div>
         </header>

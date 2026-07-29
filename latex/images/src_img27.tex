@@ -1,0 +1,77 @@
+% =====================================================================
+%  Nguồn vector cho Hình 4.16 — Kiến trúc pipeline dịch vụ OCR (không PDF text-layer)
+%  Khớp ĐÚNG code app.py: 3 engine tự chủ (vietocr / paddleocr / paddledet_viet).
+%  Biên dịch: xelatex src_img27.tex -> src_img27.pdf -> copy sang img27.pdf
+% =====================================================================
+\documentclass[border=10pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc}
+
+\tikzset{
+  io/.style   ={rounded corners=8pt, draw=gray!60!black, fill=gray!8, line width=0.8pt,
+                align=center, inner sep=6pt, font=\small, minimum height=1cm},
+  proc/.style ={draw=gray!60!black, fill=gray!5, line width=0.8pt,
+                align=center, inner sep=6pt, font=\small, minimum height=1cm},
+  dec/.style  ={diamond, aspect=2.2, draw=orange!70!black, fill=orange!12, line width=0.8pt,
+                align=center, inner sep=2pt, font=\small},
+  engv/.style ={draw=orange!75!black, fill=orange!14, line width=0.9pt, rounded corners=2pt,
+                align=center, inner sep=6pt, font=\small, text width=4.2cm},
+  engp/.style ={draw=violet!70!black, fill=violet!12, line width=0.9pt, rounded corners=2pt,
+                align=center, inner sep=6pt, font=\small, text width=4.2cm},
+  engh/.style ={draw=teal!75!black, fill=teal!12, line width=0.9pt, rounded corners=2pt,
+                align=center, inner sep=6pt, font=\small, text width=4.2cm},
+  note/.style ={draw=gray!55!black, dashed, fill=yellow!8, line width=0.6pt,
+                align=left, inner sep=6pt, font=\footnotesize, text width=15cm},
+  fl/.style   ={-{Stealth[length=6pt]}, line width=0.8pt, gray!55!black},
+}
+
+\begin{document}
+\begin{tikzpicture}[node distance=0.9cm and 1.1cm]
+
+\node[font=\large] (title) {Kiến trúc pipeline trích xuất hóa đơn — dịch vụ OCR};
+
+\node[io, below=0.5cm of title] (input) {Ảnh hóa đơn (JPG/PNG) hoặc PDF quét\\ \footnotesize (\_to\_images: PDF $\rightarrow$ ảnh 200 dpi, ảnh $\rightarrow$ RGB)};
+\node[proc, below=of input] (api) {API \texttt{POST /extract}\ \ (fileUrl, model)};
+\node[dec, below=of api] (route) {Định tuyến theo\\ tham số \texttt{model}};
+
+% ---- 3 engine song song ----
+\node[engv, below=1.4cm of route.south, xshift=-5.6cm] (v)
+  {\textbf{model = vietocr}\\[2pt] EasyOCR (CRAFT) phát hiện dòng\\ $\rightarrow$ VietOCR (VGG19 + Transformer) nhận dạng};
+\node[engp, below=1.4cm of route.south] (p)
+  {\textbf{model = paddleocr}\\[2pt] PaddleOCR PP-OCRv4: DBNet phát hiện $\rightarrow$ phân loại góc $\rightarrow$ SVTR\_LCNet nhận dạng (CTC)};
+\node[engh, below=1.4cm of route.south, xshift=5.6cm] (h)
+  {\textbf{model = paddledet\_viet}\\[2pt] DBNet (Paddle) phát hiện $\rightarrow$ VietOCR nhận dạng (biến thể lai)};
+
+\node[proc, below=1.5cm of p, text width=8.2cm] (norm)
+  {Danh sách dòng chuẩn hóa\\ \texttt{[\{ text, box(x0,y0,x1,y1), prob \}]}};
+\node[proc, below=of norm, text width=8.2cm] (parse)
+  {\texttt{parse\_invoice()}: khử nghiêng + gom hàng theo vị trí\\ + biểu thức chính quy + chuẩn hoá số/dấu tiếng Việt};
+\node[proc, below=of parse, text width=8.2cm] (fields)
+  {Trường hóa đơn: MST người bán · Số HĐ · Ngày\\ · Tiền hàng · Tiền thuế · Tổng thanh toán · Tiền tệ};
+\node[io, below=of fields, text width=8.2cm] (write)
+  {Ghi Invoice + InvoiceItem (đối chiếu Đơn mua PO)};
+
+% ---- luồng ----
+\draw[fl] (input) -- (api);
+\draw[fl] (api) -- (route);
+\draw[fl] (route.south) -- (v.north);
+\draw[fl] (route.south) -- (p.north);
+\draw[fl] (route.south) -- (h.north);
+\draw[fl] (v.south) |- (norm.north);
+\draw[fl] (p.south) -- (norm.north);
+\draw[fl] (h.south) |- (norm.north);
+\draw[fl] (norm) -- (parse);
+\draw[fl] (parse) -- (fields);
+\draw[fl] (fields) -- (write);
+
+% ---- ghi chú ----
+\node[note, below=0.7cm of write] (nt)
+  {\textbf{Ghi chú.} Cả ba engine đều tự chủ, chạy offline và fine-tune được trên dữ liệu hóa đơn tự gán nhãn.
+   Giao diện cho người dùng chọn \texttt{paddleocr} (mặc định) hoặc \texttt{vietocr};
+   \texttt{paddledet\_viet} là biến thể lai (DBNet + VietOCR) dùng để so sánh/đánh giá.
+   Backend .NET lưu lựa chọn ở cột \texttt{ocr\_jobs.ocrEngine} và gọi dịch vụ qua trường \texttt{model}.};
+
+\end{tikzpicture}
+\end{document}

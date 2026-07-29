@@ -235,7 +235,19 @@
       "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\render_pdf.ps1\")",
       "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\render_pdf.ps1\" -Pdf \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\BaoCao_final.pdf\" -OutDir \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--DATN-TownHub\\\\28d801d6-3824-4ca2-8ab0-df075c917879\\\\scratchpad\\\\report\\\\pages_final\")",
       "Bash(pandoc -t markdown \"2. Đề cương HP-ĐATN-V2.docx\" -o \"C:/Users/ADMIN/AppData/Local/Temp/claude/D--DATN-TownHub/e3bed8ec-380c-45dc-b3d7-78c9e33b6a20/scratchpad/decuong.md\")",
-      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Read(//d/DATN/New folder/**)",
+      "Bash(unzip -l ocr-service.zip)",
+      "Bash(cd /tmp/ocr_x && sed -n '1,90p' app.py)",
+      "Bash(unzip -l townhub_ocr-20260714T161102Z-1-001.zip)",
+      "Bash(awk '{print $4}')",
+      "Bash(python -c \"import json,sys; nb=json.load\\(open\\('run_service_colab.ipynb',encoding='utf-8'\\)\\); print\\('cells:', len\\(nb['cells']\\)\\); print\\('OK valid ipynb'\\)\")",
+      "Bash(pandoc -t markdown \"D:\\\\DATN\\\\TownHub\\\\Báo_cáo_thực_tập_Nguyễn_Xuân_Thưởng_đã_sửa.docx\" -o report.md)",
+      "Bash(pandoc -t markdown \"E:\\\\Học tập\\\\_____Đồ án tốt nghiệp_____\\\\Báo cáo\\\\Biểu mẫu_Quy định Tổ chức và Đánh giá TTTN HUCE.docx\" -o bieumau.md)",
+      "PowerShell(Get-Command pandoc,soffice,python -ErrorAction SilentlyContinue)",
+      "Bash(grep -iv \"using\\\\|//\")",
+      "Bash(python -c \"import markitdown; print\\('markitdown ok'\\)\")",
+      "Bash(cd \"/c/Users/ADMIN/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/7559cbf1-47fb-4cf5-b644-383cf13e4b7b/7f810f91-8159-4168-9212-da6a7c3da2f0/skills/pptx\" && ls scripts/ && echo \"---\" && which markitdown node python soffice pdftoppm 2>&1)"
     ]
   }
 }

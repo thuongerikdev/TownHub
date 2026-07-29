@@ -1,2 +1,10 @@
 import DisposalList from '@/components/assets/DisposalList';
-export default function Page() { return <DisposalList />; }
+import { RequirePermission } from '@/components/shared';
+
+export default function Page() {
+  return (
+    <RequirePermission perm="asset.accounting">
+      <DisposalList />
+    </RequirePermission>
+  );
+}

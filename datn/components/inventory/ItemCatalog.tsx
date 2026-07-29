@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, PackageSearch, Power, Tag, Boxes } from "lucide-react";
 import { toast } from "sonner";
 import {
-  materials, type MaterialResponse, type CreateMaterialInput, type UpdateMaterialInput,
+  materials, type MaterialResponse, type MaterialCategoryResponse,
+  type CreateMaterialInput, type UpdateMaterialInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockMaterials } from "@/lib/mock/inventory";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
@@ -34,14 +36,22 @@ const emptyForm: FormState = {
 const toNum = (s: string) => (s.trim() ? Number(s) : undefined);
 
 export default function ItemCatalog() {
+  // RBAC ở tầng giao diện: sửa danh mục vật tư là master-data → cần inventory.manage.
+  // KTV chỉ có inventory.transaction (xuất/nhập kho) nên chỉ được xem danh mục.
+  const { hasPermission } = useAuth();
+  const canManage = hasPermission("inventory.manage");
   const q = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
   const list = q.items;
+  // Lấy danh mục từ API (được seed sẵn) — tránh bế tắc khi chưa có vật tư nào (BUG-13).
+  // Nếu API rỗng (chế độ mock) thì suy danh mục từ chính danh sách vật tư như trước.
+  const catQ = useApiList<MaterialCategoryResponse>(() => materials.getCategories(), { mock: [] });
 
   const categories = useMemo(() => {
+    if (catQ.items.length > 0) return catQ.items.map((c) => ({ id: c.id, name: c.name }));
     const seen = new Map<string, string>();
     for (const m of list) if (m.categoryId) seen.set(m.categoryId, m.categoryName ?? m.categoryId);
     return [...seen].map(([id, name]) => ({ id, name }));
-  }, [list]);
+  }, [catQ.items, list]);
 
   const [search, setSearch] = useState("");
   const [catF, setCatF] = useState("all");
@@ -93,6 +103,9 @@ export default function ItemCatalog() {
   async function submit() {
     if (!form.materialCode.trim() || !form.name.trim()) { toast.error("Nhập mã và tên vật tư."); return; }
     if (!form.categoryId) { toast.error("Chọn danh mục vật tư."); return; }
+    for (const [v, label] of [[form.minStock, "Tồn tối thiểu"], [form.maxStock, "Tồn tối đa"], [form.reorderPoint, "Điểm đặt lại"], [form.reorderQuantity, "SL đặt lại"], [form.unitPrice, "Đơn giá"]] as const) {
+      if (v.trim() !== "" && Number(v) < 0) { toast.error(`${label} không được âm.`); return; }
+    }
     const base: CreateMaterialInput = {
       materialCode: form.materialCode.trim(), name: form.name.trim(), categoryId: form.categoryId,
       unitOfMeasure: form.unitOfMeasure.trim() || undefined,
@@ -157,8 +170,8 @@ export default function ItemCatalog() {
       key: "actions", header: "", align: "right",
       cell: (m) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(m)}><Pencil className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(m)}><Trash2 className="size-4" /></Button>
+          {canManage && <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(m)}><Pencil className="size-4" /></Button>}
+          {canManage && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(m)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
     },
@@ -170,7 +183,7 @@ export default function ItemCatalog() {
         title="Danh mục vật tư"
         description="Quản lý master-data: định mức tồn kho, điểm đặt hàng lại và đơn giá tham chiếu"
         icon={PackageSearch}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Thêm vật tư</Button>}
+        actions={canManage ? <Button onClick={openCreate}><Plus className="size-4" /> Thêm vật tư</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}

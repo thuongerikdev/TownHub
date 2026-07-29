@@ -1,20 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, Boxes, PackageX, AlertTriangle, Wallet, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Fragment, useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  materials, type MaterialResponse, type CreateMaterialInput, type UpdateMaterialInput,
+  Boxes, PackageX, AlertTriangle, Wallet, PackageSearch, Warehouse,
+  ChevronRight, ChevronDown,
+} from "lucide-react";
+import {
+  materials, type MaterialResponse, type InventoryLevelResponse,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockMaterials, mockInventoryLevels } from "@/lib/mock/inventory";
 import {
-  PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
-  ToneBadge, type Column, type Tone,
+  PageHeader, StatCard, FilterBar, MockBanner,
+  ToneBadge, LoadingState, ErrorState, EmptyState, type Tone,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -26,159 +30,140 @@ const STOCK: Record<StockState, { label: string; tone: Tone }> = {
   low: { label: "Sắp hết", tone: "warning" },
   ok: { label: "Đủ tồn", tone: "success" },
 };
-const threshold = (m: MaterialResponse) => m.reorderPoint ?? m.minStock ?? 0;
-const stockState = (onHand: number, m: MaterialResponse): StockState =>
-  onHand <= 0 ? "out" : onHand <= threshold(m) ? "low" : "ok";
 
-interface FormState {
-  materialCode: string; name: string; categoryId: string; unitOfMeasure: string;
-  minStock: string; reorderPoint: string; reorderQuantity: string; unitPrice: string; notes: string;
-}
-const emptyForm: FormState = {
-  materialCode: "", name: "", categoryId: "", unitOfMeasure: "",
-  minStock: "", reorderPoint: "", reorderQuantity: "", unitPrice: "", notes: "",
+// Một vật tư gộp lại từ nhiều kho: tổng tồn + chi tiết tồn theo TỪNG kho.
+type WhLevel = { id: string; warehouseId: string; warehouseName: string; qty: number };
+type MatGroup = {
+  materialId: string; materialCode: string; materialName: string;
+  categoryName?: string; unitOfMeasure?: string; unitPrice?: number;
+  minStock: number; reorderPoint?: number;
+  total: number; warehouses: WhLevel[];
 };
+const threshold = (g: Pick<MatGroup, "reorderPoint" | "minStock">) => g.reorderPoint ?? g.minStock ?? 0;
+const stateOf = (qty: number, g: Pick<MatGroup, "reorderPoint" | "minStock">): StockState =>
+  qty <= 0 ? "out" : qty <= threshold(g) ? "low" : "ok";
 
+// Màn "Tồn kho": gộp theo vật tư, mở rộng ra tồn của từng kho.
+// Thêm/sửa/xoá vật tư (master-data) ở màn Danh mục vật tư (/inventory/catalog).
 export default function Inventory() {
-  const q = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
-  const levelsQ = useApiList(() => materials.getInventoryLevels(), { mock: mockInventoryLevels });
-  const list = q.items;
+  const matQ = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
+  const levelsQ = useApiList<InventoryLevelResponse>(() => materials.getInventoryLevels(), { mock: mockInventoryLevels });
 
-  const onHandMap = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const lv of levelsQ.items) map.set(lv.materialId, (map.get(lv.materialId) ?? 0) + lv.quantityOnHand);
-    return map;
-  }, [levelsQ.items]);
-  const onHandOf = (m: MaterialResponse) => onHandMap.get(m.id) ?? 0;
-
-  const categories = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const m of list) if (m.categoryId) seen.set(m.categoryId, m.categoryName ?? m.categoryId);
-    return [...seen].map(([id, name]) => ({ id, name }));
-  }, [list]);
+  const materialMap = useMemo(() => {
+    const m = new Map<string, MaterialResponse>();
+    for (const mat of matQ.items) m.set(mat.id, mat);
+    return m;
+  }, [matQ.items]);
 
   const [search, setSearch] = useState("");
   const [stockF, setStockF] = useState("all");
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<MaterialResponse | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
-  const [confirmDel, setConfirmDel] = useState<MaterialResponse | null>(null);
+  const [whF, setWhF] = useState("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Danh sách kho (suy ra từ dữ liệu tồn kho) cho bộ lọc.
+  const warehouseOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lv of levelsQ.items) if (lv.warehouseId) m.set(lv.warehouseId, lv.warehouseName ?? lv.warehouseId);
+    return [...m.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  }, [levelsQ.items]);
+
+  // Gộp các dòng tồn (đã lọc theo kho nếu có) thành nhóm vật tư.
+  const groups = useMemo(() => {
+    const map = new Map<string, MatGroup>();
+    for (const lv of levelsQ.items) {
+      if (whF !== "all" && lv.warehouseId !== whF) continue;
+      const mat = materialMap.get(lv.materialId);
+      let g = map.get(lv.materialId);
+      if (!g) {
+        g = {
+          materialId: lv.materialId,
+          materialCode: lv.materialCode ?? mat?.materialCode ?? "",
+          materialName: lv.materialName ?? mat?.name ?? "",
+          categoryName: mat?.categoryName,
+          unitOfMeasure: lv.unitOfMeasure ?? mat?.unitOfMeasure,
+          unitPrice: mat?.unitPrice,
+          minStock: mat?.minStock ?? 0,
+          reorderPoint: mat?.reorderPoint,
+          total: 0, warehouses: [],
+        };
+        map.set(lv.materialId, g);
+      }
+      g.total += lv.quantityOnHand;
+      g.warehouses.push({ id: lv.id, warehouseId: lv.warehouseId, warehouseName: lv.warehouseName ?? "—", qty: lv.quantityOnHand });
+    }
+    const arr = [...map.values()];
+    for (const g of arr) g.warehouses.sort((a, b) => a.warehouseName.localeCompare(b.warehouseName, "vi"));
+    arr.sort((a, b) => a.materialCode.localeCompare(b.materialCode, "vi"));
+    return arr;
+  }, [levelsQ.items, materialMap, whF]);
 
   const stats = useMemo(() => {
-    let low = 0, out = 0, value = 0;
-    for (const m of list) {
-      const oh = onHandMap.get(m.id) ?? 0;
-      const st = stockState(oh, m);
-      if (st === "out") out++; else if (st === "low") low++;
-      value += oh * (m.unitPrice ?? 0);
+    let low = 0, out = 0, value = 0, lines = 0;
+    for (const g of groups) {
+      for (const w of g.warehouses) {
+        lines++;
+        const st = stateOf(w.qty, g);
+        if (st === "out") out++; else if (st === "low") low++;
+        value += w.qty * (g.unitPrice ?? 0);
+      }
     }
-    return { total: list.length, low, out, value };
-  }, [list, onHandMap]);
+    return { materials: groups.length, lines, low, out, value };
+  }, [groups]);
 
-  const filtered = useMemo(() => {
+  const visible = useMemo(() => {
     const s = search.trim().toLowerCase();
-    return list.filter((m) => {
-      if (stockF !== "all" && stockState(onHandMap.get(m.id) ?? 0, m) !== stockF) return false;
+    return groups.filter((g) => {
+      if (stockF !== "all" && stateOf(g.total, g) !== stockF) return false;
       if (!s) return true;
-      return [m.materialCode, m.name, m.categoryName].some((f) => f?.toLowerCase().includes(s));
+      return [g.materialCode, g.materialName, g.categoryName, ...g.warehouses.map((w) => w.warehouseName)]
+        .some((f) => f?.toLowerCase().includes(s));
     });
-  }, [list, search, stockF, onHandMap]);
+  }, [groups, search, stockF]);
 
-  function openCreate() {
-    setEditing(null);
-    setForm(emptyForm);
-    setOpen(true);
-  }
-  function openEdit(m: MaterialResponse) {
-    setEditing(m);
-    setForm({
-      materialCode: m.materialCode, name: m.name, categoryId: m.categoryId,
-      unitOfMeasure: m.unitOfMeasure ?? "", minStock: String(m.minStock ?? ""),
-      reorderPoint: m.reorderPoint != null ? String(m.reorderPoint) : "",
-      reorderQuantity: m.reorderQuantity != null ? String(m.reorderQuantity) : "",
-      unitPrice: m.unitPrice != null ? String(m.unitPrice) : "", notes: m.notes ?? "",
+  function toggle(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
-    setOpen(true);
   }
 
-  async function submit() {
-    if (!form.materialCode.trim() || !form.name.trim()) { toast.error("Nhập mã và tên vật tư."); return; }
-    if (!form.categoryId) { toast.error("Chọn danh mục vật tư."); return; }
-    const base: CreateMaterialInput = {
-      materialCode: form.materialCode.trim(), name: form.name.trim(), categoryId: form.categoryId,
-      unitOfMeasure: form.unitOfMeasure.trim() || undefined,
-      minStock: form.minStock ? Number(form.minStock) : undefined,
-      reorderPoint: form.reorderPoint ? Number(form.reorderPoint) : undefined,
-      reorderQuantity: form.reorderQuantity ? Number(form.reorderQuantity) : undefined,
-      unitPrice: form.unitPrice ? Number(form.unitPrice) : undefined,
-      notes: form.notes.trim() || undefined,
-    };
-    setSubmitting(true);
-    const res = editing
-      ? await materials.update({ ...base, id: editing.id } as UpdateMaterialInput)
-      : await materials.create(base);
-    setSubmitting(false);
-    if (res.errorCode === 200) {
-      toast.success(editing ? "Đã cập nhật vật tư." : "Đã thêm vật tư.");
-      setOpen(false);
-      q.refetch();
-    } else toast.error(res.errorMessage || "Lưu thất bại.");
+  const allExpanded = visible.length > 0 && visible.every((g) => expanded.has(g.materialId));
+  function toggleAll() {
+    setExpanded(allExpanded ? new Set() : new Set(visible.map((g) => g.materialId)));
   }
 
-  async function doDelete() {
-    if (!confirmDel) return;
-    const res = await materials.delete(confirmDel.id);
-    if (res.errorCode === 200) {
-      toast.success("Đã xoá vật tư.");
-      setConfirmDel(null);
-      q.refetch();
-    } else toast.error(res.errorMessage || "Xoá thất bại.");
-  }
-
-  const columns: Column<MaterialResponse>[] = [
-    {
-      key: "mat", header: "Vật tư", sortable: true, sortAccessor: (m) => m.materialCode,
-      cell: (m) => <div><span className="font-mono text-xs text-muted-foreground">{m.materialCode}</span><span className="block text-sm font-medium text-foreground">{m.name}</span></div>,
-    },
-    { key: "cat", header: "Danh mục", cell: (m) => <span className="text-muted-foreground">{m.categoryName ?? "—"}</span> },
-    {
-      key: "onhand", header: "Tồn kho", align: "right", sortable: true, sortAccessor: (m) => onHandMap.get(m.id) ?? 0,
-      cell: (m) => <span className="font-medium text-foreground">{formatNumber(onHandOf(m))} <span className="text-xs font-normal text-muted-foreground">{m.unitOfMeasure}</span></span>,
-    },
-    { key: "min", header: "Định mức", align: "right", cell: (m) => <span className="text-xs text-muted-foreground">tối thiểu {formatNumber(m.minStock)} · đặt lại {m.reorderPoint != null ? formatNumber(m.reorderPoint) : "—"}</span> },
-    { key: "price", header: "Đơn giá", align: "right", sortable: true, sortAccessor: (m) => m.unitPrice ?? 0, cell: (m) => formatCurrency(m.unitPrice) },
-    { key: "stock", header: "Trạng thái", cell: (m) => { const st = STOCK[stockState(onHandOf(m), m)]; return <ToneBadge tone={st.tone} dot>{st.label}</ToneBadge>; } },
-    {
-      key: "actions", header: "", align: "right",
-      cell: (m) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" title="Sửa" onClick={() => openEdit(m)}><Pencil className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(m)}><Trash2 className="size-4" /></Button>
-        </div>
-      ),
-    },
-  ];
+  const body = levelsQ.loading ? <LoadingState />
+    : levelsQ.error ? <ErrorState message={levelsQ.error} onRetry={levelsQ.refetch} />
+    : visible.length === 0 ? <EmptyState title="Chưa có tồn kho" description="Chưa có vật tư nào có tồn trong kho." />
+    : null;
 
   return (
     <div>
       <PageHeader
         title="Kho vật tư"
-        description="Danh mục vật tư, mức tồn và cảnh báo đặt hàng lại"
+        description="Tồn kho gộp theo vật tư — mở rộng để xem chi tiết từng kho"
         icon={Boxes}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Thêm vật tư</Button>}
+        actions={<Button variant="outline" asChild><Link href="/inventory/catalog"><PackageSearch className="size-4" /> Quản lý danh mục vật tư</Link></Button>}
       />
 
-      {q.isMock && <MockBanner />}
+      {(levelsQ.isMock || matQ.isMock) && <MockBanner />}
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Tổng vật tư" value={stats.total} icon={Boxes} tone="brand" loading={q.loading} />
-        <StatCard label="Sắp hết" value={stats.low} icon={AlertTriangle} tone="warning" loading={q.loading} />
-        <StatCard label="Hết hàng" value={stats.out} icon={PackageX} tone="danger" loading={q.loading} />
-        <StatCard label="Giá trị tồn kho" value={formatCurrency(stats.value, { compact: true })} icon={Wallet} tone="success" loading={q.loading} />
+        <StatCard label="Vật tư có tồn" value={stats.materials} icon={Boxes} tone="brand" loading={levelsQ.loading} />
+        <StatCard label="Sắp hết (theo kho)" value={stats.low} icon={AlertTriangle} tone="warning" loading={levelsQ.loading} />
+        <StatCard label="Hết hàng (theo kho)" value={stats.out} icon={PackageX} tone="danger" loading={levelsQ.loading} />
+        <StatCard label="Giá trị tồn kho" value={formatCurrency(stats.value, { compact: true })} icon={Wallet} tone="success" loading={levelsQ.loading} />
       </div>
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Tìm vật tư…">
+      <FilterBar search={search} onSearch={setSearch} placeholder="Tìm vật tư hoặc kho…">
+        <Select value={whF} onValueChange={setWhF}>
+          <SelectTrigger className="h-9 w-52"><SelectValue placeholder="Mọi kho" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Mọi kho</SelectItem>
+            {warehouseOptions.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <Select value={stockF} onValueChange={setStockF}>
           <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -190,67 +175,83 @@ export default function Inventory() {
         </Select>
       </FilterBar>
 
-      <DataTable columns={columns} rows={filtered} getRowId={(m) => m.id} loading={q.loading} error={q.error} onRetry={q.refetch} />
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow className="border-border bg-muted/50 hover:bg-muted/50">
+                <TableHead className="h-10 w-10 text-xs">
+                  {visible.length > 0 && (
+                    <button type="button" onClick={toggleAll} className="text-muted-foreground hover:text-foreground" title={allExpanded ? "Thu gọn tất cả" : "Mở rộng tất cả"}>
+                      {allExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    </button>
+                  )}
+                </TableHead>
+                <TableHead className="h-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vật tư</TableHead>
+                <TableHead className="h-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Danh mục</TableHead>
+                <TableHead className="h-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kho</TableHead>
+                <TableHead className="h-10 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tồn kho</TableHead>
+                <TableHead className="h-10 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Đơn giá</TableHead>
+                <TableHead className="h-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trạng thái</TableHead>
+              </TableRow>
+            </TableHeader>
+            {!body && (
+              <TableBody>
+                {visible.map((g) => {
+                  const isOpen = expanded.has(g.materialId);
+                  const st = STOCK[stateOf(g.total, g)];
+                  return (
+                    <Fragment key={g.materialId}>
+                      <TableRow
+                        onClick={() => toggle(g.materialId)}
+                        className="cursor-pointer border-border hover:bg-surface-2/40"
+                      >
+                        <TableCell className="py-2.5">
+                          {isOpen ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
+                        </TableCell>
+                        <TableCell className="py-2.5">
+                          <span className="font-mono text-xs text-muted-foreground">{g.materialCode}</span>
+                          <span className="block text-sm font-medium text-foreground">{g.materialName}</span>
+                        </TableCell>
+                        <TableCell className="py-2.5 text-sm text-muted-foreground">{g.categoryName ?? "—"}</TableCell>
+                        <TableCell className="py-2.5 text-sm text-muted-foreground">
+                          <span className="inline-flex items-center gap-1.5"><Warehouse className="size-3.5" />{g.warehouses.length} kho</span>
+                        </TableCell>
+                        <TableCell className="py-2.5 text-right text-sm font-semibold text-foreground">
+                          {formatNumber(g.total)} <span className="text-xs font-normal text-muted-foreground">{g.unitOfMeasure}</span>
+                        </TableCell>
+                        <TableCell className="py-2.5 text-right text-sm text-foreground">{formatCurrency(g.unitPrice)}</TableCell>
+                        <TableCell className="py-2.5"><ToneBadge tone={st.tone} dot>{st.label}</ToneBadge></TableCell>
+                      </TableRow>
 
-      <EntityModal
-        open={open}
-        onOpenChange={setOpen}
-        title={editing ? "Cập nhật vật tư" : "Thêm vật tư"}
-        size="lg"
-        onSubmit={submit}
-        submitting={submitting}
-        submitLabel={editing ? "Lưu" : "Tạo"}
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã vật tư" required>
-            <Input value={form.materialCode} onChange={(e) => setForm((f) => ({ ...f, materialCode: e.target.value }))} placeholder="MAT-0001" />
-          </Field>
-          <Field label="Đơn vị tính">
-            <Input value={form.unitOfMeasure} onChange={(e) => setForm((f) => ({ ...f, unitOfMeasure: e.target.value }))} placeholder="cái / mét / lít" />
-          </Field>
-          <Field label="Tên vật tư" required className="col-span-2">
-            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Cáp thép thang máy 12mm" />
-          </Field>
-          <Field label="Danh mục" required className="col-span-2">
-            <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
-              <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Tồn tối thiểu">
-            <Input type="number" value={form.minStock} onChange={(e) => setForm((f) => ({ ...f, minStock: e.target.value }))} placeholder="50" />
-          </Field>
-          <Field label="Điểm đặt lại">
-            <Input type="number" value={form.reorderPoint} onChange={(e) => setForm((f) => ({ ...f, reorderPoint: e.target.value }))} placeholder="80" />
-          </Field>
-          <Field label="SL đặt lại">
-            <Input type="number" value={form.reorderQuantity} onChange={(e) => setForm((f) => ({ ...f, reorderQuantity: e.target.value }))} placeholder="200" />
-          </Field>
-          <Field label="Đơn giá (VND)">
-            <Input type="number" value={form.unitPrice} onChange={(e) => setForm((f) => ({ ...f, unitPrice: e.target.value }))} placeholder="120000" />
-          </Field>
-          <Field label="Ghi chú" className="col-span-2">
-            <Textarea rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </Field>
+                      {isOpen && g.warehouses.map((w) => {
+                        const wst = STOCK[stateOf(w.qty, g)];
+                        return (
+                          <TableRow key={w.id} className="border-border bg-muted/20 hover:bg-muted/30">
+                            <TableCell className="py-2" />
+                            <TableCell className="py-2" colSpan={2}>
+                              <span className="ml-4 inline-flex items-center gap-1.5 text-sm text-foreground">
+                                <Warehouse className="size-3.5 text-brand" />{w.warehouseName}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-2 text-sm text-muted-foreground">tại kho</TableCell>
+                            <TableCell className="py-2 text-right text-sm font-medium text-foreground">
+                              {formatNumber(w.qty)} <span className="text-xs font-normal text-muted-foreground">{g.unitOfMeasure}</span>
+                            </TableCell>
+                            <TableCell className="py-2" />
+                            <TableCell className="py-2"><ToneBadge tone={wst.tone} dot>{wst.label}</ToneBadge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </Fragment>
+                  );
+                })}
+              </TableBody>
+            )}
+          </Table>
         </div>
-      </EntityModal>
-
-      <EntityModal
-        open={!!confirmDel}
-        onOpenChange={(o) => !o && setConfirmDel(null)}
-        title="Xoá vật tư?"
-        size="sm"
-        footer={
-          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
-            <Button variant="outline" onClick={() => setConfirmDel(null)}>Huỷ</Button>
-            <Button variant="destructive" onClick={doDelete}>Xoá</Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-muted-foreground">Xoá vật tư <strong className="text-foreground">{confirmDel?.name}</strong>?</p>
-      </EntityModal>
+        {body && <div className="border-t border-border">{body}</div>}
+      </div>
     </div>
   );
 }

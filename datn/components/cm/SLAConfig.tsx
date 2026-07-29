@@ -122,6 +122,15 @@ export default function SLAConfig() {
 
   async function submit() {
     if (!form.name.trim()) { toast.error("Nhập tên cấu hình SLA."); return; }
+    // Kiểm tra hợp lệ: không âm; phản hồi < giải quyết; leo thang tăng dần L1 < L2 < L3.
+    const rt = toNum(form.responseTimeHours), rs = toNum(form.resolutionTimeHours);
+    const l1 = toNum(form.escalationL1AfterHours), l2 = toNum(form.escalationL2AfterHours), l3 = toNum(form.escalationL3AfterHours);
+    for (const v of [rt, rs, l1, l2, l3]) if (v != null && v < 0) { toast.error("Thời gian không được âm."); return; }
+    if (rt != null && rs != null && rt >= rs) { toast.error("Thời gian phản hồi phải nhỏ hơn thời gian giải quyết."); return; }
+    const chain = [l1, l2, l3].filter((x): x is number => x != null);
+    for (let i = 1; i < chain.length; i++) {
+      if (chain[i] <= chain[i - 1]) { toast.error("Ngưỡng leo thang phải tăng dần (L1 < L2 < L3)."); return; }
+    }
     const body: CreateSlaConfigInput = {
       name: form.name.trim(), priorityLevel: form.priorityLevel,
       issueCategory: form.issueCategory === NONE ? undefined : form.issueCategory,

@@ -1,0 +1,67 @@
+{
+  "cookies": [
+    {
+      "name": "fz.refresh",
+      "value": "DcqoXzD10pyrdoAR%2FIX3PwF8ZTpxsi9foLDGQm%2Byipe1S16C63UADRxKuweyhtGPGHfG3slRb1atG2712dPZkQ%3D%3D",
+      "domain": "localhost",
+      "path": "/login/auth/refresh",
+      "expires": 1785249779.8803,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "fz.did",
+      "value": "9752c463d21547d08a96778a152d705d",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1819204980.879087,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "fz.access",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQWRtaW5pc3RyYXRvciIsImVtYWlsIjoiYWRtaW5AZnouY29tIiwidXNlck5hbWUiOiJhZG1pbiIsInVzZXJJZCI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJzdWIiOiIxIiwianRpIjoiMDliZTNlNmQtY2QyYi00Y2M2LWI3YzItZWQxMTM2YzFhODEwIiwic2lkIjoiMzgwIiwicm9sZSI6ImFkbWluIiwicGVybWlzc2lvbiI6WyJhY2NvdW50LmNoYW5nZV9wYXNzd29yZCIsImFjY291bnQubWZhX3NldHVwIiwiYXBhcnRtZW50LmNyZWF0ZSIsImFwYXJ0bWVudC5kZWxldGUiLCJhcGFydG1lbnQudXBkYXRlIiwiYXBhcnRtZW50LnZpZXciLCJhc3NldC5jcmVhdGUiLCJhc3NldC5kZWxldGUiLCJhc3NldC51cGRhdGUiLCJhc3NldC52aWV3IiwiYXVkaXRfbG9nLm1hbmFnZSIsImF1dGguZm9yZ290X3Bhc3N3b3JkIiwiYXV0aC5sb2dpbiIsImF1dGgubG9naW5fZ29vZ2xlIiwiYXV0aC5sb2dvdXQiLCJhdXRoLm1mYV92ZXJpZnkiLCJhdXRoLnJlZnJlc2giLCJhdXRoLnJlZ2lzdGVyIiwiaW52ZW50b3J5LmF1ZGl0IiwiaW52ZW50b3J5LnRyYW5zYWN0aW9uIiwiaW52ZW50b3J5LnZpZXciLCJub3RpZmljYXRpb24ubWFuYWdlIiwibm90aWZpY2F0aW9uLnNlbmQiLCJub3RpZmljYXRpb24udmlldyIsInBlcm1pc3Npb24uYXNzaWduIiwicGVybWlzc2lvbi5hc3NpZ24uYWRtaW4iLCJwZXJtaXNzaW9uLm1hbmFnZSIsInBlcm1pc3Npb24ubWFuYWdlLmFkbWluIiwicGVybWlzc2lvbi5yZWFkIiwicGVybWlzc2lvbi5yZWFkLmFkbWluIiwicHJvY3VyZW1lbnQuYXBwcm92ZSIsInByb2N1cmVtZW50Lmludm9pY2UiLCJwcm9jdXJlbWVudC5vcmRlciIsInByb2N1cmVtZW50LnJlcXVlc3QiLCJwcm9jdXJlbWVudC52aWV3IiwicmVwb3J0LmNvc3QiLCJyZXBvcnQua3BpIiwicmVzaWRlbnQuY3JlYXRlIiwicmVzaWRlbnQuZGVsZXRlIiwicmVzaWRlbnQudXBkYXRlIiwicmVzaWRlbnQudmlldyIsInJvbGUuYXNzaWduIiwicm9sZS5hc3NpZ24uYWRtaW4iLCJyb2xlLm1hbmFnZSIsInJvbGUubWFuYWdlLmFkbWluIiwicm9sZS5yZWFkIiwic3lzdGVtLmhlYWx0aCIsInRpY2tldC5hc3NpZ24iLCJ0aWNrZXQuY2xvc2UiLCJ0aWNrZXQuY3JlYXRlIiwidGlja2V0LnJlc29sdmUiLCJ0aWNrZXQudmlldyIsInVzZXIuY3JlYXRlIiwidXNlci5jcmVhdGVfYnFsIiwidXNlci5kZWxldGUiLCJ1c2VyLnJlYWRfZGV0YWlscyIsInVzZXIucmVhZF9kZXRhaWxzLmFkbWluIiwidXNlci5yZWFkX3Byb2ZpbGUiLCJ1c2VyLnVwZGF0ZV9wcm9maWxlIiwidXNlcnNlc3Npb24ubWFuYWdlIiwidmVuZG9yLmNyZWF0ZSIsInZlbmRvci5ldmFsdWF0ZSIsInZlbmRvci51cGRhdGUiLCJ2ZW5kb3IudmlldyIsIndvcmtvcmRlci5hc3NpZ24iLCJ3b3Jrb3JkZXIuY2xvc2UiLCJ3b3Jrb3JkZXIuY3JlYXRlIiwid29ya29yZGVyLmV4ZWN1dGUiLCJ3b3Jrb3JkZXIucmV2aWV3Iiwid29ya29yZGVyLnZpZXciXSwiZXhwIjoxNzg0NjQ4NTc5fQ.H0XXKl2Idf9ZVhDOtAKAElSyAdTsDg8uShJzraP8W6I",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "fz.permissions",
+      "value": "%5B%22account.change_password%22%2C%22account.mfa_setup%22%2C%22apartment.create%22%2C%22apartment.delete%22%2C%22apartment.update%22%2C%22apartment.view%22%2C%22asset.create%22%2C%22asset.delete%22%2C%22asset.update%22%2C%22asset.view%22%2C%22audit_log.manage%22%2C%22auth.forgot_password%22%2C%22auth.login%22%2C%22auth.login_google%22%2C%22auth.logout%22%2C%22auth.mfa_verify%22%2C%22auth.refresh%22%2C%22auth.register%22%2C%22inventory.audit%22%2C%22inventory.transaction%22%2C%22inventory.view%22%2C%22notification.manage%22%2C%22notification.send%22%2C%22notification.view%22%2C%22permission.assign%22%2C%22permission.assign.admin%22%2C%22permission.manage%22%2C%22permission.manage.admin%22%2C%22permission.read%22%2C%22permission.read.admin%22%2C%22procurement.approve%22%2C%22procurement.invoice%22%2C%22procurement.order%22%2C%22procurement.request%22%2C%22procurement.view%22%2C%22report.cost%22%2C%22report.kpi%22%2C%22resident.create%22%2C%22resident.delete%22%2C%22resident.update%22%2C%22resident.view%22%2C%22role.assign%22%2C%22role.assign.admin%22%2C%22role.manage%22%2C%22role.manage.admin%22%2C%22role.read%22%2C%22system.health%22%2C%22ticket.assign%22%2C%22ticket.close%22%2C%22ticket.create%22%2C%22ticket.resolve%22%2C%22ticket.view%22%2C%22user.create%22%2C%22user.create_bql%22%2C%22user.delete%22%2C%22user.read_details%22%2C%22user.read_details.admin%22%2C%22user.read_profile%22%2C%22user.update_profile%22%2C%22usersession.manage%22%2C%22vendor.create%22%2C%22vendor.evaluate%22%2C%22vendor.update%22%2C%22vendor.view%22%2C%22workorder.assign%22%2C%22workorder.close%22%2C%22workorder.create%22%2C%22workorder.execute%22%2C%22workorder.review%22%2C%22workorder.view%22%5D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1784648579.880334,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "auth.roles",
+          "value": "[{\"roleID\":1,\"roleName\":\"admin\"}]"
+        },
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQWRtaW5pc3RyYXRvciIsImVtYWlsIjoiYWRtaW5AZnouY29tIiwidXNlck5hbWUiOiJhZG1pbiIsInVzZXJJZCI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJzdWIiOiIxIiwianRpIjoiMDliZTNlNmQtY2QyYi00Y2M2LWI3YzItZWQxMTM2YzFhODEwIiwic2lkIjoiMzgwIiwicm9sZSI6ImFkbWluIiwicGVybWlzc2lvbiI6WyJhY2NvdW50LmNoYW5nZV9wYXNzd29yZCIsImFjY291bnQubWZhX3NldHVwIiwiYXBhcnRtZW50LmNyZWF0ZSIsImFwYXJ0bWVudC5kZWxldGUiLCJhcGFydG1lbnQudXBkYXRlIiwiYXBhcnRtZW50LnZpZXciLCJhc3NldC5jcmVhdGUiLCJhc3NldC5kZWxldGUiLCJhc3NldC51cGRhdGUiLCJhc3NldC52aWV3IiwiYXVkaXRfbG9nLm1hbmFnZSIsImF1dGguZm9yZ290X3Bhc3N3b3JkIiwiYXV0aC5sb2dpbiIsImF1dGgubG9naW5fZ29vZ2xlIiwiYXV0aC5sb2dvdXQiLCJhdXRoLm1mYV92ZXJpZnkiLCJhdXRoLnJlZnJlc2giLCJhdXRoLnJlZ2lzdGVyIiwiaW52ZW50b3J5LmF1ZGl0IiwiaW52ZW50b3J5LnRyYW5zYWN0aW9uIiwiaW52ZW50b3J5LnZpZXciLCJub3RpZmljYXRpb24ubWFuYWdlIiwibm90aWZpY2F0aW9uLnNlbmQiLCJub3RpZmljYXRpb24udmlldyIsInBlcm1pc3Npb24uYXNzaWduIiwicGVybWlzc2lvbi5hc3NpZ24uYWRtaW4iLCJwZXJtaXNzaW9uLm1hbmFnZSIsInBlcm1pc3Npb24ubWFuYWdlLmFkbWluIiwicGVybWlzc2lvbi5yZWFkIiwicGVybWlzc2lvbi5yZWFkLmFkbWluIiwicHJvY3VyZW1lbnQuYXBwcm92ZSIsInByb2N1cmVtZW50Lmludm9pY2UiLCJwcm9jdXJlbWVudC5vcmRlciIsInByb2N1cmVtZW50LnJlcXVlc3QiLCJwcm9jdXJlbWVudC52aWV3IiwicmVwb3J0LmNvc3QiLCJyZXBvcnQua3BpIiwicmVzaWRlbnQuY3JlYXRlIiwicmVzaWRlbnQuZGVsZXRlIiwicmVzaWRlbnQudXBkYXRlIiwicmVzaWRlbnQudmlldyIsInJvbGUuYXNzaWduIiwicm9sZS5hc3NpZ24uYWRtaW4iLCJyb2xlLm1hbmFnZSIsInJvbGUubWFuYWdlLmFkbWluIiwicm9sZS5yZWFkIiwic3lzdGVtLmhlYWx0aCIsInRpY2tldC5hc3NpZ24iLCJ0aWNrZXQuY2xvc2UiLCJ0aWNrZXQuY3JlYXRlIiwidGlja2V0LnJlc29sdmUiLCJ0aWNrZXQudmlldyIsInVzZXIuY3JlYXRlIiwidXNlci5jcmVhdGVfYnFsIiwidXNlci5kZWxldGUiLCJ1c2VyLnJlYWRfZGV0YWlscyIsInVzZXIucmVhZF9kZXRhaWxzLmFkbWluIiwidXNlci5yZWFkX3Byb2ZpbGUiLCJ1c2VyLnVwZGF0ZV9wcm9maWxlIiwidXNlcnNlc3Npb24ubWFuYWdlIiwidmVuZG9yLmNyZWF0ZSIsInZlbmRvci5ldmFsdWF0ZSIsInZlbmRvci51cGRhdGUiLCJ2ZW5kb3IudmlldyIsIndvcmtvcmRlci5hc3NpZ24iLCJ3b3Jrb3JkZXIuY2xvc2UiLCJ3b3Jrb3JkZXIuY3JlYXRlIiwid29ya29yZGVyLmV4ZWN1dGUiLCJ3b3Jrb3JkZXIucmV2aWV3Iiwid29ya29yZGVyLnZpZXciXSwiZXhwIjoxNzg0NjQ4NTc5fQ.H0XXKl2Idf9ZVhDOtAKAElSyAdTsDg8uShJzraP8W6I"
+        },
+        {
+          "name": "auth.permissions",
+          "value": "[\"account.change_password\",\"account.mfa_setup\",\"apartment.create\",\"apartment.delete\",\"apartment.update\",\"apartment.view\",\"asset.create\",\"asset.delete\",\"asset.update\",\"asset.view\",\"audit_log.manage\",\"auth.forgot_password\",\"auth.login\",\"auth.login_google\",\"auth.logout\",\"auth.mfa_verify\",\"auth.refresh\",\"auth.register\",\"inventory.audit\",\"inventory.transaction\",\"inventory.view\",\"notification.manage\",\"notification.send\",\"notification.view\",\"permission.assign\",\"permission.assign.admin\",\"permission.manage\",\"permission.manage.admin\",\"permission.read\",\"permission.read.admin\",\"procurement.approve\",\"procurement.invoice\",\"procurement.order\",\"procurement.request\",\"procurement.view\",\"report.cost\",\"report.kpi\",\"resident.create\",\"resident.delete\",\"resident.update\",\"resident.view\",\"role.assign\",\"role.assign.admin\",\"role.manage\",\"role.manage.admin\",\"role.read\",\"system.health\",\"ticket.assign\",\"ticket.close\",\"ticket.create\",\"ticket.resolve\",\"ticket.view\",\"user.create\",\"user.create_bql\",\"user.delete\",\"user.read_details\",\"user.read_details.admin\",\"user.read_profile\",\"user.update_profile\",\"usersession.manage\",\"vendor.create\",\"vendor.evaluate\",\"vendor.update\",\"vendor.view\",\"workorder.assign\",\"workorder.close\",\"workorder.create\",\"workorder.execute\",\"workorder.review\",\"workorder.view\"]"
+        },
+        {
+          "name": "refreshToken",
+          "value": "DcqoXzD10pyrdoAR/IX3PwF8ZTpxsi9foLDGQm+yipe1S16C63UADRxKuweyhtGPGHfG3slRb1atG2712dPZkQ=="
+        }
+      ]
+    }
+  ]
+}

@@ -447,6 +447,14 @@ namespace TH.Auth.ApplicationService.StartUp
                 foreach (var permission in PermissionConstants.Permissions)
                     options.AddPolicy(permission.Key, policy => policy.RequireClaim("permission", permission.Value));
 
+                // Policy "hoặc": cùng một endpoint phục vụ 2 nhóm người dùng khác nhau.
+                // Kỹ thuật viên chỉ có quyền *thực hiện* (execute/resolve) nhưng vẫn phải
+                // PUT được phiếu để check-in (WO → IN_PROGRESS) và kết thúc xử lý sự cố
+                // (ticket → RESOLVED). Không cấp create/delete cho họ.
+                foreach (var (name, codes) in PermissionConstants.CompositePolicies)
+                    options.AddPolicy(name, policy => policy.RequireAssertion(ctx =>
+                        ctx.User.Claims.Any(c => c.Type == "permission" && codes.Contains(c.Value))));
+
                 //options.AddPolicy("ActiveVIP", p => p.Requirements.Add(new ActiveVipRequirement()));
             });
 
@@ -499,6 +507,25 @@ namespace TH.Auth.ApplicationService.StartUp
                 {
                     logger.LogError(ex, "An error occurred while seeding the database.");
                 }
+            }
+        }
+
+        // Seed nhân sự + cư dân demo (idempotent). Trả về map userName→userID để
+        // module Base liên kết Resident.AuthUserId. Gọi khi bật cờ seed demo.
+        public static async Task<Dictionary<string, int>> SeedDemoUsersAsync(this WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
+            var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("AuthDemoSeeder");
+            try
+            {
+                var context = services.GetRequiredService<AuthDbContext>();
+                return await AuthDataSeeder.SeedDemoUsersAsync(context, services);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Lỗi khi seed nhân sự/cư dân demo.");
+                throw;
             }
         }
     }

@@ -154,5 +154,29 @@ namespace TH.Base.ApplicationService.StartUp
                 }
             }
         }
+
+        // ════════════════════════════════════════════════════════════════════
+        // SeedBaseDataAsync — migrate (nếu cần) & seed dữ liệu mẫu Base/TownHub.
+        //   userMap: userName→userID từ AuthDataSeeder.SeedDemoUsersAsync để cư dân
+        //   liên kết đúng tài khoản Auth. Gọi trong Program.cs sau khi seed users.
+        // ════════════════════════════════════════════════════════════════════
+        public static async Task SeedBaseDataAsync(this WebApplication app, Dictionary<string, int> userMap)
+        {
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
+            var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("BaseSeeder");
+            try
+            {
+                var context = services.GetRequiredService<TownHubDbContext>();
+                logger.LogInformation("Applying migrations for Base/TownHub module...");
+                await context.Database.MigrateAsync();
+                await BaseDataSeeder.SeedAllAsync(context, userMap ?? new Dictionary<string, int>(), logger);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Lỗi khi migrate/seed database của Base/TownHub module.");
+                throw;
+            }
+        }
     }
 }

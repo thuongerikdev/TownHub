@@ -1,0 +1,63 @@
+\contentsline {figure}{Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}{4}{figure.caption.25}%
+\contentsline {figure}{Hình 0.2. Bảng công việc Kanban của nhóm}{4}{figure.caption.26}%
+\contentsline {figure}{Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}{5}{figure.caption.27}%
+\contentsline {figure}{Hình 0.4. Trao đổi công việc trên nhóm chat}{5}{figure.caption.28}%
+\contentsline {figure}{Hình 0.5. Biên bản họp nhóm (bản mẫu)}{6}{figure.caption.29}%
+\contentsline {figure}{Hình 1.1. Trang chủ nền tảng Building Care (S-TECH)}{11}{figure.caption.39}%
+\contentsline {figure}{Hình 1.2. Thông cáo triển khai Building Care tại FLC Twin Towers}{12}{figure.caption.40}%
+\contentsline {figure}{Hình 1.3. Landsoft Control triển khai cho Xuân Mai Corp}{14}{figure.caption.41}%
+\contentsline {figure}{Hình 1.4. Geleximco ứng dụng Landsoft Control}{15}{figure.caption.42}%
+\contentsline {figure}{Hình 1.5. Bài báo Tuổi Trẻ về mô hình phí của CyHome}{16}{figure.caption.43}%
+\contentsline {figure}{Hình 1.6. Ứng dụng CyHome PMS cho kỹ thuật viên (Google Play)}{18}{figure.caption.44}%
+\contentsline {figure}{Hình 3.1. Kiến trúc tổng thể hệ thống TownHub}{24}{figure.caption.66}%
+\contentsline {figure}{Hình 3.2. Biểu đồ Use Case tổng quát module Base}{25}{figure.caption.68}%
+\contentsline {figure}{Hình 3.3. Sơ đồ thực thể – liên kết (ERD) schema auth}{27}{figure.caption.70}%
+\contentsline {figure}{Hình 3.4. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}{30}{figure.caption.73}%
+\contentsline {figure}{Hình 3.5. Giao diện màn hình đăng nhập}{31}{figure.caption.74}%
+\contentsline {figure}{Hình 3.7. Giao diện Quản trị tài khoản người dùng}{35}{figure.caption.76}%
+\contentsline {figure}{Hình 3.8. Giao diện Danh mục quyền \& phân quyền theo vai trò (RBAC)}{36}{figure.caption.77}%
+\contentsline {figure}{Hình 3.9. Giao diện Quản lý \& lịch sử thông báo}{37}{figure.caption.79}%
+\contentsline {figure}{Hình 3.6. Giao diện Bảng điều khiển (Dashboard) tổng quan}{38}{figure.caption.82}%
+\contentsline {figure}{Hình 4.1. Biểu đồ Use Case – Quản lý tài sản \& bảo trì}{43}{figure.caption.93}%
+\contentsline {figure}{Hình 4.2. Biểu đồ tuần tự: Ghi tăng tài sản}{45}{figure.caption.94}%
+\contentsline {figure}{Hình 4.3. Lưu đồ nghiệp vụ kế toán tài sản: ghi tăng – khấu hao – thanh lý}{46}{figure.caption.95}%
+\contentsline {figure}{Hình 4.4. Lưu đồ nghiệp vụ: Bảo trì định kỳ (PM/Work Order)}{47}{figure.caption.96}%
+\contentsline {figure}{Hình 4.5. Sơ đồ thực thể – liên kết (ERD) schema asset}{48}{figure.caption.97}%
+\contentsline {figure}{Hình 4.6. Giao diện Danh sách tài sản}{51}{figure.caption.99}%
+\contentsline {figure}{Hình 4.7. Giao diện Chi tiết tài sản (thông số, khấu hao, lịch sử)}{52}{figure.caption.100}%
+\contentsline {figure}{Hình 4.8. Giao diện Lệnh công việc bảo trì (Work Order)}{52}{figure.caption.101}%
+\contentsline {figure}{Hình 4.9. Lưu đồ nghiệp vụ: Kiểm kê kho định kỳ}{54}{figure.caption.107}%
+\contentsline {figure}{Hình 4.10. Lưu đồ nghiệp vụ: Quy trình mua sắm PR $\rightarrow $ PO và OCR hóa đơn}{55}{figure.caption.108}%
+\contentsline {figure}{Biểu đồ tuần tự use case Trích xuất hóa đơn tự động}{58}{figure.caption.110}%
+\contentsline {figure}{Hình 4.11. Biểu đồ Use Case – Kho, Mua sắm và Nhà cung cấp}{59}{figure.caption.113}%
+\contentsline {figure}{Hình 4.12. Sơ đồ thực thể – liên kết (ERD) phân hệ Kho, Mua sắm và Nhà cung cấp}{60}{figure.caption.114}%
+\contentsline {figure}{Hình 4.13. Giao diện Tồn kho vật tư (cảnh báo tồn thấp)}{62}{figure.caption.116}%
+\contentsline {figure}{Hình 4.14. Giao diện Upload OCR hóa đơn}{63}{figure.caption.117}%
+\contentsline {figure}{Hình 4.15. Giao diện Danh sách nhà cung cấp}{63}{figure.caption.118}%
+\contentsline {figure}{Hình 4.16. Kiến trúc pipeline trích xuất hóa đơn của dịch vụ OCR}{65}{figure.caption.120}%
+\contentsline {figure}{Hình 4.17. Luồng AI hai tầng (EasyOCR + VietOCR) so với PaddleOCR hợp nhất}{67}{figure.caption.121}%
+\contentsline {figure}{Hình 4.18. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}{69}{figure.caption.122}%
+\contentsline {figure}{Hình 4.19. Tác động của fine-tune (Sequence và Character accuracy)}{71}{figure.caption.123}%
+\contentsline {figure}{Hình 4.20. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}{71}{figure.caption.124}%
+\contentsline {figure}{Hình 4.21. Độ trễ suy luận (ms/ảnh) và thông lượng (ảnh/giây) trên CPU}{72}{figure.caption.125}%
+\contentsline {figure}{Hình 4.22. Tính bổ trợ giữa các engine (mẫu nào engine nào đọc đúng)}{72}{figure.caption.126}%
+\contentsline {figure}{Hình 4.23. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew).}{74}{figure.caption.127}%
+\contentsline {figure}{Hình 4.24. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng.}{76}{figure.caption.128}%
+\contentsline {figure}{Hình 4.25. Google Cloud Vision AI (API đám mây)}{78}{figure.caption.130}%
+\contentsline {figure}{Hình 4.26. Azure AI Document Intelligence}{78}{figure.caption.131}%
+\contentsline {figure}{Hình 4.27. Amazon Textract}{79}{figure.caption.132}%
+\contentsline {figure}{Hình 4.28. ABBYY FineReader Engine (SDK thương mại)}{80}{figure.caption.133}%
+\contentsline {figure}{Hình 4.29. Tesseract OCR (mã nguồn mở)}{80}{figure.caption.134}%
+\contentsline {figure}{Hình 4.30. PaddleOCR (mã nguồn mở) -- engine được chọn}{81}{figure.caption.135}%
+\contentsline {figure}{Hình 4.30b. Bảng xếp hạng AI công khai OmniDocBench — PaddleOCR dẫn đầu}{84}{figure.caption.136}%
+\contentsline {figure}{Hình 4.31. Lưu đồ nghiệp vụ: Xử lý sự cố và giám sát SLA}{86}{figure.caption.141}%
+\contentsline {figure}{Hình 4.32. Biểu đồ Use Case – Quản lý sự cố và SLA}{88}{figure.caption.144}%
+\contentsline {figure}{Hình 4.33. Sơ đồ trạng thái vòng đời ticket sự cố}{89}{figure.caption.145}%
+\contentsline {figure}{Hình 4.34. Sơ đồ thực thể – liên kết (ERD) phân hệ Quản lý sự cố \& SLA}{90}{figure.caption.146}%
+\contentsline {figure}{Hình 4.35. Giao diện Danh sách phiếu sự cố (CM)}{92}{figure.caption.148}%
+\contentsline {figure}{Hình 4.36. Giao diện Bảng theo dõi SLA}{93}{figure.caption.149}%
+\contentsline {figure}{Hình 5.1. Giao diện Quản trị Tài khoản người dùng}{95}{figure.caption.155}%
+\contentsline {figure}{Hình 5.2. Giao diện Vai trò \& phân quyền (RBAC)}{95}{figure.caption.156}%
+\contentsline {figure}{Hình 5.3. Nhật ký lỗi \& kiểm thử trên Excel (sheet Lỗi Base)}{97}{figure.caption.159}%
+\contentsline {figure}{Hình PL.1. Đánh đổi chính xác – tốc độ giữa ba engine OCR}{131}{figure.caption.192}%
+\contentsline {figure}{Hình PL.2. Radar tổng hợp ba engine OCR}{132}{figure.caption.193}%

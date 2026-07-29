@@ -12,6 +12,7 @@ import {
   type ChecklistTemplateItemResponse, type CreateWorkOrderInput,
 } from '@/lib/api';
 import { useApi, useApiList } from '@/lib/use-api';
+import { useAuth } from '@/contexts/AuthContext';
 import { LoadingState, ErrorState, EntityModal, Field } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,8 @@ export default function AssetDetail() {
   const asset = assetQ.data;
 
   // Dữ liệu các tab (thật)
+  const { hasPermission } = useAuth();
+  const mayCreateWo = hasPermission("workorder.create");
   const woQ = useApiList<WorkOrderResponse>(() => woApi.getAll({ assetId }), { deps: [assetId], enabled: !!assetId });
   const costQ = useApiList<CostTrackingResponse>(() => costTracking.getByAsset(assetId), { deps: [assetId], enabled: !!assetId });
   const deprQ = useApiList<AssetDepreciationLogResponse>(() => assetDepreciation.getByAsset(assetId), { deps: [assetId], enabled: !!assetId });
@@ -171,9 +174,11 @@ export default function AssetDetail() {
           <button onClick={() => setQrOpen(true)} className="flex items-center gap-1.5 px-3 py-2 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-950 text-sm font-medium transition-colors">
             <QrCode className="w-4 h-4" /> QR Code
           </button>
-          <button onClick={openWo} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
-            <Wrench className="w-4 h-4" /> Tạo WO
-          </button>
+          {mayCreateWo && (
+            <button onClick={openWo} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
+              <Wrench className="w-4 h-4" /> Tạo WO
+            </button>
+          )}
         </div>
       </div>
 
@@ -367,7 +372,7 @@ export default function AssetDetail() {
               <SelectContent>{['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="Ước tính (giờ)"><Input type="number" value={woForm.estimatedHours} onChange={(e) => setWoForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" /></Field>
+          <Field label="Ước tính (giờ)"><Input type="number" min="0" value={woForm.estimatedHours} onChange={(e) => setWoForm((f) => ({ ...f, estimatedHours: e.target.value }))} placeholder="3" /></Field>
           <Field label="Ngày thực hiện"><Input type="date" value={woForm.scheduledDate} onChange={(e) => setWoForm((f) => ({ ...f, scheduledDate: e.target.value }))} /></Field>
           <Field label="Hạn hoàn thành"><Input type="date" value={woForm.dueDate} onChange={(e) => setWoForm((f) => ({ ...f, dueDate: e.target.value }))} /></Field>
           <Field label="Mô tả công việc" className="col-span-2"><Textarea rows={3} value={woForm.description} onChange={(e) => setWoForm((f) => ({ ...f, description: e.target.value }))} /></Field>

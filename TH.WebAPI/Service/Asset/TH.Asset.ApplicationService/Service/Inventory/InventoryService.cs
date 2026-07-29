@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -49,6 +49,29 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             var codes = await db.PurchaseOrders
                 .Where(x => x.poCode.StartsWith(prefix))
                 .Select(x => x.poCode)
+                .ToListAsync();
+
+            int next = 1;
+            foreach (var c in codes)
+            {
+                var suffix = c.Substring(prefix.Length);
+                if (int.TryParse(suffix, out int n) && n >= next) next = n + 1;
+            }
+            return $"{prefix}{next:D3}";
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Helper sinh mã Phiếu kiểm kê kho:  STK-{yyyyMM}-{NNN}  (server sinh)
+    // ════════════════════════════════════════════════════════════════════════
+    internal static class StockTakeCodeGen
+    {
+        public static async Task<string> NextCodeAsync(AssetDbContext db, int year, int month)
+        {
+            var prefix = $"STK-{year}{month:D2}-";
+            var codes = await db.StockTakes
+                .Where(x => x.stkCode.StartsWith(prefix))
+                .Select(x => x.stkCode)
                 .ToListAsync();
 
             int next = 1;
@@ -229,6 +252,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<MaterialResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<List<MaterialResponse>>> GetLowStockAsync(Guid? warehouseId = null);
         Task<ResponseDto<List<InventoryLevelResponse>>> GetInventoryLevelsAsync(Guid? warehouseId = null, Guid? materialId = null);
+        Task<ResponseDto<List<MaterialCategoryResponse>>> GetCategoriesAsync();
     }
 
     public class MaterialService : AssetServiceBase, IMaterialService
@@ -451,6 +475,34 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
+        public async Task<ResponseDto<List<MaterialCategoryResponse>>> GetCategoriesAsync()
+        {
+            try
+            {
+                // Danh mục vật tư được seed sẵn nhưng trước đây không có endpoint đọc,
+                // khiến màn Danh mục vật tư bế tắc khi chưa có vật tư nào (BUG-13).
+                var result = await _dbContext.MaterialCategories
+                    .Include(x => x.parentCategory)
+                    .OrderBy(x => x.code)
+                    .Select(x => new MaterialCategoryResponse
+                    {
+                        id         = x.id,
+                        code       = x.code,
+                        name       = x.name,
+                        parentId   = x.parentId,
+                        parentName = x.parentCategory != null ? x.parentCategory.name : null,
+                    })
+                    .ToListAsync();
+
+                return ResponseConst.Success($"Tìm thấy {result.Count} danh mục vật tư.", result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh mục vật tư.");
+                return ResponseConst.Error<List<MaterialCategoryResponse>>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
         private static MaterialResponse MapToResponse(Material x) => new()
         {
             id                = x.id,
@@ -654,7 +706,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> CreateAsync(CreatePurchaseRequestDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdatePurchaseRequestDto request);
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
-        Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null);
+        Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null, int? requestedByUserId = null);
         Task<ResponseDto<PurchaseRequestResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> SubmitAsync(Guid id);
         Task<ResponseDto<bool>> ApproveAsync(Guid id, Guid approvedBy);
@@ -698,7 +750,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     requestedByName   = ticket.assignedToName;
                 }
 
-                _dbContext.PurchaseRequests.Add(new PurchaseRequest
+                var pr = new PurchaseRequest
                 {
                     prCode       = prCode,
                     ticketId     = request.ticketId,
@@ -711,7 +763,27 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     justification = request.justification,
                     priority     = request.priority,
                     neededByDate = request.neededByDate
-                });
+                };
+                _dbContext.PurchaseRequests.Add(pr);
+
+                // Dòng vật tư đề xuất (nếu client gửi kèm) — thêm cùng giao dịch, tránh phải gọi add-item riêng.
+                if (request.items != null && request.items.Count > 0)
+                {
+                    var matIds = request.items.Select(i => i.materialId).Distinct().ToList();
+                    var validMat = await _dbContext.Materials.Where(m => matIds.Contains(m.id)).Select(m => m.id).ToListAsync();
+                    foreach (var line in request.items)
+                    {
+                        if (!validMat.Contains(line.materialId))
+                            return ResponseConst.Error<bool>(400, "Có vật tư không tồn tại trong danh sách đề xuất.");
+                        _dbContext.PurchaseRequestItems.Add(new PurchaseRequestItem
+                        {
+                            prId              = pr.id,
+                            materialId        = line.materialId,
+                            targetWarehouseId = line.targetWarehouseId
+                        });
+                    }
+                }
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Tạo phiếu đề xuất mua hàng thành công.", true);
             }
@@ -770,7 +842,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null)
+        public async Task<ResponseDto<List<PurchaseRequestResponse>>> GetAllAsync(string? status = null, Guid? ticketId = null, Guid? woId = null, int? requestedByUserId = null)
         {
             try
             {
@@ -782,6 +854,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 if (!string.IsNullOrEmpty(status)) query = query.Where(x => x.status == status);
                 if (ticketId.HasValue)             query = query.Where(x => x.ticketId == ticketId.Value);
                 if (woId.HasValue)                 query = query.Where(x => x.woId     == woId.Value);
+                // KTV chỉ thấy phiếu đề xuất do chính mình lập.
+                if (requestedByUserId.HasValue)    query = query.Where(x => x.requestedByUserId == requestedByUserId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.createdAt)
@@ -1028,7 +1102,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 var now = DateTime.UtcNow;
                 var poCode = await PurchaseOrderCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
 
-                _dbContext.PurchaseOrders.Add(new PurchaseOrder
+                var po = new PurchaseOrder
                 {
                     poCode           = poCode,
                     prId             = request.prId,
@@ -1040,7 +1114,27 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     paymentTerms     = request.paymentTerms,
                     notes            = request.notes,
                     createdBy        = request.createdBy
-                });
+                };
+                _dbContext.PurchaseOrders.Add(po);
+
+                // Dòng vật tư của đơn (nếu client gửi kèm) — thêm cùng giao dịch.
+                if (request.items != null && request.items.Count > 0)
+                {
+                    var matIds = request.items.Select(i => i.materialId).Distinct().ToList();
+                    var validMat = await _dbContext.Materials.Where(m => matIds.Contains(m.id)).Select(m => m.id).ToListAsync();
+                    foreach (var line in request.items)
+                    {
+                        if (!validMat.Contains(line.materialId))
+                            return ResponseConst.Error<bool>(400, "Có vật tư không tồn tại trong danh sách đơn hàng.");
+                        _dbContext.PurchaseOrderItems.Add(new PurchaseOrderItem
+                        {
+                            poId              = po.id,
+                            materialId        = line.materialId,
+                            targetWarehouseId = line.targetWarehouseId
+                        });
+                    }
+                }
+
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Tạo đơn đặt hàng thành công.", true);
             }
@@ -1250,7 +1344,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
         Task<ResponseDto<List<InvoiceResponse>>> GetAllAsync(Guid? vendorId = null, string? paymentStatus = null);
         Task<ResponseDto<InvoiceResponse>> GetByIdAsync(Guid id);
-        Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, Guid confirmedBy);
+        Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null, int? confirmedByUserId = null, string? confirmedByName = null);
         Task<ResponseDto<bool>> AddItemAsync(CreateInvoiceItemDto request);
         Task<ResponseDto<List<InvoiceItemResponse>>> GetItemsAsync(Guid invoiceId);
     }
@@ -1330,6 +1424,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                 entity.paidDate      = request.paidDate;
                 entity.paymentMethod = request.paymentMethod;
                 entity.confirmedBy   = request.confirmedBy;
+                entity.confirmedByUserId = request.confirmedByUserId;
+                entity.confirmedByName   = request.confirmedByName;
                 entity.confirmedAt   = request.confirmedAt;
                 entity.notes         = request.notes;
 
@@ -1412,7 +1508,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             }
         }
 
-        public async Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, Guid confirmedBy)
+        public async Task<ResponseDto<bool>> MarkPaidAsync(Guid id, string paymentMethod, DateTime? paidDate = null, string? notes = null, Guid? confirmedBy = null, int? confirmedByUserId = null, string? confirmedByName = null)
         {
             try
             {
@@ -1424,10 +1520,16 @@ namespace TH.Asset.ApplicationService.Service.Inventory
                     return ResponseConst.Error<bool>(400, "Hóa đơn đã được thanh toán.");
 
                 entity.paymentStatus = "PAID";
-                entity.paidDate      = DateTime.UtcNow;
+                // Nhận ngày thanh toán do người dùng chọn (mặc định hôm nay); DbContext ép UTC.
+                entity.paidDate      = paidDate ?? DateTime.UtcNow;
                 entity.paymentMethod = paymentMethod;
-                entity.confirmedBy   = confirmedBy;
+                entity.confirmedBy   = confirmedBy;   // Guid? — giữ lại cho dữ liệu seed cũ
+                // Người xác nhận lấy theo tài khoản Auth (id + tên), không phải chuỗi gõ tay.
+                entity.confirmedByUserId = confirmedByUserId;
+                entity.confirmedByName   = confirmedByName;
                 entity.confirmedAt   = DateTime.UtcNow;
+                // notes chỉ còn mã giao dịch / ghi chú nghiệp vụ.
+                if (!string.IsNullOrWhiteSpace(notes)) entity.notes = notes;
                 entity.status        = "PAID";
 
                 await _dbContext.SaveChangesAsync();
@@ -1516,6 +1618,8 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             paymentStatus = x.paymentStatus,
             paymentMethod = x.paymentMethod,
             confirmedBy   = x.confirmedBy,
+            confirmedByUserId = x.confirmedByUserId,
+            confirmedByName   = x.confirmedByName,
             confirmedAt   = x.confirmedAt,
             notes         = x.notes
         };
@@ -1542,9 +1646,9 @@ namespace TH.Asset.ApplicationService.Service.Inventory
         {
             try
             {
-                // Hợp lệ: "pdf" (đọc lớp text hóa đơn điện tử) hoặc 3 engine OCR; lạ → "gemini".
+                // Hợp lệ: 2 engine OCR tự chủ ("paddleocr" | "vietocr"); giá trị lạ → "paddleocr".
                 var engine = (request.ocrEngine ?? "").Trim().ToLowerInvariant();
-                if (engine != "vietocr" && engine != "paddleocr" && engine != "pdf") engine = "gemini";
+                if (engine != "vietocr" && engine != "paddleocr") engine = "paddleocr";
 
                 var job = new OcrJob
                 {
@@ -1650,6 +1754,222 @@ namespace TH.Asset.ApplicationService.Service.Inventory
             submittedBy     = x.submittedBy,
             submittedByName = x.submittedByName,
             submittedAt     = x.submittedAt
+        };
+    }
+
+    // ============================================================
+    // STOCK TAKE SERVICE (Kiểm kê kho)
+    // ============================================================
+    public interface IStockTakeService
+    {
+        Task<ResponseDto<StockTakeResponse>> CreateAsync(CreateStockTakeDto request);
+        Task<ResponseDto<List<StockTakeResponse>>> GetAllAsync(Guid? warehouseId = null, string? status = null);
+        Task<ResponseDto<StockTakeResponse>> GetByIdAsync(Guid id);
+    }
+
+    public class StockTakeService : AssetServiceBase, IStockTakeService
+    {
+        public StockTakeService(ILogger<StockTakeService> logger, AssetDbContext dbContext)
+            : base(logger, dbContext) { }
+
+        public async Task<ResponseDto<StockTakeResponse>> CreateAsync(CreateStockTakeDto request)
+        {
+            try
+            {
+                if (request.lines == null || request.lines.Count == 0)
+                    return ResponseConst.Error<StockTakeResponse>(400, "Phiếu kiểm kê phải có ít nhất một dòng vật tư.");
+
+                var warehouseExists = await _dbContext.Warehouses.AnyAsync(x => x.id == request.warehouseId);
+                if (!warehouseExists)
+                    return ResponseConst.Error<StockTakeResponse>(400, "Kho không tồn tại.");
+
+                // Chống trùng vật tư trong cùng phiếu
+                if (request.lines.GroupBy(l => l.materialId).Any(g => g.Count() > 1))
+                    return ResponseConst.Error<StockTakeResponse>(400, "Có vật tư bị lặp trong phiếu kiểm kê.");
+
+                var materialIds = request.lines.Select(l => l.materialId).Distinct().ToList();
+                var materials = await _dbContext.Materials
+                    .Where(m => materialIds.Contains(m.id))
+                    .ToDictionaryAsync(m => m.id, m => m);
+                foreach (var mid in materialIds)
+                    if (!materials.ContainsKey(mid))
+                        return ResponseConst.Error<StockTakeResponse>(400, "Có vật tư không tồn tại trong hệ thống.");
+
+                var now = DateTime.UtcNow;
+                var stkCode = await StockTakeCodeGen.NextCodeAsync(_dbContext, now.Year, now.Month);
+
+                var stockTake = new StockTake
+                {
+                    stkCode           = stkCode,
+                    warehouseId       = request.warehouseId,
+                    period            = request.period,
+                    countDate         = request.countDate ?? now,
+                    performedByUserId = request.performedByUserId,
+                    performedByName   = request.performedByName,
+                    status            = "COMPLETED",
+                    notes             = request.notes,
+                    createdAt         = now,
+                    lines             = new List<StockTakeLine>()
+                };
+
+                int matched = 0, diffCount = 0;
+                decimal totalDiffValue = 0;
+
+                foreach (var l in request.lines)
+                {
+                    var unitPrice = l.unitPrice ?? materials[l.materialId].unitPrice;
+                    var diff      = l.countedQty - l.systemQty;
+                    var diffValue = unitPrice.HasValue ? diff * unitPrice.Value : (decimal?)null;
+
+                    if (diff == 0) matched++;
+                    else { diffCount++; totalDiffValue += diffValue ?? 0; }
+
+                    stockTake.lines.Add(new StockTakeLine
+                    {
+                        materialId = l.materialId,
+                        systemQty  = l.systemQty,
+                        countedQty = l.countedQty,
+                        diff       = diff,
+                        unitPrice  = unitPrice,
+                        diffValue  = diffValue,
+                        note       = l.note
+                    });
+                }
+
+                stockTake.totalItems     = request.lines.Count;
+                stockTake.matchedItems   = matched;
+                stockTake.diffItems      = diffCount;
+                stockTake.totalDiffValue = totalDiffValue;
+
+                // Add trước để EF sinh Guid id (client-side) → dùng làm referenceId cho giao dịch.
+                _dbContext.StockTakes.Add(stockTake);
+
+                // Với mỗi dòng lệch: sinh giao dịch điều chỉnh (ADJUST) + cập nhật tồn kho.
+                // referenceId = stockTake.id (Guid hợp lệ) — không còn lỗi 400 như cách cũ.
+                int adjustSeq = 0;
+                foreach (var line in stockTake.lines.Where(x => x.diff != 0))
+                {
+                    adjustSeq++;
+                    var txnCode = diffCount > 1 ? $"{stkCode}-{adjustSeq}" : stkCode;
+
+                    _dbContext.InventoryTransactions.Add(new InventoryTransaction
+                    {
+                        txnCode       = txnCode,
+                        warehouseId   = request.warehouseId,
+                        materialId    = line.materialId,
+                        txnType       = "ADJUST",
+                        quantity      = line.diff,
+                        unitCost      = line.unitPrice,
+                        totalCost     = line.diffValue.HasValue ? Math.Abs(line.diffValue.Value) : (decimal?)null,
+                        referenceType = "STOCK_TAKE",
+                        referenceId   = stockTake.id,
+                        notes         = string.IsNullOrWhiteSpace(line.note) ? $"Kiểm kê {request.period}".Trim() : line.note,
+                        performedAt   = now
+                    });
+
+                    var level = await _dbContext.InventoryLevels
+                        .FirstOrDefaultAsync(x => x.warehouseId == request.warehouseId && x.materialId == line.materialId);
+                    if (level == null)
+                    {
+                        level = new InventoryLevel { warehouseId = request.warehouseId, materialId = line.materialId, quantityOnHand = 0 };
+                        _dbContext.InventoryLevels.Add(level);
+                    }
+                    level.quantityOnHand += line.diff;   // âm = giảm tồn, dương = tăng tồn
+                }
+
+                await _dbContext.SaveChangesAsync();
+
+                var response = await BuildResponseAsync(stockTake.id);
+                return ResponseConst.Success("Tạo phiếu kiểm kê thành công.", response!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo phiếu kiểm kê.");
+                return ResponseConst.Error<StockTakeResponse>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        public async Task<ResponseDto<List<StockTakeResponse>>> GetAllAsync(Guid? warehouseId = null, string? status = null)
+        {
+            try
+            {
+                var query = _dbContext.StockTakes
+                    .Include(x => x.warehouse)
+                    .Include(x => x.lines!).ThenInclude(l => l.material)
+                    .AsQueryable();
+
+                if (warehouseId.HasValue)            query = query.Where(x => x.warehouseId == warehouseId.Value);
+                if (!string.IsNullOrEmpty(status))   query = query.Where(x => x.status == status);
+
+                var list = await query.OrderByDescending(x => x.countDate).ToListAsync();
+                var result = list.Select(MapResponse).ToList();
+                return ResponseConst.Success("Lấy danh sách phiếu kiểm kê thành công.", result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách phiếu kiểm kê.");
+                return ResponseConst.Error<List<StockTakeResponse>>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        public async Task<ResponseDto<StockTakeResponse>> GetByIdAsync(Guid id)
+        {
+            try
+            {
+                var response = await BuildResponseAsync(id);
+                if (response == null)
+                    return ResponseConst.Error<StockTakeResponse>(404, "Không tìm thấy phiếu kiểm kê.");
+                return ResponseConst.Success("Lấy chi tiết phiếu kiểm kê thành công.", response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy chi tiết phiếu kiểm kê. ID: {Id}", id);
+                return ResponseConst.Error<StockTakeResponse>(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
+        private async Task<StockTakeResponse?> BuildResponseAsync(Guid id)
+        {
+            var entity = await _dbContext.StockTakes
+                .Include(x => x.warehouse)
+                .Include(x => x.lines!).ThenInclude(l => l.material)
+                .FirstOrDefaultAsync(x => x.id == id);
+            return entity == null ? null : MapResponse(entity);
+        }
+
+        private static StockTakeResponse MapResponse(StockTake x) => new StockTakeResponse
+        {
+            id                = x.id,
+            stkCode           = x.stkCode,
+            warehouseId       = x.warehouseId,
+            warehouseName     = x.warehouse != null ? x.warehouse.name : null,
+            period            = x.period,
+            countDate         = x.countDate,
+            performedByUserId = x.performedByUserId,
+            performedByName   = x.performedByName,
+            status            = x.status,
+            totalItems        = x.totalItems,
+            matchedItems      = x.matchedItems,
+            diffItems         = x.diffItems,
+            totalDiffValue    = x.totalDiffValue,
+            notes             = x.notes,
+            createdAt         = x.createdAt,
+            lines             = (x.lines ?? new List<StockTakeLine>())
+                .OrderByDescending(l => l.diff != 0)
+                .Select(l => new StockTakeLineResponse
+                {
+                    id            = l.id,
+                    materialId    = l.materialId,
+                    materialCode  = l.material != null ? l.material.materialCode : null,
+                    materialName  = l.material != null ? l.material.name : null,
+                    unitOfMeasure = l.material != null ? l.material.unitOfMeasure : null,
+                    systemQty     = l.systemQty,
+                    countedQty    = l.countedQty,
+                    diff          = l.diff,
+                    unitPrice     = l.unitPrice,
+                    diffValue     = l.diffValue,
+                    note          = l.note
+                }).ToList()
         };
     }
 }

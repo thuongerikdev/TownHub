@@ -1,0 +1,68 @@
+<mxfile host="app.diagrams.net" version="24.7.17">
+  <diagram name="AI-Pipeline" id="aipipe-1">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Nhãn lớp -->
+        <mxCell id="lb1" value="ĐẦU VÀO" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="35" width="150" height="20" as="geometry"/></mxCell>
+        <mxCell id="lb2" value="TIỀN XỬ LÝ" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="110" width="150" height="20" as="geometry"/></mxCell>
+        <mxCell id="lb3" value="CHỌN ENGINE" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="185" width="150" height="20" as="geometry"/></mxCell>
+        <mxCell id="lb4" value="PHÁT HIỆN&#10;(Detection)" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="285" width="150" height="30" as="geometry"/></mxCell>
+        <mxCell id="lb5" value="NHẬN DẠNG&#10;(Recognition)" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="440" width="150" height="30" as="geometry"/></mxCell>
+        <mxCell id="lb6" value="HẬU XỬ LÝ&#10;(Parse)" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="640" width="150" height="30" as="geometry"/></mxCell>
+        <mxCell id="lb7" value="ĐẦU RA" style="text;html=1;fontStyle=1;fontColor=#2E5A88;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="960" width="150" height="20" as="geometry"/></mxCell>
+
+        <!-- Luồng chính trên -->
+        <mxCell id="inp" value="Ảnh / PDF hóa đơn" style="rounded=1;whiteSpace=wrap;html=1;arcSize=50;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="620" y="30" width="260" height="45" as="geometry"/></mxCell>
+        <mxCell id="pre" value="Tiền xử lý (_to_images):&#10;PDF → ảnh 200 dpi  •  ảnh → RGB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="620" y="105" width="260" height="45" as="geometry"/></mxCell>
+        <mxCell id="sel" value="Chọn engine (ocrEngine từ .NET)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="640" y="175" width="220" height="70" as="geometry"/></mxCell>
+
+        <!-- Cột VIETOCR -->
+        <mxCell id="v1" value="Phát hiện dòng: EasyOCR / CRAFT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="285" width="300" height="45" as="geometry"/></mxCell>
+        <mxCell id="v2" value="Cắt dòng (crop từng ô chữ)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="360" width="300" height="40" as="geometry"/></mxCell>
+        <mxCell id="v3" value="Nhận dạng: VietOCR&#10;(VGG19 → Transformer)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="430" width="300" height="50" as="geometry"/></mxCell>
+
+        <!-- Cột PADDLE -->
+        <mxCell id="p1" value="Phát hiện: PaddleOCR DBNet" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="980" y="285" width="300" height="45" as="geometry"/></mxCell>
+        <mxCell id="p2" value="Xoay góc: angle classifier (cls)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="980" y="360" width="300" height="40" as="geometry"/></mxCell>
+        <mxCell id="p3" value="Nhận dạng: SVTR_LCNet&#10;(PP-OCRv4, fine-tune)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="980" y="430" width="300" height="50" as="geometry"/></mxCell>
+
+        <!-- Hợp nhất output OCR -->
+        <mxCell id="lines" value="Danh sách ô OCR:  { text, box = toạ độ hộp, prob }" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="600" y="540" width="680" height="45" as="geometry"/></mxCell>
+
+        <!-- Parse pipeline -->
+        <mxCell id="d" value="① KHỬ NGHIÊNG (deskew): ước lượng độ nghiêng từ hàng tiêu đề (hồi quy) → nắn y′ = y − a·x" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc0000;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="700" y="630" width="480" height="55" as="geometry"/></mxCell>
+        <mxCell id="r1" value="② Gom hàng theo y′ (phân cụm 1-D)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="700" y="700" width="480" height="40" as="geometry"/></mxCell>
+        <mxCell id="r2" value="③ Trích TRƯỜNG: nhãn + regex (số HĐ, ngày, MST, tiền hàng, thuế, tổng)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="700" y="755" width="480" height="45" as="geometry"/></mxCell>
+        <mxCell id="r3" value="④ Trích BẢNG: gán ô vào cột theo tâm-x → line items" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="700" y="815" width="480" height="45" as="geometry"/></mxCell>
+        <mxCell id="r4" value="⑤ Chuẩn hóa số (_num) + fallback tổng = subtotal + thuế" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="700" y="875" width="480" height="45" as="geometry"/></mxCell>
+
+        <!-- Output -->
+        <mxCell id="out" value="ĐẦU RA: JSON { fields, lineItems, confidence }" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="620" y="955" width="300" height="50" as="geometry"/></mxCell>
+        <mxCell id="net" value="Backend .NET: lưu Invoice / InvoiceItem + màn xác nhận" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;" vertex="1" parent="1"><mxGeometry x="620" y="1035" width="300" height="45" as="geometry"/></mxCell>
+
+        <!-- Cạnh -->
+        <mxCell id="ea" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="inp" target="pre"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="eb" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="pre" target="sel"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ev" value="vietocr" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="sel" target="v1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ep" value="paddleocr" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontStyle=1;" edge="1" parent="1" source="sel" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ev1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="v1" target="v2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ev2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="v2" target="v3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ep1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="p1" target="p2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ep2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="p2" target="p3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="evl" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="v3" target="lines"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="epl" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="p3" target="lines"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="eld" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="lines" target="d"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ed1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="d" target="r1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ed2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r1" target="r2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ed3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r2" target="r3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ed4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r3" target="r4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edo" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="r4" target="out"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="eout" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="out" target="net"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ehy" value="HYBRID (paddledet_viet):&#10;DBNet → VietOCR" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;strokeColor=#9673a6;strokeWidth=2;fontColor=#9673a6;fontStyle=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="p1" target="v3"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

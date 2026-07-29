@@ -618,11 +618,25 @@ export default function UsersPage() {
     setLoading(true);
     setError("");
     try {
-      const res = isAdmin ? await users.getAllAdmin() : await users.getAll();
-      if (res.errorCode === 200 && res.data) {
-        setUserList(res.data);
+      const tag = (list: GetUserResponse[] | undefined, scope: string) =>
+        (list ?? []).map((u) => ({ ...u, scope }));
+
+      if (isAdmin) {
+        // Admin thấy TẤT CẢ: nhân sự/BQL (scope!=user) + cư dân (scope=user).
+        const [staffRes, resRes] = await Promise.all([
+          users.getAllAdmin(),     // /user/admin/getAllUsers  → nhân sự
+          users.getAllResidents(), // /user/getAllUsers         → cư dân
+        ]);
+        if (staffRes.errorCode !== 200 && resRes.errorCode !== 200) {
+          setError(staffRes.errorMessage || resRes.errorMessage || "Không tải được danh sách người dùng");
+        } else {
+          setUserList([...tag(staffRes.data, "staff"), ...tag(resRes.data, "user")]);
+        }
       } else {
-        setError(res.errorMessage || "Không tải được danh sách người dùng");
+        // Nhân sự thường (không phải admin): chỉ quản lý cư dân.
+        const res = await users.getAllResidents();
+        if (res.errorCode === 200 && res.data) setUserList(tag(res.data, "user"));
+        else setError(res.errorMessage || "Không tải được danh sách người dùng");
       }
     } catch {
       setError("Lỗi kết nối server");
@@ -740,6 +754,7 @@ export default function UsersPage() {
                 <tr>
                   <th className="px-6 py-4 font-medium tracking-wider">Tài khoản</th>
                   <th className="px-6 py-4 font-medium tracking-wider">Username</th>
+                  <th className="px-6 py-4 font-medium tracking-wider">Loại</th>
                   <th className="px-6 py-4 font-medium tracking-wider">Email xác thực</th>
                   <th className="px-6 py-4 font-medium tracking-wider">Trạng thái</th>
                   <th className="px-6 py-4 font-medium tracking-wider text-right">Thao tác</th>
@@ -776,6 +791,15 @@ export default function UsersPage() {
                         <Shield className="w-4 h-4 text-zinc-500" />
                         <span className="font-mono text-sm">{user.userName}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                        user.scope === "user"
+                          ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      }`}>
+                        {user.scope === "user" ? "Cư dân" : "Nhân sự"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${

@@ -65,6 +65,8 @@ namespace TH.Asset.Infrastructure.Database
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
         public DbSet<OcrJob> OcrJobs { get; set; }
+        public DbSet<StockTake> StockTakes { get; set; }
+        public DbSet<StockTakeLine> StockTakeLines { get; set; }
 
         // ── Vendor ────────────────────────────────────────────────────────────
         public DbSet<VendorEntity> Vendors { get; set; }
@@ -266,6 +268,30 @@ namespace TH.Asset.Infrastructure.Database
             modelBuilder.Entity<Invoice>()
                 .HasIndex(x => x.invoiceCode).IsUnique();
 
+            // Kiểm kê kho: mã phiếu duy nhất; xoá phiếu → xoá dòng (Cascade),
+            // giữ Material (Restrict) để tránh vòng cascade.
+            modelBuilder.Entity<StockTake>(b =>
+            {
+                b.HasIndex(x => x.stkCode).IsUnique();
+                b.HasOne(x => x.warehouse)
+                    .WithMany()
+                    .HasForeignKey(x => x.warehouseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<StockTakeLine>(b =>
+            {
+                b.HasOne(x => x.stockTake)
+                    .WithMany(s => s.lines)
+                    .HasForeignKey(x => x.stockTakeId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.material)
+                    .WithMany()
+                    .HasForeignKey(x => x.materialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             // ── Vendor ──
             modelBuilder.Entity<VendorEntity>()
                 .HasIndex(x => x.vendorCode).IsUnique();
@@ -380,6 +406,19 @@ namespace TH.Asset.Infrastructure.Database
             // OcrJob confidence score
             modelBuilder.Entity<OcrJob>()
                 .Property(x => x.confidenceScore).HasColumnType("numeric(5,4)");
+
+            // Kiểm kê kho
+            modelBuilder.Entity<StockTake>()
+                .Property(x => x.totalDiffValue).HasColumnType("numeric(18,0)");
+
+            modelBuilder.Entity<StockTakeLine>(b =>
+            {
+                b.Property(x => x.systemQty).HasColumnType("numeric(12,3)");
+                b.Property(x => x.countedQty).HasColumnType("numeric(12,3)");
+                b.Property(x => x.diff).HasColumnType("numeric(12,3)");
+                b.Property(x => x.unitPrice).HasColumnType("numeric(14,0)");
+                b.Property(x => x.diffValue).HasColumnType("numeric(18,0)");
+            });
 
             // VendorContract
             modelBuilder.Entity<VendorContract>()

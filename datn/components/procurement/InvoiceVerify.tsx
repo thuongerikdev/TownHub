@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import {
   invoices, ocrJobs, vendorsApi, purchaseOrders, materials, parseOcrPayload,
   type OcrJobResponse, type VendorResponse, type PurchaseOrderResponse, type MaterialResponse,
+  type PurchaseOrderItemResponse,
 } from "@/lib/api";
 import { useApi, useApiList } from "@/lib/use-api";
 import { mockOcrJobs, mockPurchaseOrders } from "@/lib/mock/procurement";
@@ -66,8 +67,8 @@ function bestMaterialId(name: string, mats: MaterialResponse[]): string {
 
 function genInvoiceCode(): string {
   const y = new Date().getFullYear();
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `INV-${y}-${rand}`;
+  // Mốc thời gian (base36) bảo đảm duy nhất, tránh trùng như random 4 số cũ.
+  return `INV-${y}-${Date.now().toString(36).slice(-6).toUpperCase()}`;
 }
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -121,6 +122,13 @@ export default function InvoiceVerify() {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([{ name: "", quantity: 1, unitPrice: 0, materialId: "" }]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Dòng vật tư của PO — chỉ nạp khi đã chọn PO, dùng để đối chiếu vật tư PO yêu cầu
+  // với vật tư AI đọc được từ hóa đơn.
+  const poItemsQ = useApiList<PurchaseOrderItemResponse>(
+    () => purchaseOrders.getItems(poId),
+    { deps: [poId], enabled: poId !== NONE, mock: [] },
+  );
 
   // Preselect mapped PO from ?po= (avoid useSearchParams — Next 16 Suspense rule).
   useEffect(() => {
@@ -197,6 +205,33 @@ export default function InvoiceVerify() {
   const selectedVendor = vendorsQ.items.find((v) => v.id === vendorId);
   const poVendor = selectedPo ? vendorsQ.items.find((v) => v.id === selectedPo.vendorId) : undefined;
 
+  const matName = (id: string) =>
+    materialsQ.items.find((m) => m.id === id)?.name ?? id;
+
+  // Đối chiếu VẬT TƯ: tập vật tư PO yêu cầu so với tập vật tư đã khớp trên hóa đơn.
+  //  • thiếu  = PO yêu cầu nhưng hóa đơn không có → giao thiếu / OCR đọc sót.
+  //  • ngoài  = hóa đơn có nhưng PO không yêu cầu → giao sai / tính thêm hàng.
+  // Dòng hóa đơn chưa khớp vật tư không tính vào đây (đã có cảnh báo "chưa khớp" riêng).
+  const materialRecon = useMemo(() => {
+    if (!selectedPo) return null;
+    const poItems = poItemsQ.items.filter((i) => i.materialId);
+    if (poItems.length === 0) return { pending: true, missing: [], extra: [], matched: 0, poCount: 0 };
+
+    const poIds = new Set(poItems.map((i) => i.materialId));
+    const invIds = new Set(items.map((i) => i.materialId).filter(Boolean));
+
+    const missing = poItems
+      .filter((i) => !invIds.has(i.materialId))
+      .map((i) => i.materialName?.trim() || matName(i.materialId));
+    const extra = [...invIds]
+      .filter((id) => !poIds.has(id))
+      .map((id) => matName(id));
+    const matched = [...invIds].filter((id) => poIds.has(id)).length;
+
+    return { pending: false, missing, extra, matched, poCount: poIds.size };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPo, poItemsQ.items, items, materialsQ.items]);
+
   // Đối chiếu (gateway "Dữ liệu khớp & Hợp lệ?")
   const recon = useMemo(() => {
     if (!selectedPo) return null;
@@ -204,9 +239,13 @@ export default function InvoiceVerify() {
     const poTotal = selectedPo.totalAmount ?? null;
     const delta = poTotal != null ? totalAmount - poTotal : null;
     const amountMatch = delta != null ? Math.abs(delta) < 1 : null;
-    const valid = vendorMatch && amountMatch === true;
-    return { vendorMatch, poTotal, delta, amountMatch, valid };
-  }, [selectedPo, vendorId, totalAmount]);
+    // null = PO chưa khai báo dòng vật tư nên không có cơ sở đối chiếu.
+    const materialMatch = !materialRecon || materialRecon.pending
+      ? null
+      : materialRecon.missing.length === 0 && materialRecon.extra.length === 0;
+    const valid = vendorMatch && amountMatch === true && materialMatch !== false;
+    return { vendorMatch, poTotal, delta, amountMatch, materialMatch, valid };
+  }, [selectedPo, vendorId, totalAmount, materialRecon]);
 
   function updateItem(i: number, patch: Partial<LineItem>) {
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
@@ -229,9 +268,17 @@ export default function InvoiceVerify() {
     if (!vendorId) { toast.error("Hãy chọn nhà cung cấp."); return; }
     if (!invoiceCode) { toast.error("Thiếu mã hóa đơn."); return; }
     if (recon && !recon.valid) {
-      const ok = window.confirm(
-        "Dữ liệu chưa khớp hoàn toàn với PO. Bạn vẫn muốn xác nhận hóa đơn?",
-      );
+      const lines = ["Dữ liệu chưa khớp hoàn toàn với PO:"];
+      if (!recon.vendorMatch) lines.push("• Nhà cung cấp khác với PO.");
+      if (recon.amountMatch === false) lines.push("• Tổng tiền lệch so với PO.");
+      if (recon.materialMatch === false && materialRecon) {
+        if (materialRecon.missing.length)
+          lines.push(`• Thiếu ${materialRecon.missing.length} vật tư PO yêu cầu: ${materialRecon.missing.join(", ")}.`);
+        if (materialRecon.extra.length)
+          lines.push(`• Có ${materialRecon.extra.length} vật tư ngoài PO: ${materialRecon.extra.join(", ")}.`);
+      }
+      lines.push("", "Bạn vẫn muốn xác nhận hóa đơn?");
+      const ok = window.confirm(lines.join("\n"));
       if (!ok) return;
     }
 
@@ -390,6 +437,37 @@ export default function InvoiceVerify() {
                       <dd className="text-right text-foreground">{formatDate(selectedPo.expectedDelivery)}</dd>
                     </div>
                   )}
+                  {/* Vật tư PO yêu cầu — đối chiếu trực quan với cột hạng mục bên phải. */}
+                  <div className="border-t border-border pt-2">
+                    <dt className="mb-1 text-muted-foreground">
+                      Vật tư PO yêu cầu{poItemsQ.items.length > 0 ? ` (${poItemsQ.items.length})` : ""}
+                    </dt>
+                    {poItemsQ.loading ? (
+                      <dd className="text-xs text-muted-foreground">Đang tải…</dd>
+                    ) : poItemsQ.items.length === 0 ? (
+                      <dd className="text-xs text-muted-foreground">PO này chưa khai báo dòng vật tư.</dd>
+                    ) : (
+                      <dd>
+                        <ul className="space-y-0.5">
+                          {poItemsQ.items.map((it) => {
+                            const onInvoice = items.some((li) => li.materialId === it.materialId);
+                            return (
+                              <li key={it.id} className="flex items-center justify-between gap-2 text-xs">
+                                <span className="min-w-0 truncate text-foreground">
+                                  {it.materialName?.trim() || matName(it.materialId)}
+                                  {it.materialCode ? <span className="text-muted-foreground"> ({it.materialCode})</span> : null}
+                                </span>
+                                <span className={cn("shrink-0 font-medium", onInvoice ? "text-success" : "text-warning")}>
+                                  {onInvoice ? "có trên HĐ" : "thiếu"}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </dd>
+                    )}
+                  </div>
+
                   {selectedPo.totalAmount != null && (
                     <Button
                       type="button"
@@ -433,6 +511,47 @@ export default function InvoiceVerify() {
                           : `Hóa đơn thấp hơn PO ${formatCurrency(-recon!.delta)}`
                     }
                   />
+                  <ReconRow
+                    label="Vật tư"
+                    ok={recon!.materialMatch === true}
+                    pending={recon!.materialMatch === null}
+                    okText={`Khớp ${materialRecon!.matched}/${materialRecon!.poCount} vật tư của PO`}
+                    badText={
+                      recon!.materialMatch === null
+                        ? "PO chưa khai báo dòng vật tư để đối chiếu"
+                        : [
+                            materialRecon!.missing.length ? `thiếu ${materialRecon!.missing.length}` : "",
+                            materialRecon!.extra.length ? `ngoài PO ${materialRecon!.extra.length}` : "",
+                          ].filter(Boolean).join(" · ")
+                    }
+                  />
+
+                  {/* Chi tiết lệch vật tư — nêu đích danh để kế toán biết đòi hàng hay từ chối dòng nào. */}
+                  {recon!.materialMatch === false && (
+                    <div className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">
+                      {materialRecon!.missing.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-warning">
+                            PO yêu cầu nhưng hóa đơn không có ({materialRecon!.missing.length})
+                          </p>
+                          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-foreground">
+                            {materialRecon!.missing.map((n) => <li key={`m-${n}`}>{n}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {materialRecon!.extra.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-warning">
+                            Hóa đơn có nhưng PO không yêu cầu ({materialRecon!.extra.length})
+                          </p>
+                          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-foreground">
+                            {materialRecon!.extra.map((n) => <li key={`e-${n}`}>{n}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div
                     className={cn(
                       "flex items-center gap-2 rounded-lg p-3 text-sm font-medium",
@@ -543,7 +662,7 @@ export default function InvoiceVerify() {
                           type="number"
                           min={0}
                           value={it.quantity}
-                          onChange={(e) => updateItem(i, { quantity: Number(e.target.value) || 0 })}
+                          onChange={(e) => updateItem(i, { quantity: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                       <div className="w-28 shrink-0">
@@ -552,7 +671,7 @@ export default function InvoiceVerify() {
                           type="number"
                           min={0}
                           value={it.unitPrice}
-                          onChange={(e) => updateItem(i, { unitPrice: Number(e.target.value) || 0 })}
+                          onChange={(e) => updateItem(i, { unitPrice: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                     </div>

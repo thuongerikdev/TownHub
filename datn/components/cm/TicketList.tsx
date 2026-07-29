@@ -9,6 +9,8 @@ import {
   type TicketResponse, type CreateTicketInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
+import { isTicketOwnerScoped } from "@/lib/rbac";
 import { mockTickets } from "@/lib/mock/cm";
 import { mockAssets } from "@/lib/mock/asset";
 import { mockSlaConfigs } from "@/lib/mock/cm";
@@ -41,7 +43,7 @@ const CATEGORY: Record<string, string> = {
 };
 const CATEGORY_OPTIONS = Object.keys(CATEGORY);
 const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT" };
+const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống" };
 
 // SLA resolution window (giờ) suy theo độ ưu tiên — để tô màu badge khi mock.
 const SLA_HOURS: Record<string, number> = { CRITICAL: 4, HIGH: 8, MEDIUM: 24, LOW: 72 };
@@ -62,6 +64,11 @@ const emptyForm: FormState = {
 
 export default function TicketList(_props: { userRole?: string }) {
   const router = useRouter();
+  // RBAC ở tầng giao diện: chỉ hiện nút Tạo/Xoá theo quyền (admin được bỏ qua trong hasPermission).
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("ticket.create");
+  // Backend chỉ trả về phiếu được phân công cho KTV — nói rõ để tránh hiểu nhầm là mất dữ liệu.
+  const ownScoped = isTicketOwnerScoped(hasPermission);
   const q = useApiList<TicketResponse>(() => tickets.getAll(), { mock: mockTickets });
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const slaQ = useApiList(() => slaConfigs.getAll(), { mock: mockSlaConfigs });
@@ -94,7 +101,7 @@ export default function TicketList(_props: { userRole?: string }) {
   }, [list, search, statusF, priorityF]);
 
   function openCreate() {
-    setForm({ ...emptyForm, ticketCode: `TKT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}` });
+    setForm({ ...emptyForm });
     setOpen(true);
   }
 
@@ -102,7 +109,8 @@ export default function TicketList(_props: { userRole?: string }) {
     if (!form.title.trim()) { toast.error("Nhập tiêu đề sự cố."); return; }
     const buildingId = assetsQ.items.find((a) => a.id === form.assetId)?.buildingId ?? BUILDING;
     const body: CreateTicketInput = {
-      ticketCode: form.ticketCode.trim(), buildingId, reportedByName: "Hệ thống nội bộ",
+      // Bỏ trống → server tự sinh mã.
+      buildingId, reportedByName: "Hệ thống nội bộ",
       assetId: form.assetId || undefined, slaConfigId: form.slaConfigId || undefined,
       title: form.title.trim(), description: form.description.trim() || undefined,
       category: form.category, priority: form.priority, source: form.source,
@@ -148,7 +156,7 @@ export default function TicketList(_props: { userRole?: string }) {
       cell: (t) => (
         <div className="flex items-center justify-end gap-1">
           <Button variant="ghost" size="icon" title="Chi tiết" onClick={() => setDetail(t)}><Eye className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(t)}><Trash2 className="size-4" /></Button>
+          {canCreate && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(t)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
     },
@@ -158,9 +166,11 @@ export default function TicketList(_props: { userRole?: string }) {
     <div>
       <PageHeader
         title="Xử lý sự cố (CM)"
-        description="Tiếp nhận, phân công và theo dõi SLA các ticket sự cố"
+        description={ownScoped
+          ? "Các phiếu sự cố được phân công cho bạn"
+          : "Tiếp nhận, phân công và theo dõi SLA các ticket sự cố"}
         icon={LifeBuoy}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo ticket</Button>}
+        actions={canCreate ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo ticket</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}
@@ -201,8 +211,8 @@ export default function TicketList(_props: { userRole?: string }) {
         submitLabel="Tạo"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mã ticket" required>
-            <Input value={form.ticketCode} onChange={(e) => setForm((f) => ({ ...f, ticketCode: e.target.value }))} />
+          <Field label="Mã ticket" hint="Tự sinh khi lưu">
+            <Input value="" placeholder="TK-…" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Nguồn">
             <Select value={form.source} onValueChange={(v) => setForm((f) => ({ ...f, source: v }))}>

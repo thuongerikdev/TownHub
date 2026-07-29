@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { Receipt, Clock, CheckCircle2, AlertCircle, CalendarDays, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { invoices, type InvoiceResponse } from "@/lib/api";
+import { invoices, users, type InvoiceResponse, type RoleMember } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockInvoices } from "@/lib/mock/procurement";
 import {
   PageHeader, StatCard, MockBanner, FilterBar, EntityModal, Field, ToneBadge,
@@ -46,12 +47,19 @@ export default function Invoices() {
   const q = useApiList<InvoiceResponse>(() => invoices.getAll(), { mock: mockInvoices });
   const now = Date.now();
 
+  // Danh sách người có thể xác nhận thanh toán — lấy từ tài khoản vai trò Kế toán
+  // để lưu đúng userID, thay vì để người dùng gõ tay tên.
+  const { user } = useAuth();
+  const accountantsQ = useApiList<RoleMember>(() => users.getByRole("Kế toán"), { mock: [] });
+  const memberLabel = (m: RoleMember) => m.fullName?.trim() || m.userName;
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
   const [target, setTarget] = useState<InvoiceResponse | null>(null);
   const [method, setMethod] = useState("BANK_TRANSFER");
-  const [confirmedBy, setConfirmedBy] = useState("Kế toán");
+  // Nguoi xac nhan chon theo tai khoan (luu userID), khong go tay ten.
+  const [confirmedById, setConfirmedById] = useState("");
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [payRef, setPayRef] = useState("");
   const [payNote, setPayNote] = useState("");
@@ -98,7 +106,9 @@ export default function Invoices() {
   function openPay(inv: InvoiceResponse) {
     setTarget(inv);
     setMethod("BANK_TRANSFER");
-    setConfirmedBy("Kế toán");
+    // Mặc định là người đang đăng nhập nếu họ nằm trong danh sách kế toán.
+    const me = accountantsQ.items.find((m) => m.userID === user?.userID);
+    setConfirmedById(me ? String(me.userID) : "");
     setPayDate(new Date().toISOString().slice(0, 10));
     setPayRef("");
     setPayNote("");
@@ -106,9 +116,20 @@ export default function Invoices() {
 
   async function pay() {
     if (!target) return;
-    if (!confirmedBy.trim()) { toast.error("Nhập người xác nhận thanh toán."); return; }
+    const confirmer = accountantsQ.items.find((m) => String(m.userID) === confirmedById);
+    if (!confirmer) { toast.error("Chọn người xác nhận thanh toán."); return; }
     setSubmitting(true);
-    const res = await invoices.markPaid(target.id, method, confirmedBy.trim());
+    // Người xác nhận lưu thành cột riêng (id + tên); notes chỉ còn mã GD & ghi chú.
+    const notes = [
+      payRef.trim() ? `Mã GD: ${payRef.trim()}` : "",
+      payNote.trim() || "",
+    ].filter(Boolean).join(" · ");
+    const res = await invoices.markPaid(target.id, method, {
+      paidDate: payDate || undefined,
+      notes: notes || undefined,
+      confirmedByUserId: confirmer.userID,
+      confirmedByName: memberLabel(confirmer),
+    });
     setSubmitting(false);
     if (res.errorCode === 200) {
       toast.success(`Đã ghi nhận thanh toán ${target.invoiceCode}.`);
@@ -197,6 +218,7 @@ export default function Invoices() {
                             </span>
                           )}
                           {inv.paidDate && <span className="text-success">Đã TT: {formatDate(inv.paidDate)}</span>}
+                          {inv.confirmedByName && <span>Người xác nhận: {inv.confirmedByName}</span>}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
@@ -268,8 +290,21 @@ export default function Invoices() {
               <Field label="Ngày thanh toán" required>
                 <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
               </Field>
-              <Field label="Người xác nhận" required>
-                <Input value={confirmedBy} onChange={(e) => setConfirmedBy(e.target.value)} />
+              <Field label="Người xác nhận" required hint="Chọn từ tài khoản vai trò Kế toán">
+                <Select value={confirmedById} onValueChange={setConfirmedById}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      accountantsQ.loading ? "Đang tải…"
+                        : accountantsQ.items.length ? "Chọn người xác nhận"
+                          : "Chưa có tài khoản Kế toán"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accountantsQ.items.map((m) => (
+                      <SelectItem key={m.userID} value={String(m.userID)}>{memberLabel(m)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
             <Field label="Phương thức thanh toán" required>

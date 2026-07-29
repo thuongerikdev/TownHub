@@ -10,6 +10,7 @@ import {
   type MaterialResponse, type CreateInventoryTransactionInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockWarehouses, mockMaterials, mockInventoryLevels } from "@/lib/mock/inventory";
 import { MockBanner, Field } from "@/components/shared";
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,16 @@ const REF_TYPES: Record<string, string> = {
 };
 
 function genTxnCode() {
-  return `TXN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  // Dùng mốc thời gian (base36) để bảo đảm duy nhất, tránh trùng như random 4 số cũ.
+  return `TXN-${new Date().getFullYear()}-${Date.now().toString(36).slice(-6).toUpperCase()}`;
 }
 
 interface Line { materialId: string; qty: number; }
 
 export default function InventoryTransactions() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const mayTxn = hasPermission("inventory.transaction");
   const whQ = useApiList(() => warehouses.getAll(), { mock: mockWarehouses });
   const matQ = useApiList<MaterialResponse>(() => materials.getAll(), { mock: mockMaterials });
   const levelsQ = useApiList(() => materials.getInventoryLevels(), { mock: mockInventoryLevels });
@@ -93,9 +97,26 @@ export default function InventoryTransactions() {
   async function submit() {
     if (!effectiveWh) { toast.error("Chọn kho thực hiện."); return; }
     if (lines.length === 0) { toast.error("Thêm ít nhất một vật tư."); return; }
+    // Chặn xuất vượt tồn kho (loại OUT/TRANSFER).
+    if (isOut) {
+      for (const ln of lines) {
+        if (ln.qty > onHandOf(ln.materialId)) {
+          toast.error(`Xuất vượt tồn: ${matMap.get(ln.materialId)?.name ?? ln.materialId} — tồn ${onHandOf(ln.materialId)}, yêu cầu ${ln.qty}.`);
+          return;
+        }
+      }
+    }
     setSubmitting(true);
     const base = genTxnCode();
     let ok = true;
+    // performedBy/referenceId ở backend là kiểu Guid? — KHÔNG gửi chuỗi tự do (tên
+    // người, mã "WO-2026-0098") vào đó để tránh lỗi deserialize 400. Ghi thông tin
+    // người thực hiện & mã tham chiếu dạng chữ vào notes cho tới khi có lookup Guid thật.
+    const humanMeta = [
+      performedBy.trim() ? `Người thực hiện: ${performedBy.trim()}` : "",
+      refType !== "NONE" && refId.trim() ? `Tham chiếu: ${refId.trim()}` : "",
+    ].filter(Boolean).join(" · ");
+    const combinedNotes = [note.trim(), humanMeta].filter(Boolean).join(" — ") || undefined;
     for (let i = 0; i < lines.length; i++) {
       const ln = lines[i];
       const m = matMap.get(ln.materialId);
@@ -106,12 +127,14 @@ export default function InventoryTransactions() {
         quantity: ln.qty, unitCost,
         totalCost: unitCost != null ? unitCost * ln.qty : undefined,
         referenceType: refType === "NONE" ? undefined : refType,
-        referenceId: refId.trim() || undefined,
-        notes: note.trim() || undefined,
-        performedBy: performedBy.trim() || undefined,
+        notes: combinedNotes,
       };
       const res = await inventoryTransactions.create(body);
-      if (res.errorCode !== 200) { ok = false; toast.error(res.errorMessage || `Lỗi tại dòng ${i + 1}.`); break; }
+      if (res.errorCode !== 200) {
+        ok = false;
+        toast.error(`${res.errorMessage || "Lỗi"} tại dòng ${i + 1}/${lines.length}.${i > 0 ? ` Đã ghi ${i} dòng trước đó — vui lòng kiểm tra kho để tránh ghi trùng.` : ""}`);
+        break;
+      }
     }
     setSubmitting(false);
     if (ok) {
@@ -265,8 +288,8 @@ export default function InventoryTransactions() {
           <Button variant="outline" className="flex-1" asChild>
             <Link href="/inventory">Huỷ</Link>
           </Button>
-          <Button className="flex-1" onClick={submit} disabled={submitting || lines.length === 0}>
-            {submitting ? "Đang ghi nhận…" : `Xác nhận ${TXN_TYPES.find((t) => t.value === txnType)?.label}`}
+          <Button className="flex-1" onClick={submit} disabled={submitting || lines.length === 0 || !mayTxn} title={!mayTxn ? "Bạn không có quyền ghi nhận giao dịch kho" : undefined}>
+            {submitting ? "Đang ghi nhận…" : !mayTxn ? "Không có quyền ghi nhận" : `Xác nhận ${TXN_TYPES.find((t) => t.value === txnType)?.label}`}
           </Button>
         </div>
       </div>

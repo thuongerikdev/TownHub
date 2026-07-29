@@ -1,16 +1,20 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using TH.Asset.ApplicationService.Service.Inventory;
 using TH.Asset.Dtos;
+using TH.Constant;
 
 namespace TH.WebAPI.Controllers.Asset.Inventory
 {
     // ── Request bodies cho action endpoints ──────────────────────────────────
     public record ApproveRequestBody(Guid ApprovedBy);
     public record RejectRequestBody(string Reason);
-    public record MarkPaidRequestBody(string PaymentMethod, Guid ConfirmedBy);
+    // Người xác nhận thanh toán lấy theo tài khoản Auth: ConfirmedByUserId (int) + tên
+    // hiển thị, KHÔNG để client gõ tay tên vào Notes. ConfirmedBy (Guid?) giữ lại cho
+    // dữ liệu seed cũ. Notes chỉ còn mã giao dịch / ghi chú nghiệp vụ.
+    public record MarkPaidRequestBody(string PaymentMethod, DateTime? PaidDate = null, string? Notes = null, Guid? ConfirmedBy = null, int? ConfirmedByUserId = null, string? ConfirmedByName = null);
     public record MarkReviewedRequestBody(Guid ReviewedBy, string? ReviewedByName = null);
 
     // ════════════════════════════════════════════════════════════════════════
@@ -23,7 +27,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IWarehouseService _service;
         public WarehouseController(IWarehouseService service) => _service = service;
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateWarehouseDto request)
         {
@@ -31,7 +35,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateWarehouseDto request)
         {
@@ -41,7 +45,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -80,7 +84,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         private readonly IMaterialService _service;
         public MaterialController(IMaterialService service) => _service = service;
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateMaterialDto request)
         {
@@ -88,7 +92,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpPut("update")]
         public async Task<IActionResult> Update([FromBody] UpdateMaterialDto request)
         {
@@ -98,7 +102,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "InventoryTransaction")]
+        [Authorize(Policy = "InventoryManage")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -145,6 +149,14 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             var result = await _service.GetInventoryLevelsAsync(warehouseId, materialId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
+
+        [Authorize(Policy = "InventoryView")]
+        [HttpGet("get-categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var result = await _service.GetCategoriesAsync();
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -175,6 +187,45 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             [FromQuery] Guid? referenceId)
         {
             var result = await _service.GetAllAsync(warehouseId, materialId, txnType, referenceType, referenceId);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "InventoryView")]
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 404) return NotFound(result);
+            return BadRequest(result);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // STOCK TAKE CONTROLLER (Kiểm kê kho)
+    // ════════════════════════════════════════════════════════════════════════
+    [ApiController]
+    [Route("api/asset/stock-take")]
+    public class StockTakeController : ControllerBase
+    {
+        private readonly IStockTakeService _service;
+        public StockTakeController(IStockTakeService service) => _service = service;
+
+        [Authorize(Policy = "InventoryAudit")]
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] CreateStockTakeDto request)
+        {
+            var result = await _service.CreateAsync(request);
+            return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        [Authorize(Policy = "InventoryView")]
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] Guid? warehouseId,
+            [FromQuery] string? status)
+        {
+            var result = await _service.GetAllAsync(warehouseId, status);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
@@ -227,23 +278,31 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return BadRequest(result);
         }
 
-        [Authorize(Policy = "ProcurementView")]
+        [Authorize(Policy = "ProcurementRead")]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? status,
             [FromQuery] Guid? ticketId,
             [FromQuery] Guid? woId)
         {
-            var result = await _service.GetAllAsync(status, ticketId, woId);
+            // KTV chỉ thấy phiếu đề xuất do mình lập (xem AssignmentScope).
+            var result = await _service.GetAllAsync(status, ticketId, woId, User.PurchaseRequestOwnerScope());
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "ProcurementView")]
+        [Authorize(Policy = "ProcurementRead")]
         [HttpGet("get/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _service.GetByIdAsync(id);
-            if (result.ErrorCode == 200) return Ok(result);
+            if (result.ErrorCode == 200)
+            {
+                var scope = User.PurchaseRequestOwnerScope();
+                if (scope.HasValue && result.Data?.requestedByUserId != scope.Value)
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ResponseConst.Error<PurchaseRequestResponse>(403, "Phiếu đề xuất này không phải của bạn."));
+                return Ok(result);
+            }
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);
         }
@@ -252,6 +311,8 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         [HttpPut("submit/{id}")]
         public async Task<IActionResult> Submit(Guid id)
         {
+            var denied = await DenyIfNotOwnPr(id);
+            if (denied != null) return denied;
             var result = await _service.SubmitAsync(id);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
@@ -286,12 +347,30 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
         }
 
-        [Authorize(Policy = "ProcurementView")]
+        [Authorize(Policy = "ProcurementRead")]
         [HttpGet("get-items/{prId}")]
         public async Task<IActionResult> GetItems(Guid prId)
         {
+            var denied = await DenyIfNotOwnPr(prId);
+            if (denied != null) return denied;
             var result = await _service.GetItemsAsync(prId);
             return result.ErrorCode == 200 ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Từ chối nếu người gọi chỉ được xem phiếu đề xuất của mình mà PR này lại của người khác.
+        /// </summary>
+        private async Task<IActionResult?> DenyIfNotOwnPr(Guid prId)
+        {
+            var scope = User.PurchaseRequestOwnerScope();
+            if (!scope.HasValue) return null;
+
+            var current = await _service.GetByIdAsync(prId);
+            if (current.ErrorCode == 404) return NotFound(current);
+            if (current.Data?.requestedByUserId == scope.Value) return null;
+
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ResponseConst.Error<bool>(403, "Phiếu đề xuất này không phải của bạn."));
         }
     }
 
@@ -432,7 +511,7 @@ namespace TH.WebAPI.Controllers.Asset.Inventory
         [HttpPut("mark-paid/{id}")]
         public async Task<IActionResult> MarkPaid(Guid id, [FromBody] MarkPaidRequestBody body)
         {
-            var result = await _service.MarkPaidAsync(id, body.PaymentMethod, body.ConfirmedBy);
+            var result = await _service.MarkPaidAsync(id, body.PaymentMethod, body.PaidDate, body.Notes, body.ConfirmedBy, body.ConfirmedByUserId, body.ConfirmedByName);
             if (result.ErrorCode == 200) return Ok(result);
             if (result.ErrorCode == 404) return NotFound(result);
             return BadRequest(result);

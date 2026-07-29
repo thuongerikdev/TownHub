@@ -549,7 +549,7 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         Task<ResponseDto<bool>> CreateAsync(CreateWorkOrderDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdateWorkOrderDto request);
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
-        Task<ResponseDto<List<WorkOrderResponse>>> GetAllAsync(Guid? assetId = null, string? status = null, Guid? buildingId = null);
+        Task<ResponseDto<List<WorkOrderResponse>>> GetAllAsync(Guid? assetId = null, string? status = null, Guid? buildingId = null, int? assignedToUserId = null);
         Task<ResponseDto<WorkOrderResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> AssignTechnicianAsync(CreateWorkOrderAssignmentDto request);
         Task<ResponseDto<bool>> AddChecklistResponseAsync(CreateWorkOrderChecklistResponseDto request);
@@ -682,7 +682,7 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
         }
 
         public async Task<ResponseDto<List<WorkOrderResponse>>> GetAllAsync(
-            Guid? assetId = null, string? status = null, Guid? buildingId = null)
+            Guid? assetId = null, string? status = null, Guid? buildingId = null, int? assignedToUserId = null)
         {
             try
             {
@@ -694,6 +694,8 @@ namespace TH.Asset.ApplicationService.Service.Maintenance
                 if (assetId.HasValue)          query = query.Where(x => x.assetId == assetId.Value);
                 if (!string.IsNullOrEmpty(status)) query = query.Where(x => x.status == status);
                 if (buildingId.HasValue)       query = query.Where(x => x.buildingId == buildingId.Value);
+                // Giới hạn theo phân công: kỹ thuật viên chỉ thấy phiếu của mình.
+                if (assignedToUserId.HasValue) query = query.Where(x => x.assignedToUserId == assignedToUserId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.createdAt)

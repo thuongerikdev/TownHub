@@ -1,0 +1,56 @@
+% =====================================================================
+%  Nguồn vector cho Hình 4.34 — ERD phân hệ Quản lý sự cố & SLA
+%  Vẽ theo PHONG CÁCH của Hình 4.12 (erd_kho.pdf, kiểu Graphviz):
+%    - bảng: thanh tiêu đề nền xanh nhạt, viền xanh, thuộc tính căn trái
+%    - dây quan hệ: đường cong xám, mũi tên trỏ về bảng "1" (được tham chiếu)
+%    - KHÔNG có nhãn "N — 1"
+%  Bố cục hình sao (tickets ở trung tâm) -> không dây nào đè lên bảng.
+%  Biên dịch:  xelatex src_img39.tex  ->  src_img39.pdf  -> copy sang img39.pdf
+% =====================================================================
+\documentclass[border=10pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,shapes.multipart,calc}
+
+\tikzset{
+  entity/.style={
+    draw=blue!55!black, line width=0.8pt,
+    rectangle split, rectangle split parts=2,
+    rectangle split part align={center, left},
+    rectangle split part fill={blue!12, white},
+    inner sep=5pt, font=\small, text=black, align=left,
+    rounded corners=0.4pt,
+  },
+  rel/.style={draw=gray!60!black, line width=0.8pt, -{Stealth[length=7pt,width=6pt]}},
+}
+
+\begin{document}
+\begin{tikzpicture}
+
+% ---- Tiêu đề nhúng (giống Hình 4.12) ----
+\node[font=\large] at (0, 8.3) {ERD — Phân hệ Quản lý sự cố \& SLA};
+
+% ---- Hub trung tâm ----
+\node[entity] (tickets) at (0,0)
+  {\textbf{tickets}\nodepart{two}PK id\\FK assetId\\FK purchaseRequestId\\FK slaConfigId\\status\\ticketCode\\title};
+
+% ---- Bảng vệ tinh toả quanh ----
+\node[entity] (assign) at (-7.4, 4.6) {\textbf{ticket\_assignments}\nodepart{two}PK id\\FK ticketId};
+\node[entity] (attach) at ( 0.0, 6.6) {\textbf{ticket\_attachments}\nodepart{two}PK id\\FK ticketId};
+\node[entity] (rating) at ( 7.6, 4.6) {\textbf{ticket\_ratings}\nodepart{two}PK id\\FK ticketId};
+\node[entity] (escal)  at ( 8.4,-1.4) {\textbf{sla\_escalation\_log}\nodepart{two}PK id\\FK ticketId};
+\node[entity] (status) at ( 1.4,-6.6) {\textbf{ticket\_status\_history}\nodepart{two}PK id\\FK ticketId};
+\node[entity] (sla)    at (-8.6,-1.4) {\textbf{sla\_configs}\nodepart{two}PK id\\name};
+
+% ---- Quan hệ: con (giữ FK) -> cha (được tham chiếu), mũi tên ở phía cha ----
+\draw[rel] (assign.east)  to[out=-20,in=150] (tickets.north west);
+\draw[rel] (attach.south) to[out=-90,in=90]  (tickets.north);
+\draw[rel] (rating.west)  to[out=200,in=30]  (tickets.north east);
+\draw[rel] (escal.west)   to[out=180,in=20]  (tickets.east);
+\draw[rel] (status.north) to[out=90,in=-70]  (tickets.south);
+% tickets tham chiếu sla_configs (FK slaConfigId)
+\draw[rel] (tickets.west) to[out=180,in=0]   (sla.east);
+
+\end{tikzpicture}
+\end{document}

@@ -194,7 +194,7 @@ namespace TH.Asset.ApplicationService.Service.Incident
         Task<ResponseDto<bool>> CreateAsync(CreateTicketDto request);
         Task<ResponseDto<bool>> UpdateAsync(UpdateTicketDto request);
         Task<ResponseDto<bool>> DeleteAsync(Guid id);
-        Task<ResponseDto<List<TicketResponse>>> GetAllAsync(Guid? buildingId = null, string? status = null, Guid? reportedBy = null);
+        Task<ResponseDto<List<TicketResponse>>> GetAllAsync(Guid? buildingId = null, string? status = null, Guid? reportedBy = null, int? assignedToUserId = null);
         Task<ResponseDto<TicketResponse>> GetByIdAsync(Guid id);
         Task<ResponseDto<bool>> ChangeStatusAsync(CreateTicketStatusHistoryDto request);
         Task<ResponseDto<bool>> AssignAsync(CreateTicketAssignmentDto request);
@@ -340,7 +340,7 @@ namespace TH.Asset.ApplicationService.Service.Incident
         }
 
         public async Task<ResponseDto<List<TicketResponse>>> GetAllAsync(
-            Guid? buildingId = null, string? status = null, Guid? reportedBy = null)
+            Guid? buildingId = null, string? status = null, Guid? reportedBy = null, int? assignedToUserId = null)
         {
             try
             {
@@ -353,6 +353,8 @@ namespace TH.Asset.ApplicationService.Service.Incident
                 if (buildingId.HasValue)           query = query.Where(x => x.buildingId == buildingId.Value);
                 if (!string.IsNullOrEmpty(status)) query = query.Where(x => x.status == status);
                 if (reportedBy.HasValue)           query = query.Where(x => x.reportedBy == reportedBy.Value);
+                // Giới hạn theo phân công: kỹ thuật viên chỉ thấy phiếu sự cố của mình.
+                if (assignedToUserId.HasValue)     query = query.Where(x => x.assignedToUserId == assignedToUserId.Value);
 
                 var result = await query
                     .OrderByDescending(x => x.createdAt)
@@ -454,6 +456,24 @@ namespace TH.Asset.ApplicationService.Service.Incident
                 ticket.assignedToUserId = request.assignedToUserId;
                 ticket.assignedToName   = request.assignedToName;
                 ticket.updatedAt        = DateTime.UtcNow;
+
+                // Phân công cũng chuyển trạng thái sang ASSIGNED để mở bước xử lý tiếp theo.
+                // Chỉ tự chuyển khi ticket còn ở đầu luồng (NEW/OPEN) và ghi lịch sử trạng thái.
+                if (ticket.status == "NEW" || ticket.status == "OPEN")
+                {
+                    var oldStatus = ticket.status;
+                    ticket.status = "ASSIGNED";
+                    _dbContext.TicketStatusHistories.Add(new TicketStatusHistory
+                    {
+                        ticketId   = ticket.id,
+                        fromStatus = oldStatus,
+                        toStatus   = "ASSIGNED",
+                        changedBy  = request.assignedTo == Guid.Empty ? (Guid?)null : request.assignedTo,
+                        note       = request.assignedToName != null
+                            ? $"Phân công cho {request.assignedToName}"
+                            : "Phân công kỹ thuật viên."
+                    });
+                }
 
                 await _dbContext.SaveChangesAsync();
                 return ResponseConst.Success("Phân công ticket thành công.", true);

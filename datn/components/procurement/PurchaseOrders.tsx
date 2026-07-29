@@ -9,11 +9,12 @@ import { toast } from "sonner";
 import {
   purchaseOrders, vendorsApi, purchaseRequests,
   type PurchaseOrderResponse, type CreatePurchaseOrderInput, type UpdatePurchaseOrderInput,
-  type VendorResponse, type PurchaseRequestResponse,
+  type VendorResponse, type PurchaseRequestResponse, type PurchaseLineInput,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockPurchaseOrders, mockPurchaseRequests } from "@/lib/mock/procurement";
 import { mockVendors } from "@/lib/mock/vendor";
+import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
   StatusBadge, ToneBadge, type Column, type StatusDef,
@@ -81,8 +82,11 @@ export default function PurchaseOrders() {
   const [statusF, setStatusF] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [lines, setLines] = useState<PurchaseLineInput[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [detail, setDetail] = useState<PurchaseOrderResponse | null>(null);
+  // Dòng vật tư của PO đang xem chi tiết.
+  const detailItemsQ = useApiList(() => purchaseOrders.getItems(detail!.id), { deps: [detail?.id], enabled: !!detail });
   const [confirmDel, setConfirmDel] = useState<PurchaseOrderResponse | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -110,15 +114,34 @@ export default function PurchaseOrders() {
 
   function openCreate() {
     setForm(emptyForm); // Mã PO do server sinh khi lưu.
+    setLines([]);
     setOpen(true);
   }
-  function openCreateFromPr(pr: PurchaseRequestResponse) {
+  async function openCreateFromPr(pr: PurchaseRequestResponse) {
     setForm({
       ...emptyForm,
       prId: pr.id,
       notes: pr.title ? `Theo đề xuất ${pr.prCode}: ${pr.title}` : `Theo đề xuất ${pr.prCode}`,
     });
+    setLines([]);
     setOpen(true);
+    await loadPrItems(pr.id);
+  }
+
+  // Nạp vật tư của một PR vào danh sách dòng PO (PO kế thừa vật tư từ đề xuất).
+  async function loadPrItems(prId: string) {
+    const res = await purchaseRequests.getItems(prId);
+    if (res.errorCode === 200) {
+      setLines((res.data ?? []).map((it) => ({ materialId: it.materialId, targetWarehouseId: it.targetWarehouseId })));
+    }
+  }
+
+  // Chọn PR trong dropdown khi đang tạo PO: gắn prId + tự điền vật tư của PR đó.
+  async function pickPr(v: string) {
+    const prId = v === "none" ? "" : v;
+    setForm((f) => ({ ...f, prId }));
+    if (prId) await loadPrItems(prId);
+    else setLines([]);
   }
 
   function buildUpdate(po: PurchaseOrderResponse, status: string): UpdatePurchaseOrderInput {
@@ -154,6 +177,7 @@ export default function PurchaseOrders() {
       totalAmount: form.totalAmount ? Number(form.totalAmount) : undefined,
       currency: "VND", paymentTerms: form.paymentTerms.trim() || undefined,
       notes: form.notes.trim() || undefined,
+      items: lines.length ? lines : undefined,
     };
     setSubmitting(true);
     const res = await purchaseOrders.create(body);
@@ -282,13 +306,14 @@ export default function PurchaseOrders() {
             </Select>
           </Field>
           <Field label="Từ đề xuất (PR)" hint="Tuỳ chọn" className="col-span-2">
-            <Select value={form.prId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, prId: v === "none" ? "" : v }))}>
+            <Select value={form.prId || "none"} onValueChange={pickPr}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— Không liên kết —</SelectItem>
                 {prsQ.items.map((p) => <SelectItem key={p.id} value={p.id}>{p.prCode}{p.title ? ` · ${p.title}` : ""}</SelectItem>)}
               </SelectContent>
             </Select>
+            {form.prId && <p className="mt-1 text-xs text-muted-foreground">Vật tư của đề xuất đã được nạp vào danh sách bên dưới — có thể chỉnh thêm.</p>}
           </Field>
           <Field label="Ngày đặt">
             <Input type="date" value={form.issueDate} onChange={(e) => setForm((f) => ({ ...f, issueDate: e.target.value }))} />
@@ -305,6 +330,9 @@ export default function PurchaseOrders() {
           <Field label="Ghi chú" className="col-span-2">
             <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Yêu cầu giao hàng tận kho, kèm chứng từ…" />
           </Field>
+          <div className="col-span-2">
+            <MaterialLinesPicker value={lines} onChange={setLines} label="Vật tư của đơn" />
+          </div>
         </div>
       </EntityModal>
 
@@ -351,6 +379,23 @@ export default function PurchaseOrders() {
             <DetailRow label="Người tạo">{detail.createdBy ?? "—"}</DetailRow>
             <DetailRow label="Ngày tạo">{formatDate(detail.createdAt)}</DetailRow>
             {detail.notes && <div className="col-span-2"><DetailRow label="Ghi chú">{detail.notes}</DetailRow></div>}
+            <div className="col-span-2">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Vật tư của đơn ({detailItemsQ.items.length})</p>
+              {detailItemsQ.loading ? (
+                <p className="text-sm text-muted-foreground">Đang tải…</p>
+              ) : detailItemsQ.items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Đơn này chưa có dòng vật tư.</p>
+              ) : (
+                <ul className="divide-y divide-border rounded-lg border border-border">
+                  {detailItemsQ.items.map((it) => (
+                    <li key={it.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                      <span><span className="font-medium text-foreground">{it.materialName ?? it.materialId}</span> <span className="text-xs text-muted-foreground">{it.materialCode}</span></span>
+                      <span className="text-xs text-muted-foreground">{it.warehouseName ?? ""}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
       </EntityModal>

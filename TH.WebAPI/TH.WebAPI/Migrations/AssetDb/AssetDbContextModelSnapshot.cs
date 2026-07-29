@@ -857,6 +857,13 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Property<Guid?>("confirmedBy")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("confirmedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("confirmedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("currency")
                         .IsRequired()
                         .HasMaxLength(3)
@@ -1354,6 +1361,107 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.HasIndex("targetWarehouseId");
 
                     b.ToTable("purchase_request_items", "asset");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Inventory.StockTake", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("countDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("createdAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("diffItems")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("matchedItems")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("performedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("performedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("period")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("stkCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("totalDiffValue")
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<int>("totalItems")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("warehouseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("stkCode")
+                        .IsUnique();
+
+                    b.HasIndex("warehouseId");
+
+                    b.ToTable("stock_takes", "asset");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Inventory.StockTakeLine", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("countedQty")
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<decimal>("diff")
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<decimal?>("diffValue")
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<Guid>("materialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("stockTakeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("systemQty")
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<decimal?>("unitPrice")
+                        .HasColumnType("numeric(14,0)");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("materialId");
+
+                    b.HasIndex("stockTakeId");
+
+                    b.ToTable("stock_take_lines", "asset");
                 });
 
             modelBuilder.Entity("TH.Asset.Domain.Inventory.Warehouse", b =>
@@ -2506,6 +2614,36 @@ namespace TH.WebAPI.Migrations.AssetDb
                     b.Navigation("targetWarehouse");
                 });
 
+            modelBuilder.Entity("TH.Asset.Domain.Inventory.StockTake", b =>
+                {
+                    b.HasOne("TH.Asset.Domain.Inventory.Warehouse", "warehouse")
+                        .WithMany()
+                        .HasForeignKey("warehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("warehouse");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Inventory.StockTakeLine", b =>
+                {
+                    b.HasOne("TH.Asset.Domain.Inventory.Material", "material")
+                        .WithMany()
+                        .HasForeignKey("materialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TH.Asset.Domain.Inventory.StockTake", "stockTake")
+                        .WithMany("lines")
+                        .HasForeignKey("stockTakeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("material");
+
+                    b.Navigation("stockTake");
+                });
+
             modelBuilder.Entity("TH.Asset.Domain.Maintenance.ChecklistTemplate", b =>
                 {
                     b.HasOne("TH.Asset.Domain.Core.AssetCategory", "category")
@@ -2796,6 +2934,11 @@ namespace TH.WebAPI.Migrations.AssetDb
             modelBuilder.Entity("TH.Asset.Domain.Inventory.PurchaseRequest", b =>
                 {
                     b.Navigation("items");
+                });
+
+            modelBuilder.Entity("TH.Asset.Domain.Inventory.StockTake", b =>
+                {
+                    b.Navigation("lines");
                 });
 
             modelBuilder.Entity("TH.Asset.Domain.Inventory.Warehouse", b =>

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  ArrowLeft, MapPin, User, Clock, AlertTriangle, CheckCircle2,
+  ArrowLeft, ArrowRight, MapPin, User, Clock, AlertTriangle, CheckCircle2,
   UserPlus, TrendingUp, RefreshCw, Inbox, Package, ShoppingCart, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,9 +15,11 @@ import {
   type TicketResponse, type TicketStatusHistoryResponse, type SlaEscalationLogResponse,
   type SlaConfigResponse, type UpdateTicketInput, type TicketAttachmentResponse,
   type WarehouseResponse, type MaterialResponse,
-  type InventoryTransactionResponse, type PurchaseRequestResponse,
+  type InventoryTransactionResponse, type PurchaseRequestResponse, type PurchaseLineInput,
 } from "@/lib/api";
+import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import { useApi, useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockTickets, mockSlaConfigs } from "@/lib/mock/cm";
 import { mockWarehouses, mockMaterials } from "@/lib/mock/inventory";
 import {
@@ -42,7 +44,7 @@ const TICKET_STATUS: Record<string, StatusDef> = {
 const CATEGORY: Record<string, string> = {
   ELECTRICAL: "Điện", PLUMBING: "Nước", HVAC: "HVAC", ELEVATOR: "Thang máy", FIRE: "PCCC", OTHER: "Khác",
 };
-const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT", RECEPTION: "Lễ tân", PHONE: "Điện thoại", EMAIL: "Email", APP: "Ứng dụng" };
+const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", RECEPTION: "Lễ tân", PHONE: "Điện thoại", EMAIL: "Email", APP: "Ứng dụng" };
 
 const SLA_HOURS: Record<string, number> = { CRITICAL: 4, HIGH: 8, MEDIUM: 24, LOW: 72 };
 const isClosed = (t: TicketResponse) => t.status === "RESOLVED" || t.status === "CLOSED";
@@ -82,6 +84,14 @@ const NEXT_STATUS: Record<string, string[]> = {
   IN_PROGRESS:      ["PENDING_MATERIAL", "RESOLVED"],
   PENDING_MATERIAL: ["IN_PROGRESS", "RESOLVED"],
   RESOLVED:         ["CLOSED"],
+};
+
+// Bước tiến chính (forward) của từng trạng thái — dùng làm nút "nhảy sang bước tiếp theo".
+const PRIMARY_NEXT: Record<string, { to: string; label: string }> = {
+  ASSIGNED:         { to: "IN_PROGRESS", label: "Bắt đầu xử lý" },
+  IN_PROGRESS:      { to: "RESOLVED",    label: "Hoàn tất xử lý" },
+  PENDING_MATERIAL: { to: "IN_PROGRESS", label: "Tiếp tục xử lý" },
+  RESOLVED:         { to: "CLOSED",      label: "Đóng ticket" },
 };
 
 const SHOW_MATERIAL = new Set(["ASSIGNED", "IN_PROGRESS", "PENDING_MATERIAL", "RESOLVED"]);
@@ -127,6 +137,11 @@ export default function TicketDetail() {
   );
 
   // ── Assign modal state ────────────────────────────────────────────────────────
+  const { hasPermission } = useAuth();
+  const mayAssign = hasPermission("ticket.assign");
+  const mayResolve = hasPermission("ticket.resolve");
+  const mayClose = hasPermission("ticket.close");
+  const mayChangeStatus = mayResolve || mayClose;
   const [assignOpen, setAssignOpen] = useState(false);
   const [techId,     setTechId]     = useState("");
   const techQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"), { enabled: assignOpen });
@@ -142,6 +157,7 @@ export default function TicketDetail() {
 
   // ── PR inline form ────────────────────────────────────────────────────────────
   const [prForm,     setPrForm]     = useState<PrForm>(emptyPr);
+  const [prLines,    setPrLines]    = useState<PurchaseLineInput[]>([]);
   const [prWorking,  setPrWorking]  = useState(false);
 
   const [working, setWorking] = useState(false);
@@ -180,13 +196,8 @@ export default function TicketDetail() {
     if (!tech) { toast.error("Chọn kỹ thuật viên được phân công."); return; }
     const techName = tech.fullName?.trim() || tech.userName;
     setWorking(true);
+    // Backend tự chuyển trạng thái sang ASSIGNED và ghi lịch sử khi phân công.
     const res = await tickets.assign({ ticketId: t.id, assignedToUserId: tech.userID, assignedToName: techName });
-    if (res.errorCode === 200) {
-      await tickets.changeStatus({
-        ticketId: t.id, toStatus: "ASSIGNED", fromStatus: t.status,
-        note: `Phân công cho ${techName}`,
-      });
-    }
     setWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã phân công KTV.");
@@ -251,11 +262,13 @@ export default function TicketDetail() {
       title:           prForm.title.trim() || `Vật tư cho ${t.ticketCode}`,
       priority:        prForm.priority,
       justification:   prForm.justification.trim() || undefined,
+      items:           prLines.length ? prLines : undefined,
     });
     setPrWorking(false);
     if (res.errorCode === 200) {
       toast.success("Đã tạo phiếu đề xuất mua hàng.");
       setPrForm(emptyPr);
+      setPrLines([]);
       linkedPrsQ.refetch();
     } else toast.error(res.errorMessage || "Tạo PR thất bại.");
   }
@@ -282,7 +295,9 @@ export default function TicketDetail() {
   const rem    = remaining(t);
   const nexts  = NEXT_STATUS[t.status] ?? [];
   const closed = isClosed(t);
-  const canAssign = t.status === "NEW" || t.status === "OPEN";
+  const canAssign = (t.status === "NEW" || t.status === "OPEN") && mayAssign;
+  const primary = PRIMARY_NEXT[t.status];               // bước tiến chính (nếu có)
+  const otherNexts = nexts.filter((s) => s !== primary?.to);
   const showMaterial = SHOW_MATERIAL.has(t.status);
 
   const beforePhotos = photosQ.items.filter((a) => photoKind(a.fileUrl) === "BEFORE").map((a) => ({ url: stripPhotoKind(a.fileUrl) }));
@@ -470,6 +485,9 @@ export default function TicketDetail() {
                         <label className="mb-1 block text-xs text-muted-foreground">Lý do / Mô tả</label>
                         <Textarea rows={2} value={prForm.justification} onChange={(e) => setPrForm((f) => ({ ...f, justification: e.target.value }))} placeholder="Mô tả nhu cầu vật tư cần mua…" />
                       </div>
+                      <div className="col-span-full">
+                        <MaterialLinesPicker value={prLines} onChange={setPrLines} label="Vật tư đề xuất" compact />
+                      </div>
                       <div className="col-span-full flex justify-end">
                         <Button size="sm" onClick={doCreatePr} disabled={prWorking}>
                           <Plus className="size-4" /> Tạo phiếu đề xuất
@@ -619,22 +637,24 @@ export default function TicketDetail() {
               {canAssign && (
                 <Button className="w-full" onClick={() => setAssignOpen(true)}><UserPlus className="size-4" /> Phân công KTV</Button>
               )}
-              {nexts.length > 0 && !canAssign && (
+              {/* Bước tiến chính: nút rõ ràng để nhảy sang bước tiếp theo của luồng. */}
+              {primary && !closed && mayChangeStatus && (
                 <Button
                   className="w-full"
                   variant="default"
-                  onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}
+                  onClick={() => { setToStatus(primary.to); setStatusOpen(true); }}
                 >
-                  <RefreshCw className="size-4" /> Cập nhật trạng thái
+                  <ArrowRight className="size-4" /> {primary.label}
                 </Button>
               )}
-              {nexts.length > 0 && canAssign && (
+              {/* Chuyển sang trạng thái khác (rẽ nhánh, vd. chờ vật tư). */}
+              {otherNexts.length > 0 && !closed && mayChangeStatus && (
                 <Button
                   className="w-full"
                   variant="outline"
-                  onClick={() => { setToStatus(nexts[0]); setStatusOpen(true); }}
+                  onClick={() => { setToStatus(otherNexts[0]); setStatusOpen(true); }}
                 >
-                  <RefreshCw className="size-4" /> Cập nhật trạng thái
+                  <RefreshCw className="size-4" /> Trạng thái khác
                 </Button>
               )}
               <Button variant="outline" className="w-full" asChild>

@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ClipboardCheck, ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, PackageCheck,
+  ClipboardCheck, ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, PackageCheck, History,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  warehouses, materials, inventoryTransactions,
-  type MaterialResponse,
+  warehouses, materials, stockTakes, users,
+  type MaterialResponse, type RoleMember,
 } from "@/lib/api";
 import { useApiList } from "@/lib/use-api";
 import { mockWarehouses, mockMaterials, mockInventoryLevels } from "@/lib/mock/inventory";
@@ -35,26 +35,26 @@ function defaultPeriod(): string {
   const d = new Date();
   return `Tháng ${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
-function genStockTakeCode(): string {
-  return `STK-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-}
 
 export default function StockTaking() {
   const router = useRouter();
   const whQ = useApiList(() => warehouses.getAll(), { mock: mockWarehouses });
   const matQ = useApiList(() => materials.getAll(), { mock: mockMaterials });
+  const staffQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"));
 
   const [step, setStep] = useState<Step>("create");
   const [warehouseId, setWarehouseId] = useState("");
   const [period, setPeriod] = useState(defaultPeriod());
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [performedBy, setPerformedBy] = useState("");
+  const [performerId, setPerformerId] = useState("");
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   const effectiveWh = warehouseId || whQ.items[0]?.id || "";
   const whName = whQ.items.find((w) => w.id === effectiveWh)?.name ?? "—";
+  const performer = staffQ.items.find((u) => String(u.userID) === performerId);
+  const performerName = performer ? (performer.fullName?.trim() || performer.userName) : "";
 
   const levelsQ = useApiList(
     () => materials.getInventoryLevels({ warehouseId: effectiveWh }),
@@ -100,36 +100,31 @@ export default function StockTaking() {
   async function approve() {
     if (!effectiveWh) return;
     setSubmitting(true);
-    const base = genStockTakeCode();
-    let ok = true;
-    for (let i = 0; i < diffRows.length; i++) {
-      const r = diffRows[i];
-      const price = matMap[r.lv.materialId]?.unitPrice;
-      const res = await inventoryTransactions.create({
-        txnCode: diffRows.length > 1 ? `${base}-${i + 1}` : base,
-        warehouseId: effectiveWh,
+    // Lưu cả kỳ kiểm kê (header + mọi dòng, kể cả khớp sổ) qua 1 phiếu StockTake.
+    // Backend tự sinh mã, điều chỉnh tồn cho dòng lệch và ghi lịch sử.
+    const res = await stockTakes.create({
+      warehouseId: effectiveWh,
+      period,
+      countDate: date,
+      performedByUserId: performer?.userID,
+      performedByName: performerName || undefined,
+      lines: rows.map((r) => ({
         materialId: r.lv.materialId,
-        txnType: "ADJUST",
-        quantity: r.diff ?? 0,
-        unitCost: price,
-        totalCost: price != null ? Math.abs(r.diff ?? 0) * price : undefined,
-        referenceType: "STOCK_TAKE",
-        referenceId: base,
-        notes: notes[r.lv.materialId] || `Kiểm kê ${period}`,
-        performedBy: performedBy || undefined,
-      });
-      if (res.errorCode !== 200) {
-        ok = false;
-        toast.error(res.errorMessage || `Tạo điều chỉnh cho ${r.lv.materialName} thất bại.`);
-        break;
-      }
-    }
+        systemQty: r.lv.quantityOnHand,
+        countedQty: r.actual ?? 0,
+        unitPrice: matMap[r.lv.materialId]?.unitPrice,
+        note: notes[r.lv.materialId]?.trim() || undefined,
+      })),
+    });
     setSubmitting(false);
-    if (ok) {
+    if (res.errorCode === 200) {
+      const code = res.data?.stkCode ?? "";
       toast.success(diffRows.length
-        ? `Đã duyệt & điều chỉnh tồn cho ${diffRows.length} vật tư.`
-        : "Kiểm kê khớp sổ, đã hoàn tất.");
-      router.push("/inventory");
+        ? `Đã lưu phiếu kiểm kê ${code} & điều chỉnh tồn cho ${diffRows.length} vật tư.`
+        : `Đã lưu phiếu kiểm kê ${code} — khớp sổ, không cần điều chỉnh.`);
+      router.push("/inventory/stock-taking/history");
+    } else {
+      toast.error(res.errorMessage || "Lưu phiếu kiểm kê thất bại.");
     }
   }
 
@@ -143,6 +138,11 @@ export default function StockTaking() {
         title="Kiểm kê kho"
         description="Đối chiếu tồn thực tế với sổ sách và sinh phiếu điều chỉnh"
         icon={ClipboardCheck}
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/inventory/stock-taking/history"><History className="size-4" /> Lịch sử kiểm kê</Link>
+          </Button>
+        }
       />
 
       {isMock && <MockBanner />}
@@ -177,7 +177,18 @@ export default function StockTaking() {
               </Select>
             </Field>
             <Field label="Người thực hiện">
-              <Input value={performedBy} onChange={(e) => setPerformedBy(e.target.value)} placeholder="VD: KTV Trần Thanh B" />
+              <Select value={performerId} onValueChange={setPerformerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={staffQ.loading ? "Đang tải…" : staffQ.items.length ? "Chọn người thực hiện" : "Chưa có kỹ thuật viên"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffQ.items.map((u) => (
+                    <SelectItem key={u.userID} value={String(u.userID)}>
+                      {u.fullName?.trim() || u.userName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Kỳ kiểm kê" required>
               <Input value={period} onChange={(e) => setPeriod(e.target.value)} />

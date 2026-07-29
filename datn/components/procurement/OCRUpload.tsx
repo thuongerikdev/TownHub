@@ -27,14 +27,13 @@ const DOC_LABEL: Record<string, string> = Object.fromEntries(DOC_TYPES.map((d) =
 
 // Engine OCR — khớp với service Python (field "model") và backend .NET.
 const OCR_ENGINES = [
-  { value: "gemini", label: "Gemini (API · chính xác cao)" },
-  { value: "vietocr", label: "VietOCR (tự train)" },
-  { value: "paddleocr", label: "PaddleOCR (tự train)" },
+  { value: "paddleocr", label: "PaddleOCR thuần (tự train)" },
+  { value: "vietocr", label: "VietOCR + EasyOCR (tự train)" },
+  { value: "paddledet_viet", label: "PaddleOCR DBNet + VietOCR (hybrid)" },
 ];
-const ENGINE_LABEL: Record<string, string> = {
-  ...Object.fromEntries(OCR_ENGINES.map((e) => [e.value, e.label])),
-  pdf: "PDF điện tử (đọc text)",
-};
+const ENGINE_LABEL: Record<string, string> = Object.fromEntries(
+  OCR_ENGINES.map((e) => [e.value, e.label]),
+);
 const OCR_STATUS: Record<string, { tone: Tone; label: string }> = {
   PENDING: { tone: "neutral", label: "Chờ xử lý" },
   QUEUED: { tone: "neutral", label: "Trong hàng đợi" },
@@ -93,16 +92,9 @@ export default function OCRUpload() {
   const jobsQ = useApiList<OcrJobResponse>(() => ocrJobs.getAll(), { mock: mockOcrJobs });
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<"ocr" | "pdf">("ocr");
   const [docType, setDocType] = useState("INVOICE");
-  const [engine, setEngine] = useState("gemini");
+  const [engine, setEngine] = useState("paddleocr");
   const [file, setFile] = useState<File | null>(null);
-
-  function switchMode(m: "ocr" | "pdf") {
-    setMode(m);
-    setFile(null);
-    if (fileRef.current) fileRef.current.value = "";
-  }
   const [submittedBy, setSubmittedBy] = useState("Kế toán");
   const [submitting, setSubmitting] = useState(false);
 
@@ -120,12 +112,23 @@ export default function OCRUpload() {
 
   async function submit() {
     if (!file) { toast.error("Hãy chọn tệp chứng từ để xử lý."); return; }
+    const MAX_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      toast.error(`Tệp vượt quá 10MB (hiện ${(file.size / 1024 / 1024).toFixed(1)}MB). Vui lòng chọn tệp nhỏ hơn.`);
+      return;
+    }
+    const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isImageFile = file.type.startsWith("image/");
+    if (!isImageFile && !isPdfFile) {
+      toast.error("Vui lòng chọn tệp ảnh (JPG/PNG) hoặc PDF quét.");
+      return;
+    }
     setSubmitting(true);
     try {
       const fileUrl = await fileToDataUrl(file);
       const res = await ocrJobs.submit({
         documentType: docType,
-        ocrEngine: mode === "pdf" ? "pdf" : engine,
+        ocrEngine: engine,
         fileUrl,
         fileName: file.name,
         fileSizeBytes: file.size,
@@ -157,28 +160,9 @@ export default function OCRUpload() {
 
       {jobsQ.isMock && <MockBanner />}
 
-      {/* Tab: 2 chế độ đọc tách biệt */}
-      <div className="mb-4 flex gap-1 rounded-xl border border-border bg-surface p-1">
-        {[
-          { v: "ocr", label: "Hóa đơn ảnh (OCR)" },
-          { v: "pdf", label: "Hóa đơn điện tử (PDF)" },
-        ].map((t) => (
-          <button
-            key={t.v}
-            type="button"
-            onClick={() => switchMode(t.v as "ocr" | "pdf")}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              mode === t.v ? "bg-brand text-white" : "text-muted-foreground hover:bg-surface-2"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {/* Form tải chứng từ */}
       <div className="rounded-xl border border-border bg-surface p-6">
-        <div className={`mb-4 grid gap-4 ${mode === "ocr" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+        <div className="mb-4 grid gap-4 sm:grid-cols-3">
           <Field label="Loại chứng từ" required>
             <Select value={docType} onValueChange={setDocType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -187,16 +171,14 @@ export default function OCRUpload() {
               </SelectContent>
             </Select>
           </Field>
-          {mode === "ocr" && (
-            <Field label="Engine AI" required>
-              <Select value={engine} onValueChange={setEngine}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {OCR_ENGINES.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
+          <Field label="Engine AI" required>
+            <Select value={engine} onValueChange={setEngine}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {OCR_ENGINES.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Người gửi">
             <Input value={submittedBy} onChange={(e) => setSubmittedBy(e.target.value)} placeholder="VD: Kế toán" />
           </Field>
@@ -205,7 +187,7 @@ export default function OCRUpload() {
         <input
           ref={fileRef}
           type="file"
-          accept={mode === "pdf" ? ".pdf" : ".pdf,.jpg,.jpeg,.png"}
+          accept=".pdf,.jpg,.jpeg,.png"
           className="hidden"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
@@ -218,7 +200,7 @@ export default function OCRUpload() {
           >
             <Upload className="size-10 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Nhấn để chọn tệp chứng từ</span>
-            <span className="text-xs text-muted-foreground">{mode === "pdf" ? "Chỉ tệp PDF hóa đơn điện tử (có lớp text)" : "PDF quét, JPG, PNG · tối đa 10MB"}</span>
+            <span className="text-xs text-muted-foreground">PDF quét, JPG, PNG · tối đa 10MB</span>
           </button>
         ) : (
           <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 p-4">
@@ -235,13 +217,11 @@ export default function OCRUpload() {
 
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-info/30 bg-info/5 p-3 text-xs text-muted-foreground">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-info" />
-          <span>{mode === "pdf"
-            ? "Hóa đơn điện tử được đọc trực tiếp từ lớp text của PDF (không dùng AI) nên chính xác cao. Nếu PDF là bản scan, hãy dùng tab OCR."
-            : "AI sẽ bóc tách số hóa đơn, nhà cung cấp, danh mục và tổng tiền. Kết quả có thể đối chiếu, chỉnh sửa trước khi tạo hóa đơn."}</span>
+          <span>AI sẽ bóc tách số hóa đơn, nhà cung cấp, danh mục và tổng tiền. Kết quả có thể đối chiếu, chỉnh sửa trước khi tạo hóa đơn.</span>
         </div>
 
         <Button onClick={submit} disabled={submitting || !file} className="mt-5 w-full">
-          {submitting ? "Đang gửi…" : mode === "pdf" ? "Đọc hóa đơn điện tử (PDF)" : "Gửi xử lý OCR"}
+          {submitting ? "Đang gửi…" : "Gửi xử lý OCR"}
         </Button>
       </div>
 

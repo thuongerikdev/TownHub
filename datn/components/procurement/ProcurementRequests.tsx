@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import { Plus, ShoppingCart, Check, X, Trash2, Eye, Clock, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
-  purchaseRequests, displayUser, EMPTY_GUID,
-  type PurchaseRequestResponse, type CreatePurchaseRequestInput,
+  purchaseRequests, users, displayUser, EMPTY_GUID,
+  type PurchaseRequestResponse, type CreatePurchaseRequestInput, type PurchaseLineInput, type RoleMember,
 } from "@/lib/api";
+import { MaterialLinesPicker } from "@/components/shared/material-lines-picker";
 import { useApiList } from "@/lib/use-api";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockPurchaseRequests } from "@/lib/mock/procurement";
 import {
   PageHeader, StatCard, DataTable, FilterBar, EntityModal, Field, MockBanner,
@@ -32,20 +34,30 @@ const STATUS_OPTIONS = ["DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "CONVERTED
 const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 interface FormState {
-  title: string; justification: string; priority: string; neededByDate: string; requestedBy: string;
+  title: string; justification: string; priority: string; neededByDate: string; requestedById: string;
 }
-const emptyForm: FormState = { title: "", justification: "", priority: "MEDIUM", neededByDate: "", requestedBy: "" };
+const emptyForm: FormState = { title: "", justification: "", priority: "MEDIUM", neededByDate: "", requestedById: "" };
 
 export default function ProcurementRequests() {
   const q = useApiList<PurchaseRequestResponse>(() => purchaseRequests.getAll(), { mock: mockPurchaseRequests });
   const list = q.items;
+  // Danh sách người đề xuất — chọn theo ID (không nhập tay), giống phân công KTV ở WO/Ticket.
+  const staffQ = useApiList<RoleMember>(() => users.getByRole("Kỹ thuật viên"));
+  // RBAC ở tầng giao diện: chỉ hiện nút theo quyền (admin được bỏ qua).
+  const { hasPermission } = useAuth();
+  const canRequest = hasPermission("procurement.request");
+  const canApprove = hasPermission("procurement.approve");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [lines, setLines] = useState<PurchaseLineInput[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [detail, setDetail] = useState<PurchaseRequestResponse | null>(null);
+  // Dòng vật tư của PR đang xem chi tiết.
+  const detailItemsQ = useApiList(() => purchaseRequests.getItems(detail!.id), { deps: [detail?.id], enabled: !!detail });
   const [rejecting, setRejecting] = useState<PurchaseRequestResponse | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [confirmDel, setConfirmDel] = useState<PurchaseRequestResponse | null>(null);
@@ -68,16 +80,21 @@ export default function ProcurementRequests() {
 
   function openCreate() {
     setForm(emptyForm); // Mã PR do server sinh khi lưu.
+    setLines([]);
     setOpen(true);
   }
 
   async function submit() {
     if (!form.title.trim()) { toast.error("Nhập tiêu đề đề xuất."); return; }
-    if (!form.requestedBy.trim()) { toast.error("Nhập người đề xuất."); return; }
+    const performer = staffQ.items.find((u) => String(u.userID) === form.requestedById);
+    if (!performer) { toast.error("Chọn người đề xuất."); return; }
     const body: CreatePurchaseRequestInput = {
-      requestedByName: form.requestedBy.trim(), title: form.title.trim(),
+      requestedByUserId: performer.userID,
+      requestedByName: performer.fullName?.trim() || performer.userName,
+      title: form.title.trim(),
       justification: form.justification.trim() || undefined, priority: form.priority,
       neededByDate: form.neededByDate || undefined,
+      items: lines.length ? lines : undefined,
     };
     setSubmitting(true);
     const res = await purchaseRequests.create(body);
@@ -90,18 +107,26 @@ export default function ProcurementRequests() {
   }
 
   async function submitForApproval(p: PurchaseRequestResponse) {
+    if (busyId) return;
+    setBusyId(p.id);
     const res = await purchaseRequests.submit(p.id);
+    setBusyId(null);
     if (res.errorCode === 200) { toast.success(`Đã gửi duyệt ${p.prCode}.`); q.refetch(); }
     else toast.error(res.errorMessage || "Gửi duyệt thất bại.");
   }
   async function approve(p: PurchaseRequestResponse) {
+    if (busyId) return;
+    setBusyId(p.id);
     const res = await purchaseRequests.approve(p.id, EMPTY_GUID);
+    setBusyId(null);
     if (res.errorCode === 200) { toast.success(`Đã duyệt ${p.prCode}.`); q.refetch(); }
     else toast.error(res.errorMessage || "Duyệt thất bại.");
   }
   async function doReject() {
-    if (!rejecting) return;
+    if (!rejecting || busyId) return;
+    setBusyId(rejecting.id);
     const res = await purchaseRequests.reject(rejecting.id, rejectReason.trim() || "Không đạt yêu cầu");
+    setBusyId(null);
     if (res.errorCode === 200) {
       toast.success(`Đã từ chối ${rejecting.prCode}.`);
       setRejecting(null); setRejectReason("");
@@ -109,8 +134,10 @@ export default function ProcurementRequests() {
     } else toast.error(res.errorMessage || "Từ chối thất bại.");
   }
   async function doDelete() {
-    if (!confirmDel) return;
+    if (!confirmDel || busyId) return;
+    setBusyId(confirmDel.id);
     const res = await purchaseRequests.delete(confirmDel.id);
+    setBusyId(null);
     if (res.errorCode === 200) { toast.success("Đã xoá đề xuất."); setConfirmDel(null); q.refetch(); }
     else toast.error(res.errorMessage || "Xoá thất bại.");
   }
@@ -129,17 +156,17 @@ export default function ProcurementRequests() {
       key: "actions", header: "", align: "right",
       cell: (p) => (
         <div className="flex items-center justify-end gap-1">
-          {(p.status === "DRAFT" || p.status === "REJECTED") && (
-            <Button variant="ghost" size="icon" title="Gửi duyệt" className="text-brand hover:text-brand" onClick={() => submitForApproval(p)}><Send className="size-4" /></Button>
+          {canRequest && (p.status === "DRAFT" || p.status === "REJECTED") && (
+            <Button variant="ghost" size="icon" title="Gửi duyệt" className="text-brand hover:text-brand" disabled={busyId === p.id} onClick={() => submitForApproval(p)}><Send className="size-4" /></Button>
           )}
-          {p.status === "SUBMITTED" && (
+          {canApprove && p.status === "SUBMITTED" && (
             <>
-              <Button variant="ghost" size="icon" title="Duyệt" className="text-success hover:text-success" onClick={() => approve(p)}><Check className="size-4" /></Button>
+              <Button variant="ghost" size="icon" title="Duyệt" className="text-success hover:text-success" disabled={busyId === p.id} onClick={() => approve(p)}><Check className="size-4" /></Button>
               <Button variant="ghost" size="icon" title="Từ chối" className="text-danger hover:text-danger" onClick={() => setRejecting(p)}><X className="size-4" /></Button>
             </>
           )}
           <Button variant="ghost" size="icon" title="Chi tiết" onClick={() => setDetail(p)}><Eye className="size-4" /></Button>
-          <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(p)}><Trash2 className="size-4" /></Button>
+          {canRequest && <Button variant="ghost" size="icon" title="Xoá" className="text-danger hover:text-danger" onClick={() => setConfirmDel(p)}><Trash2 className="size-4" /></Button>}
         </div>
       ),
     },
@@ -151,7 +178,7 @@ export default function ProcurementRequests() {
         title="Đề xuất mua hàng (PR)"
         description="Tạo và phê duyệt yêu cầu mua sắm vật tư"
         icon={ShoppingCart}
-        actions={<Button onClick={openCreate}><Plus className="size-4" /> Tạo PR</Button>}
+        actions={canRequest ? <Button onClick={openCreate}><Plus className="size-4" /> Tạo PR</Button> : undefined}
       />
 
       {q.isMock && <MockBanner />}
@@ -190,7 +217,16 @@ export default function ProcurementRequests() {
             <Input value="" placeholder="Tự sinh khi lưu" readOnly disabled className="font-mono" />
           </Field>
           <Field label="Người đề xuất" required>
-            <Input value={form.requestedBy} onChange={(e) => setForm((f) => ({ ...f, requestedBy: e.target.value }))} placeholder="Nguyễn Văn An" />
+            <Select value={form.requestedById} onValueChange={(v) => setForm((f) => ({ ...f, requestedById: v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder={staffQ.loading ? "Đang tải…" : staffQ.items.length ? "Chọn người đề xuất" : "Chưa có nhân sự"} />
+              </SelectTrigger>
+              <SelectContent>
+                {staffQ.items.map((u) => (
+                  <SelectItem key={u.userID} value={String(u.userID)}>{u.fullName?.trim() || u.userName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Tiêu đề" required className="col-span-2">
             <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Mua cáp thép thang máy bổ sung tồn kho" />
@@ -209,6 +245,9 @@ export default function ProcurementRequests() {
           <Field label="Lý do mua" className="col-span-2">
             <Textarea rows={3} value={form.justification} onChange={(e) => setForm((f) => ({ ...f, justification: e.target.value }))} placeholder="Tồn kho dưới mức tối thiểu, cần cho công việc đang chờ…" />
           </Field>
+          <div className="col-span-2">
+            <MaterialLinesPicker value={lines} onChange={setLines} label="Vật tư đề xuất" />
+          </div>
         </div>
       </EntityModal>
 
@@ -231,6 +270,23 @@ export default function ProcurementRequests() {
             {displayUser(detail.approvedBy) && <DetailRow label="Người duyệt">{displayUser(detail.approvedBy)}</DetailRow>}
             {detail.justification && <div className="col-span-2"><DetailRow label="Lý do">{detail.justification}</DetailRow></div>}
             {detail.rejectedReason && <div className="col-span-2"><DetailRow label="Lý do từ chối">{detail.rejectedReason}</DetailRow></div>}
+            <div className="col-span-2">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Vật tư đề xuất ({detailItemsQ.items.length})</p>
+              {detailItemsQ.loading ? (
+                <p className="text-sm text-muted-foreground">Đang tải…</p>
+              ) : detailItemsQ.items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Phiếu này chưa có dòng vật tư.</p>
+              ) : (
+                <ul className="divide-y divide-border rounded-lg border border-border">
+                  {detailItemsQ.items.map((it) => (
+                    <li key={it.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                      <span><span className="font-medium text-foreground">{it.materialName ?? it.materialId}</span> <span className="text-xs text-muted-foreground">{it.materialCode}</span></span>
+                      <span className="text-xs text-muted-foreground">{it.warehouseName ?? ""}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
       </EntityModal>

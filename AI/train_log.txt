@@ -1,0 +1,44 @@
+[38;5;2m✔ Created output directory: output_vi[0m
+[38;5;4mℹ Saving to output directory: output_vi[0m
+[38;5;4mℹ Using GPU: 0[0m
+[1m
+=========================== Initializing pipeline ===========================[0m
+tokenizer_config.json: 100% 25.0/25.0 [00:00<00:00, 188kB/s]
+config.json: 100% 615/615 [00:00<00:00, 3.83MB/s]
+sentencepiece.bpe.model: 100% 5.07M/5.07M [00:00<00:00, 21.2MB/s]
+tokenizer.json: 9.10MB [00:00, 20.2MB/s]
+2026-07-22 13:54:32.959251: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+model.safetensors: 100% 1.12G/1.12G [00:07<00:00, 144MB/s]
+[38;5;2m✔ Initialized pipeline[0m
+[1m
+============================= Training pipeline =============================[0m
+[38;5;4mℹ Pipeline: ['transformer', 'ner'][0m
+[38;5;4mℹ Initial learn rate: 0.0[0m
+E    #       LOSS TRANS...  LOSS NER  ENTS_F  ENTS_P  ENTS_R  SCORE 
+---  ------  -------------  --------  ------  ------  ------  ------
+/usr/local/lib/python3.12/dist-packages/thinc/util.py:401: VisibleDeprecationWarning: This function is deprecated and will be removed in a future release. Use the cupy.from_dlpack() array constructor instead.
+  dlpack_tensor = xp_tensor.toDlpack()  # type: ignore
+  0       0       10097.77   1220.32    0.17    0.12    0.32    0.00
+  2     100     1620245.85  65224.86    0.00    0.00    0.00    0.00
+  4     200      278389.98  38156.63   20.60   54.02   12.72    0.21
+  6     300      414561.28  41828.28   10.15   18.91    6.94    0.10
+  8     400      360507.24  36617.96   54.57   57.21   52.16    0.55
+ 10     500       92911.21  28220.64   88.62   86.49   90.85    0.89
+ 13     600        4673.24  24247.66   97.26   97.57   96.95    0.97
+ 15     700         549.62  23160.32   97.02   96.47   97.58    0.97
+ 17     800         316.94  22544.28   96.46   95.56   97.37    0.96
+ 19     900         306.51  22514.29   97.27   95.26   99.37    0.97
+ 21    1000         241.07  22857.14   98.07   97.31   98.84    0.98
+ 23    1100         239.29  22723.40   98.74   98.23   99.26    0.99
+ 26    1200         237.11  22355.03   99.21   99.79   98.63    0.99
+ 28    1300         151.81  22012.57   99.26   99.89   98.63    0.99
+ 30    1400         162.32  21760.83   99.26   99.68   98.84    0.99
+ 32    1500         183.88  22027.88   99.00   99.16   98.84    0.99
+ 34    1600         101.66  22168.52   98.95   99.26   98.63    0.99
+ 36    1700         135.97  22220.24   99.05   99.26   98.84    0.99
+ 39    1800          91.28  21729.78   99.32   99.16   99.47    0.99
+ 41    1900          63.71  21604.63   99.32   99.16   99.47    0.99
+ 43    2000          53.67  21401.06   99.32   99.16   99.47    0.99
+[38;5;2m✔ Saved pipeline to output directory[0m
+output_vi/model-last

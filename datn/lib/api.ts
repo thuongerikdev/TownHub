@@ -34,6 +34,7 @@ export interface LoginResponse {
 export interface GetUserResponse {
   userID: number; userName: string; email: string; status: string; isEmailVerified: boolean;
   profile?: { firstName?: string; lastName?: string; avatar?: string; gender?: string; dateOfBirth?: string; };
+  scope?: string; // "user" = cư dân, "staff" = nhân sự/BQL (gắn ở FE khi gộp danh sách)
 }
 export interface UserSlim {
   userID: number; userName: string; email: string; status: string; isEmailVerified: boolean;
@@ -63,6 +64,10 @@ export interface NotificationResponse {
   id: number; title: string; content: string; channel: string; audience: string;
   status: string; totalRecipients: number; sentCount: number; failedCount: number;
   scheduledAt?: string; sentAt?: string; createdByAuthUserId: number; createdAt: string;
+}
+export interface NotificationInboxResponse {
+  id: number; logId: number; title: string; content: string;
+  channel: string; audience: string; sentAt?: string; createdAt: string;
 }
 export interface FaceProfileResponse {
   id: number; residentId: number; residentName: string; imageUrl: string;
@@ -237,9 +242,28 @@ async function apiFetch<T>(
       signal: controller.signal,
     });
 
-    const contentType = res.headers.get("content-type");
-    const isJson = contentType?.includes("application/json");
-    const data = isJson ? await res.json() : { errorCode: res.status, errorMessage: res.statusText, data: null };
+    // Nhận cả "application/json" LẪN "application/problem+json" (lỗi validate model
+    // của ASP.NET). Trước đây chỉ khớp "application/json" nên lỗi 400 validate bị
+    // rơi về "Bad Request" chung chung, che mất nguyên nhân thật.
+    const contentType = res.headers.get("content-type") ?? "";
+    const isJson = contentType.includes("json");
+    let data: ApiResponse<T>;
+    if (isJson) {
+      const raw = await res.json().catch(() => null);
+      if (raw && typeof raw === "object" && "errorCode" in raw) {
+        data = raw as ApiResponse<T>;
+      } else if (raw && typeof raw === "object") {
+        // ASP.NET ProblemDetails → gom title/detail/errors thành thông báo dễ đọc.
+        const pd = raw as { title?: string; detail?: string; errors?: Record<string, string[]> };
+        const fieldMsgs = pd.errors ? Object.values(pd.errors).flat() : [];
+        const msg = [pd.detail, ...fieldMsgs].filter(Boolean).join(" ") || pd.title || res.statusText;
+        data = { errorCode: res.status, errorMessage: msg, data: null as T };
+      } else {
+        data = { errorCode: res.status, errorMessage: res.statusText, data: null as T };
+      }
+    } else {
+      data = { errorCode: res.status, errorMessage: res.statusText, data: null as T };
+    }
 
     if (!res.ok) {
       if (
@@ -551,6 +575,31 @@ export const notifications = {
   update: (body: { id: number; title: string; content: string; channel: string; audience: string; templateId?: number; scheduledAt?: string; createdByAuthUserId: number }) =>
     apiFetch<boolean>("/api/Notification/update", { method: "PUT", body: JSON.stringify(body) }),
   send: (id: number) => apiFetch<boolean>(`/api/Notification/send/${id}`, { method: "POST" }),
+  // Hộp thư cá nhân: chỉ thông báo đã gửi tới đúng tài khoản đang đăng nhập.
+  inbox: (authUserId: number) =>
+    apiFetch<NotificationInboxResponse[]>(`/api/Notification/inbox/${authUserId}`),
+};
+
+// ─── Incidents (phiếu sự cố cư dân) ─────────────────────────────────────────────
+export interface CreateIncidentInput {
+  title: string; description?: string; location?: string; apartmentId?: number;
+  category: string; priority: string; reportedByAuthUserId: number; attachments?: string;
+}
+export interface IncidentResponse {
+  id: number; title: string; description?: string; location?: string; apartmentId?: number;
+  category: string; priority: string; status: string;
+  reportedByAuthUserId: number; assignedToAuthUserId?: number;
+  resolutionNote?: string; resolvedAt?: string; createdAt: string; updatedAt: string;
+}
+export const incidents = {
+  getAll: (params?: { status?: string; priority?: string }) => {
+    const q = new URLSearchParams(
+      Object.entries(params ?? {}).filter(([, v]) => v != null) as [string, string][]
+    ).toString();
+    return apiFetch<IncidentResponse[]>(`/api/Incident/get-all${q ? `?${q}` : ""}`);
+  },
+  create: (body: CreateIncidentInput) =>
+    apiFetch<boolean>("/api/Incident/create", { method: "POST", body: JSON.stringify(body) }),
 };
 
 // ─── System Config ─────────────────────────────────────────────────────────────
@@ -1062,6 +1111,69 @@ export const assetDisposals = {
     apiFetch<AssetDisposalResponse>(`/api/asset/asset-disposal/create`, { method: "POST", body: JSON.stringify(body) }),
 };
 
+// ─── Sổ kế toán & báo cáo: types ────────────────────────────────────────────
+export interface AccountInfo { account: string; accountName: string; }
+export interface JournalEntry {
+  lineId: string; documentId: string; documentCode: string; documentType: string;
+  documentDate: string; description?: string;
+  debitAccount?: string; creditAccount?: string; amount: number;
+  assetCode?: string; assetName?: string;
+}
+export interface JournalReport {
+  fromDate?: string; toDate?: string; totalDebit: number; totalCredit: number;
+  entries: JournalEntry[];
+}
+export interface LedgerEntry {
+  lineId: string; documentId: string; documentCode: string; documentDate: string;
+  description?: string; counterAccount?: string; debit: number; credit: number;
+  balance: number; assetCode?: string;
+}
+export interface LedgerReport {
+  account: string; accountName: string; fromDate?: string; toDate?: string;
+  openingBalance: number; periodDebit: number; periodCredit: number;
+  closingBalance: number; entries: LedgerEntry[];
+}
+export interface TrialBalanceRow {
+  account: string; accountName: string;
+  openingDebit: number; openingCredit: number;
+  periodDebit: number; periodCredit: number;
+  closingDebit: number; closingCredit: number;
+}
+export interface TrialBalanceReport {
+  fromDate?: string; toDate?: string; rows: TrialBalanceRow[]; totals: TrialBalanceRow;
+}
+export interface AssetRegisterRow {
+  assetId: string; assetCode: string; name: string; categoryName?: string;
+  accountCode?: string; purchaseDate?: string; usefulLifeMonths?: number;
+  originalCost: number; accumulatedDepreciation: number; bookValue: number; status: string;
+}
+export interface AssetRegisterReport {
+  totalOriginalCost: number; totalAccumulatedDepreciation: number; totalBookValue: number;
+  assetCount: number; rows: AssetRegisterRow[];
+}
+export interface AssetMovementRow {
+  assetId: string; assetCode?: string; assetName?: string; documentCode: string;
+  date: string; movementType: string; amount: number; gainLoss?: number; note?: string;
+}
+export interface AssetMovementReport {
+  fromDate?: string; toDate?: string;
+  totalIncrease: number; totalDecrease: number; increaseCount: number; decreaseCount: number;
+  increases: AssetMovementRow[]; decreases: AssetMovementRow[];
+}
+
+export const assetReports = {
+  accounts: () => apiFetch<AccountInfo[]>(`/api/asset/asset-report/accounts`, {}),
+  journal: (params?: { from?: string; to?: string; account?: string }) =>
+    apiFetch<JournalReport>(`/api/asset/asset-report/journal${qs(params)}`, {}),
+  ledger: (account: string, params?: { from?: string; to?: string }) =>
+    apiFetch<LedgerReport>(`/api/asset/asset-report/ledger${qs({ account, ...params })}`, {}),
+  trialBalance: (params?: { from?: string; to?: string }) =>
+    apiFetch<TrialBalanceReport>(`/api/asset/asset-report/trial-balance${qs(params)}`, {}),
+  assetRegister: () => apiFetch<AssetRegisterReport>(`/api/asset/asset-report/asset-register`, {}),
+  movement: (params?: { from?: string; to?: string }) =>
+    apiFetch<AssetMovementReport>(`/api/asset/asset-report/movement${qs(params)}`, {}),
+};
+
 // ─── Maintenance (PM): types ───────────────────────────────────────────────────
 export interface ChecklistTemplateResponse {
   id: string; code: string; name: string; categoryId?: string; categoryName?: string;
@@ -1256,7 +1368,7 @@ export interface CreateSlaConfigInput {
 }
 export interface UpdateSlaConfigInput extends CreateSlaConfigInput { id: string; }
 export interface CreateTicketInput {
-  ticketCode: string; buildingId: string; floorId?: string; unitId?: string;
+  ticketCode?: string; buildingId: string; floorId?: string; unitId?: string;
   assetId?: string; reportedBy?: string; reportedByName?: string; slaConfigId?: string; purchaseRequestId?: string;
   title?: string; description?: string; category?: string; priority?: string; source?: string;
 }
@@ -1355,6 +1467,7 @@ export const materials = {
     apiFetch<MaterialResponse[]>(`/api/asset/material/get-low-stock${qs({ warehouseId })}`, {}),
   getInventoryLevels: (params?: { warehouseId?: string; materialId?: string }) =>
     apiFetch<InventoryLevelResponse[]>(`/api/asset/material/get-inventory-levels${qs(params)}`, {}),
+  getCategories: () => apiFetch<MaterialCategoryResponse[]>(`/api/asset/material/get-categories`, {}),
   create: (body: CreateMaterialInput) =>
     apiFetch<boolean>(`/api/asset/material/create`, { method: "POST", body: JSON.stringify(body) }),
   update: (body: UpdateMaterialInput) =>
@@ -1367,6 +1480,33 @@ export const inventoryTransactions = {
   getById: (id: string) => apiFetch<InventoryTransactionResponse>(`/api/asset/inventory-transaction/get/${id}`, {}),
   create: (body: CreateInventoryTransactionInput) =>
     apiFetch<boolean>(`/api/asset/inventory-transaction/create`, { method: "POST", body: JSON.stringify(body) }),
+};
+
+// ─── Stock Take (Kiểm kê kho) ───────────────────────────────────────────────
+export interface StockTakeLineInput {
+  materialId: string; systemQty: number; countedQty: number; unitPrice?: number; note?: string;
+}
+export interface CreateStockTakeInput {
+  warehouseId: string; period?: string; countDate?: string;
+  performedByUserId?: number; performedByName?: string; notes?: string;
+  lines: StockTakeLineInput[];
+}
+export interface StockTakeLineResponse {
+  id: string; materialId: string; materialCode?: string; materialName?: string; unitOfMeasure?: string;
+  systemQty: number; countedQty: number; diff: number; unitPrice?: number; diffValue?: number; note?: string;
+}
+export interface StockTakeResponse {
+  id: string; stkCode: string; warehouseId: string; warehouseName?: string;
+  period?: string; countDate: string; performedByUserId?: number; performedByName?: string;
+  status: string; totalItems: number; matchedItems: number; diffItems: number;
+  totalDiffValue: number; notes?: string; createdAt: string; lines: StockTakeLineResponse[];
+}
+export const stockTakes = {
+  getAll: (params?: { warehouseId?: string; status?: string }) =>
+    apiFetch<StockTakeResponse[]>(`/api/asset/stock-take/get-all${qs(params)}`, {}),
+  getById: (id: string) => apiFetch<StockTakeResponse>(`/api/asset/stock-take/get/${id}`, {}),
+  create: (body: CreateStockTakeInput) =>
+    apiFetch<StockTakeResponse>(`/api/asset/stock-take/create`, { method: "POST", body: JSON.stringify(body) }),
 };
 
 // ─── Procurement (Mua sắm): types ──────────────────────────────────────────────
@@ -1395,7 +1535,8 @@ export interface InvoiceResponse {
   ocrJobId?: string; status: string; invoiceDate?: string; invoiceNumber?: string;
   subtotal?: number; taxAmount?: number; totalAmount?: number; currency: string;
   paymentDueDate?: string; paidDate?: string; paymentStatus: string; paymentMethod?: string;
-  confirmedBy?: string; confirmedAt?: string; notes?: string;
+  confirmedBy?: string; confirmedByUserId?: number; confirmedByName?: string;
+  confirmedAt?: string; notes?: string;
 }
 export interface InvoiceItemResponse {
   id: string; invoiceId: string; materialId: string; materialCode?: string; materialName?: string;
@@ -1427,11 +1568,14 @@ export function parseOcrPayload(raw?: string | null): OcrExtractedPayload | null
     return p && typeof p === "object" ? p : null;
   } catch { return null; }
 }
+// Dòng vật tư tạo kèm PR/PO (chọn vật tư + kho đích).
+export interface PurchaseLineInput { materialId: string; targetWarehouseId?: string }
 export interface CreatePurchaseRequestInput {
   // prCode do server sinh — không gửi. requestedBy* server tự suy từ KTV phụ trách WO.
   prCode?: string; ticketId?: string; woId?: string; departmentId?: string;
   requestedBy?: string; requestedByUserId?: number; requestedByName?: string;
   title?: string; justification?: string; priority?: string; neededByDate?: string;
+  items?: PurchaseLineInput[];
 }
 export interface UpdatePurchaseRequestInput extends CreatePurchaseRequestInput {
   id: string; status?: string; approvedBy?: string; approvedAt?: string; rejectedReason?: string;
@@ -1440,6 +1584,7 @@ export interface CreatePurchaseOrderInput {
   // poCode do server sinh — không gửi khi tạo.
   poCode?: string; prId?: string; vendorId: string; issueDate?: string; expectedDelivery?: string;
   totalAmount?: number; currency?: string; paymentTerms?: string; notes?: string; createdBy?: string;
+  items?: PurchaseLineInput[];
 }
 export interface UpdatePurchaseOrderInput extends CreatePurchaseOrderInput { id: string; status?: string; actualDelivery?: string; }
 export interface CreateInvoiceItemLine {
@@ -1498,8 +1643,23 @@ export const invoices = {
   update: (body: UpdateInvoiceInput) =>
     apiFetch<boolean>(`/api/asset/invoice/update`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => apiFetch<boolean>(`/api/asset/invoice/delete/${id}`, { method: "DELETE" }),
-  markPaid: (id: string, paymentMethod: string, confirmedBy: string) =>
-    apiFetch<boolean>(`/api/asset/invoice/mark-paid/${id}`, { method: "PUT", body: JSON.stringify({ paymentMethod, confirmedBy }) }),
+  // Người xác nhận lấy theo tài khoản Auth: confirmedByUserId (int) + tên hiển thị.
+  // KHÔNG gửi tên vào confirmedBy (cột Guid? ở backend → 400) và không nhét tên vào notes.
+  markPaid: (
+    id: string,
+    paymentMethod: string,
+    opts?: { paidDate?: string; notes?: string; confirmedByUserId?: number; confirmedByName?: string },
+  ) =>
+    apiFetch<boolean>(`/api/asset/invoice/mark-paid/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        paymentMethod,
+        paidDate: opts?.paidDate,
+        notes: opts?.notes,
+        confirmedByUserId: opts?.confirmedByUserId,
+        confirmedByName: opts?.confirmedByName,
+      }),
+    }),
   getItems: (invoiceId: string) => apiFetch<InvoiceItemResponse[]>(`/api/asset/invoice/get-items/${invoiceId}`, {}),
   addItem: (body: { invoiceId: string; materialId: string; description?: string; quantity?: number; unitPrice?: number; totalPrice?: number; poItemId?: string }) =>
     apiFetch<boolean>(`/api/asset/invoice/add-item`, { method: "POST", body: JSON.stringify(body) }),

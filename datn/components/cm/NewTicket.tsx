@@ -36,22 +36,15 @@ const PRIORITY: Record<string, string> = {
   LOW: "Thấp", MEDIUM: "Trung bình", HIGH: "Cao", CRITICAL: "Khẩn cấp",
 };
 const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống", IOT: "Cảm biến IoT" };
+const SOURCE: Record<string, string> = { RESIDENT: "Cư dân", STAFF: "Nhân viên", SYSTEM: "Hệ thống" };
 const SOURCE_OPTIONS = Object.keys(SOURCE);
 const NONE = "__none__";
-
-function genTicketCode() {
-  const y = new Date().getFullYear();
-  const n = Math.floor(1000 + Math.random() * 9000);
-  return `TKT-${y}-${n}`;
-}
 
 export default function NewTicket() {
   const router = useRouter();
   const assetsQ = useApiList(() => assetApi.getAll(), { mock: mockAssets });
   const slaQ = useApiList(() => slaConfigs.getAll(), { mock: mockSlaConfigs });
 
-  const [ticketCode] = useState(genTicketCode);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("ELECTRICAL");
   const [priority, setPriority] = useState("MEDIUM");
@@ -72,8 +65,9 @@ export default function NewTicket() {
     // input as text (reportedByName + a location line in the description) instead.
     const loc = unitId.trim();
     const desc = [loc ? `Vị trí: ${loc}` : "", description.trim()].filter(Boolean).join("\n").trim();
+    // Không gửi ticketCode → server tự sinh mã dạng TK-{yyyyMM}-{####}.
     const body: CreateTicketInput = {
-      ticketCode, buildingId: BUILDING, reportedByName: reportedBy.trim(),
+      buildingId: BUILDING, reportedByName: reportedBy.trim(),
       assetId: assetId === NONE ? undefined : assetId,
       slaConfigId: slaConfigId === NONE ? undefined : slaConfigId,
       title: title.trim(), description: desc || undefined,
@@ -82,7 +76,7 @@ export default function NewTicket() {
     const res = await tickets.create(body);
     setSubmitting(false);
     if (res.errorCode === 200) {
-      toast.success(`Đã tiếp nhận sự cố · ${ticketCode}`);
+      toast.success("Đã tiếp nhận sự cố. Mã được cấp tự động.");
       router.push("/tickets");
     } else {
       toast.error(res.errorMessage || "Tạo sự cố thất bại.");
@@ -100,7 +94,7 @@ export default function NewTicket() {
       <div className="mb-6">
         <div className="flex items-center gap-2">
           <LifeBuoy className="size-5 text-brand" />
-          <span className="font-mono text-sm text-muted-foreground">{ticketCode}</span>
+          <span className="font-mono text-sm text-muted-foreground">Mã sự cố: tự sinh khi lưu</span>
         </div>
         <h1 className="mt-1 text-2xl font-bold text-foreground">Báo sự cố mới</h1>
         <p className="mt-1 text-sm text-muted-foreground">Ghi nhận sự cố để hệ thống phân công và theo dõi SLA.</p>

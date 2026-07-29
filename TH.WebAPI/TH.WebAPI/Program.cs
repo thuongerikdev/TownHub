@@ -90,7 +90,13 @@ namespace TH.WebAPI
                 .WithHttpTransport()
                 .WithToolsFromAssembly();
 
-            builder.Services.AddControllers()
+            // Audit log tự động cho mọi hành động quan trọng (POST/PUT/PATCH/DELETE) ở cả 3 module.
+            builder.Services.AddScoped<TH.WebAPI.Filters.AuditLogActionFilter>();
+
+            builder.Services.AddControllers(mvc =>
+                {
+                    mvc.Filters.AddService<TH.WebAPI.Filters.AuditLogActionFilter>();
+                })
                 .AddJsonOptions(options =>
                 {
                     // Dòng này giúp bỏ qua các vòng lặp tham chiếu (Fix lỗi Object cycle)
@@ -139,11 +145,16 @@ namespace TH.WebAPI
 
             await app.SeedAuthDataAsync();
 
-            // Asset module chạy migration khi khởi động CHỈ khi bật cờ ASSET_AUTO_MIGRATE=true.
-            // Mặc định tắt để không tự ý thay đổi schema trên DB dùng chung (Neon) — bật khi đã sẵn sàng.
-            // Gọi tường minh AssetStartUp để tránh nhập nhằng với BaseStartUp.SeedAssetDataAsync (trùng tên).
+            // Seed dữ liệu demo (migration + dữ liệu mẫu) cho CẢ 3 module CHỈ khi bật
+            // cờ ASSET_AUTO_MIGRATE=true. Mặc định tắt để không tự ý thay đổi schema
+            // trên DB dùng chung (Neon) — bật khi đã sẵn sàng nạp dữ liệu.
+            // Thứ tự: (1) nhân sự/cư dân Auth → (2) Base/TownHub liên kết cư dân → (3) Asset.
             if (app.Configuration.GetValue<bool>("ASSET_AUTO_MIGRATE"))
+            {
+                var demoUsers = await AuthStartUp.SeedDemoUsersAsync(app);
+                await BaseStartUp.SeedBaseDataAsync(app, demoUsers);
                 await AssetStartUp.SeedAssetDataAsync(app);
+            }
 
 
             app.UseSwagger();

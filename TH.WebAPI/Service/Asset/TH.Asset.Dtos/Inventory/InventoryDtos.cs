@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace TH.Asset.Dtos
 {
@@ -153,6 +153,65 @@ namespace TH.Asset.Dtos
     }
 
     // ============================================================
+    // STOCK TAKE (Kiểm kê kho) DTOs
+    // ============================================================
+    public class CreateStockTakeLineDto
+    {
+        public Guid materialId { get; set; }
+        public decimal systemQty { get; set; }
+        public decimal countedQty { get; set; }
+        public decimal? unitPrice { get; set; }
+        public string? note { get; set; }
+    }
+
+    public class CreateStockTakeDto
+    {
+        public Guid warehouseId { get; set; }
+        public string? period { get; set; }
+        public DateTime? countDate { get; set; }
+        // Cross-service (Auth) — lưu id + tên hiển thị của người thực hiện.
+        public int? performedByUserId { get; set; }
+        public string? performedByName { get; set; }
+        public string? notes { get; set; }
+        public List<CreateStockTakeLineDto> lines { get; set; } = new();
+    }
+
+    public class StockTakeLineResponse
+    {
+        public Guid id { get; set; }
+        public Guid materialId { get; set; }
+        public string? materialCode { get; set; }
+        public string? materialName { get; set; }
+        public string? unitOfMeasure { get; set; }
+        public decimal systemQty { get; set; }
+        public decimal countedQty { get; set; }
+        public decimal diff { get; set; }
+        public decimal? unitPrice { get; set; }
+        public decimal? diffValue { get; set; }
+        public string? note { get; set; }
+    }
+
+    public class StockTakeResponse
+    {
+        public Guid id { get; set; }
+        public string stkCode { get; set; } = null!;
+        public Guid warehouseId { get; set; }
+        public string? warehouseName { get; set; }
+        public string? period { get; set; }
+        public DateTime countDate { get; set; }
+        public int? performedByUserId { get; set; }
+        public string? performedByName { get; set; }
+        public string status { get; set; } = null!;
+        public int totalItems { get; set; }
+        public int matchedItems { get; set; }
+        public int diffItems { get; set; }
+        public decimal totalDiffValue { get; set; }
+        public string? notes { get; set; }
+        public DateTime createdAt { get; set; }
+        public List<StockTakeLineResponse> lines { get; set; } = new();
+    }
+
+    // ============================================================
     // PURCHASE REQUEST DTOs
     // ============================================================
     public class CreatePurchaseRequestDto
@@ -172,6 +231,16 @@ namespace TH.Asset.Dtos
         public string? justification { get; set; }
         public string priority { get; set; } = "MEDIUM";
         public DateTime? neededByDate { get; set; }
+
+        // Dòng vật tư đề xuất — tạo kèm ngay khi lập phiếu (header + lines trong 1 giao dịch).
+        public List<PurchaseLineDto>? items { get; set; }
+    }
+
+    // Dòng vật tư dùng chung khi tạo PR/PO kèm danh sách vật tư (chỉ chọn vật tư + kho đích).
+    public class PurchaseLineDto
+    {
+        public Guid materialId { get; set; }
+        public Guid? targetWarehouseId { get; set; }
     }
 
     public class UpdatePurchaseRequestDto : CreatePurchaseRequestDto
@@ -246,6 +315,9 @@ namespace TH.Asset.Dtos
         public string? notes { get; set; }
         // Cross-service (Auth)
         public Guid? createdBy { get; set; }
+
+        // Dòng vật tư của đơn hàng — tạo kèm ngay khi lập đơn.
+        public List<PurchaseLineDto>? items { get; set; }
     }
 
     public class UpdatePurchaseOrderDto : CreatePurchaseOrderDto
@@ -363,6 +435,8 @@ namespace TH.Asset.Dtos
         public string? paymentMethod { get; set; }
         // Cross-service (Auth)
         public Guid? confirmedBy { get; set; }
+        public int? confirmedByUserId { get; set; }
+        public string? confirmedByName { get; set; }
         public DateTime? confirmedAt { get; set; }
     }
 
@@ -387,6 +461,8 @@ namespace TH.Asset.Dtos
         public string paymentStatus { get; set; } = null!;
         public string? paymentMethod { get; set; }
         public Guid? confirmedBy { get; set; }
+        public int? confirmedByUserId { get; set; }
+        public string? confirmedByName { get; set; }
         public DateTime? confirmedAt { get; set; }
         public string? notes { get; set; }
     }
@@ -425,7 +501,7 @@ namespace TH.Asset.Dtos
     public class CreateOcrJobDto
     {
         public required string documentType { get; set; }
-        // Engine OCR: "gemini" (API) | "vietocr" | "paddleocr". Mặc định "gemini" nếu bỏ trống.
+        // Engine OCR: "paddleocr" | "vietocr". Mặc định "paddleocr" nếu bỏ trống.
         public string? ocrEngine { get; set; }
         public string? fileUrl { get; set; }
         public string? fileName { get; set; }
@@ -439,7 +515,7 @@ namespace TH.Asset.Dtos
     {
         public Guid id { get; set; }
         public string documentType { get; set; } = null!;
-        public string ocrEngine { get; set; } = "gemini";  // gemini | vietocr | paddleocr
+        public string ocrEngine { get; set; } = "paddleocr";  // paddleocr | vietocr
         public string status { get; set; } = null!;  // QUEUED | PROCESSING | DONE | FAILED
         public Guid? reviewedBy { get; set; }
         public string? reviewedByName { get; set; }

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
@@ -35,7 +37,7 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
         {
             try
             {
-                // Gửi kèm "model" để service Python chọn engine (gemini | vietocr | paddleocr).
+                // Gửi kèm "model" để service Python chọn engine (paddleocr | vietocr | paddledet_viet).
                 using var req = new HttpRequestMessage(HttpMethod.Post, "extract")
                 {
                     Content = JsonContent.Create(new { fileUrl, model })
@@ -69,8 +71,17 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
                         TaxAmount     = f.TaxAmount,
                         TotalAmount   = f.TotalAmount,
                         Currency      = string.IsNullOrWhiteSpace(f.Currency) ? "VND" : f.Currency
-                    }
-                    // lineItems hiện rỗng từ service → người dùng nhập ở màn InvoiceVerify
+                    },
+                    // Đọc bảng chi tiết do service bóc tách (parser deskew + gán cột).
+                    LineItems = (dto.LineItems ?? new List<VietOcrLineItem>())
+                        .Select(li => new OcrLineItem
+                        {
+                            Description = li.Description,
+                            Quantity    = li.Quantity,
+                            UnitPrice   = li.UnitPrice,
+                            TotalPrice  = li.TotalPrice
+                        })
+                        .ToList()
                 };
             }
             catch (Exception ex)
@@ -87,7 +98,16 @@ namespace TH.Asset.ApplicationService.Service.Inventory.Ocr
             [JsonPropertyName("confidence")]   public decimal? Confidence { get; set; }
             [JsonPropertyName("rawText")]      public string? RawText { get; set; }
             [JsonPropertyName("fields")]       public VietOcrFields? Fields { get; set; }
+            [JsonPropertyName("lineItems")]    public List<VietOcrLineItem>? LineItems { get; set; }
             [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; set; }
+        }
+
+        private sealed class VietOcrLineItem
+        {
+            [JsonPropertyName("description")] public string? Description { get; set; }
+            [JsonPropertyName("quantity")]    public decimal? Quantity { get; set; }
+            [JsonPropertyName("unitPrice")]   public decimal? UnitPrice { get; set; }
+            [JsonPropertyName("totalPrice")]  public decimal? TotalPrice { get; set; }
         }
 
         private sealed class VietOcrFields
