@@ -1,0 +1,264 @@
+% =====================================================================
+%  BẢN MẪU (lát cắt dọc) — bản 3: thêm phân rã ĐẦY ĐỦ phần Base,
+%  đặc tả use case chi tiết, và 2 sequence đầy đủ đầu-cuối.
+%  Mọi luồng/trạng thái/endpoint/bảng đối chiếu code (đã kiểm chứng).
+% =====================================================================
+\documentclass[a4paper,oneside]{report}
+\usepackage[fontsize=13pt]{scrextend}
+\usepackage{lmodern}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+\setmonofont{Consolas}[Scale=0.88]
+\usepackage{geometry}
+\geometry{a4paper,left=3cm,right=2cm,top=2.5cm,bottom=2.5cm}
+\usepackage{setspace}\setstretch{1.3}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}\usepackage{float}\usepackage{pdflscape}
+\usepackage{array}\usepackage{longtable}\usepackage{tabularx}\usepackage{ragged2e}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\usepackage{enumitem}
+\setlist[itemize,1]{label={\textbullet}}
+\setlist[itemize,2]{label={--}}
+\usepackage{caption}
+\captionsetup{font=small,labelformat=empty,justification=centering}
+\newcommand{\figland}[2]{%
+  \begin{landscape}\thispagestyle{fancy}%
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{#1}%
+  \caption*{\small #2}\end{figure}\end{landscape}}
+\newcommand{\fig}[3]{%
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=#3\textheight,keepaspectratio]{#1}%
+  \caption*{\small #2}\end{figure}}
+\usepackage{tikz}\usepackage[table]{xcolor}\usepackage{microtype}
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]{\normalfont\Large\bfseries}{}{0pt}{}
+\titleformat{\section}{\normalfont\large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\chapter}{0pt}{0pt}{12pt}
+\titlespacing*{\section}{0pt}{10pt plus 2pt minus 2pt}{5pt}
+\titlespacing*{\subsection}{0pt}{8pt plus 2pt minus 2pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{6pt plus 1pt minus 1pt}{3pt}
+\setlength{\intextsep}{6pt}\setlength{\textfloatsep}{6pt}
+\setlength{\abovecaptionskip}{4pt}\setlength{\belowcaptionskip}{2pt}
+\usepackage[unicode,hidelinks]{hyperref}\usepackage{xurl}
+\XeTeXlinebreaklocale "vi"\XeTeXlinebreakskip=0pt plus 1pt
+\justifying
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}
+\newcommand{\notebox}[1]{\par\noindent\begin{center}\fcolorbox{black!30}{black!4}{%
+\begin{minipage}{0.97\linewidth}\small #1\end{minipage}}\end{center}\par}
+\newcommand{\ucrow}[2]{\textbf{#1} & #2 \\ \hline}
+\newenvironment{ucspec}[1]{%
+ \par\small\renewcommand{\arraystretch}{1.2}%
+ \begin{longtable}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{11.2cm}|}\hline
+ \multicolumn{2}{|l|}{\textbf{#1}}\\ \hline}
+ {\end{longtable}}
+
+\begin{document}
+
+\chapter*{Lát cắt mẫu: Phân tích \& thiết kế (Base + Bảo trì \& Sự cố)}
+Tài liệu trình bày mạch phân tích thống nhất — \textbf{khảo sát $\rightarrow$ chức năng tổng quát $\rightarrow$ danh sách chức năng chính $\rightarrow$ use case tổng quát $\rightarrow$ phân rã dần} — và áp mạch đó cho \emph{hai} phần: (i) nền tảng chung \textbf{Base} và (ii) nhóm \textbf{Bảo trì \& Sự cố} thuộc phân hệ Tài sản. Mỗi cấp phân rã có: biểu đồ use case kèm \emph{đặc tả use case chi tiết}, sơ đồ luồng nghiệp vụ, biểu đồ tuần tự, sơ đồ trạng thái và thiết kế cơ sở dữ liệu (ERD), cùng giải thích \emph{tại sao} và minh chứng tham chiếu. \textbf{Toàn bộ luồng, trạng thái, tên endpoint và tên bảng đều đối chiếu trực tiếp với mã nguồn} (module \texttt{TH.Auth}/\texttt{TH.Base}/\texttt{TH.Asset}); phần \emph{chưa hiện thực} được ghi chú rõ, không mô tả như đã có.
+
+\notebox{\textbf{Quy ước biểu đồ.}
+\begin{itemize}[leftmargin=1.4em,itemsep=0pt,topsep=2pt]
+  \item \textbf{Use case}: liên kết \emph{tác nhân--use case} là đường thẳng không mũi tên; giữa hai tác nhân chỉ dùng \emph{generalization} (mũi tên tam giác rỗng, có kèm nhãn ``kế thừa vai trò''); giữa các use case dùng \guillemotleft include\guillemotright/\guillemotleft extend\guillemotright{} vẽ nét đứt.
+  \item \textbf{Tuần tự}: có thanh hoạt động; gọi = nét liền mũi tên đặc, trả về = nét đứt mũi tên mở; mỗi lời gọi có trả về.
+  \item \textbf{Luồng}: BPMN có làn trách nhiệm (swimlane); cổng quyết định hình thoi.
+  \item \textbf{ERD}: Graphviz; tham chiếu nhóm khác vẽ hộp nét đứt.
+\end{itemize}}
+
+% =====================================================================
+\section*{1. Từ khảo sát đến chức năng tổng quát}
+Khảo sát hiện trạng (Chương 1) cho thấy hoạt động quản lý vận hành chủ yếu thủ công, rời rạc trên ba phân hệ tài sản -- dân cư -- dịch vụ, cùng dùng chung lớp dữ liệu nền. Từ đó rút ra hai khối: \textbf{nền tảng chung (Base)} và \textbf{ba phân hệ nghiệp vụ} kế thừa Base. Bảng~1 liệt kê nhóm chức năng chính, đánh dấu chung/riêng (Điều 7).
+
+{\small\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedright\arraybackslash}p{7.3cm}|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}p{2.1cm}|}
+\hline
+\textbf{Nhóm chức năng} & \textbf{Chức năng chính} & \textbf{Tác nhân chính} & \textbf{Phân loại} \\ \hline
+\endhead
+Nền tảng (Base) & Xác thực/MFA \& phân quyền RBAC; quản lý người dùng/phiên; thông báo; cấu hình \& danh mục; nhật ký hoạt động & Quản trị viên, Ban quản lý & Chung (cả nhóm) \\ \hline
+Tài sản -- Mua sắm & Kho \& vật tư; NCC; PR $\rightarrow$ PO $\rightarrow$ hóa đơn; OCR hóa đơn & Kế toán, Ban quản lý & Riêng (tác giả) \\ \hline
+Tài sản -- Vòng đời tài sản & Danh mục; ghi tăng; QR; điều chuyển; khấu hao; thanh lý; kế toán & Kế toán, Kỹ sư trưởng & Riêng (tác giả) \\ \hline
+Tài sản -- Bảo trì \& Sự cố & Lịch bảo trì; Work Order; checklist; nghiệm thu; ticket; SLA; đánh giá & Kỹ thuật viên, Kỹ sư trưởng, Cư dân & Riêng (tác giả) \\ \hline
+Dân cư & Hồ sơ cư dân \& căn hộ; kiểm soát ra vào (khuôn mặt) & Ban quản lý & Riêng (thành viên khác) \\ \hline
+Dịch vụ & NCC \& niêm yết dịch vụ; yêu cầu dịch vụ & Cư dân & Riêng (thành viên khác) \\ \hline
+\multicolumn{4}{r}{\footnotesize\textit{Bảng 1. Danh sách chức năng chính của hệ thống TownHub}}
+\end{longtable}}
+
+Bản đồ phân rã chức năng (Hình~1) thể hiện cây chức năng từ tổng thể xuống chi tiết. Hai phần được phân rã đầy đủ trong tài liệu này là \textbf{Base} và \textbf{Bảo trì \& Sự cố} ($\bigstar$).
+
+\fig{images/fig_funcmap.pdf}{Hình 1. Bản đồ phân rã chức năng tổng thể (đánh dấu phần chung/riêng và lát cắt trình bày)}{0.5}
+
+\subsection*{1.1. Biểu đồ use case tổng quát, phân tích tác nhân và use case}
+Hệ thống có sáu vai trò người dùng (đúng danh sách vai trò khởi tạo trong mã: \texttt{admin}, \texttt{Ban quản lý}, \texttt{Kỹ sư trưởng}, \texttt{Kỹ thuật viên}, \texttt{Kế toán}, \texttt{Cư dân}). Hình~2 là biểu đồ use case tổng quát; bốn gói phân hệ tô màu phân biệt dùng chung (Base -- xám) và riêng (Tài sản -- xanh; Dân cư/Dịch vụ -- làm mờ).
+
+\notebox{\textbf{Về quan hệ giữa hai tác nhân trong biểu đồ.} Mũi tên \emph{tam giác rỗng} ``Kỹ sư trưởng $\vartriangleright$ Kỹ thuật viên'' (kèm nhãn \emph{kế thừa vai trò / generalization}) \textbf{không phải} association giữa hai tác nhân (điều bị cấm trong UML) mà là quan hệ \emph{generalization}: Kỹ sư trưởng \emph{là một} Kỹ thuật viên đặc biệt — kế thừa mọi use case của Kỹ thuật viên (thực hiện WO, xử lý sự cố) và có thêm quyền giám sát (phân công, nghiệm thu, đóng). Nhờ đó tránh vẽ lại các liên kết trùng lặp. Đây là quy ước hợp lệ và được khuyến nghị của UML; association (đường thẳng) chỉ nối giữa tác nhân và use case.}
+
+Bảng~2 phân tích chi tiết từng use case cấp cao trong Hình~2: tác nhân, mô tả (theo endpoint thật) và ghi chú mức hiện thực.
+
+{\small\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedright\arraybackslash}p{7.6cm}|}
+\hline
+\textbf{Use case} & \textbf{Tác nhân} & \textbf{Mô tả \& ghi chú} \\ \hline
+\endhead
+\textit{Base:} Đăng nhập (MFA) & Người dùng (mọi vai trò) & Đăng nhập nội bộ/Google; MFA/TOTP; cấp JWT + refresh token. Phân rã ở §2. \\ \hline
+\textit{Base:} QL người dùng \& phân quyền (RBAC) & Quản trị viên & CRUD người dùng, vai trò, quyền; gán vai trò$\leftrightarrow$quyền; quản lý phiên. Phân rã ở §2. \\ \hline
+\textit{Base:} Cấu hình \& danh mục & Quản trị viên, Ban quản lý & Tham số hệ thống theo key; danh mục toà nhà/tầng/căn hộ. \\ \hline
+\textit{Base:} Nhận / gửi thông báo & Ban quản lý (gửi); mọi vai trò (nhận) & Soạn/gửi thông báo theo đối tượng (email thật + hộp thư trong hệ thống). \\ \hline
+\textit{Base:} Dashboard \& KPI & Ban quản lý, Kỹ sư trưởng, Kế toán & Chụp \& truy vấn KPI vận hành. \emph{Endpoint nằm ở module Asset} (AssetReportService, policy \texttt{ReportKpi}). \\ \hline
+\textit{Base:} Tra cứu Audit log & Quản trị viên & Nhật ký thao tác toàn hệ thống ghi vào \texttt{auth.AuthAuditLog} qua một action filter chung. \\ \hline
+\textit{Tài sản:} QL Mua sắm \& Kho & Kế toán, BQL, KTV, Kỹ sư trưởng & Kho, vật tư, PR$\rightarrow$PO$\rightarrow$hóa đơn, OCR, NCC (nhóm riêng — chương Mua sắm). \\ \hline
+\textit{Tài sản:} QL Vòng đời tài sản & Kế toán, Kỹ sư trưởng & Danh mục, ghi tăng, QR, điều chuyển, khấu hao, thanh lý, kế toán (nhóm riêng). \\ \hline
+\textit{Tài sản:} QL Bảo trì \& Sự cố $\bigstar$ & Kỹ sư trưởng, KTV, Cư dân, BQL & Lịch PM, Work Order, ticket, SLA. Phân rã đầy đủ ở §3. \\ \hline
+\multicolumn{3}{r}{\footnotesize\textit{Bảng 2. Phân tích use case tổng quát}}
+\end{longtable}}
+
+\figland{images/fig_uc_overall.pdf}{Hình 2. Biểu đồ use case tổng quát toàn hệ thống (phân biệt phần chung/riêng)}
+
+% =====================================================================
+\section*{2. Phân rã nền tảng chung (Base)}
+Base do cả nhóm xây dựng, là lớp dùng chung mà cả ba phân hệ nghiệp vụ kế thừa. Trọng tâm của Base là \textbf{xác thực -- phân quyền} (schema \texttt{auth}) cùng các dịch vụ vận hành dùng chung (thông báo, cấu hình -- danh mục, nhật ký hoạt động). Hình~3 là biểu đồ use case của Base, nhóm theo bốn cụm: xác thực \& tài khoản, phân quyền RBAC, vận hành \& danh mục \& thông báo, và giám sát \& hộp thư.
+
+\figland{images/fig_uc_base.pdf}{Hình 3. Biểu đồ use case module Base}
+
+\subsection*{2.1. Đặc tả use case Base tiêu biểu}
+\begin{ucspec}{UC-B01 — Đăng nhập có xác thực đa yếu tố (MFA)}
+\ucrow{Tác nhân}{Người dùng (mọi vai trò): cư dân qua \texttt{/login/userLogin}, nhân sự qua \texttt{/login/StaffLogin}.}
+\ucrow{Tiền điều kiện}{Có tài khoản trạng thái \texttt{Active}, đã xác minh email.}
+\ucrow{Luồng chính}{1) Nhập userName/mật khẩu. 2) Hệ thống kiểm \texttt{status=Active}, verify mật khẩu, \texttt{isEmailVerified}. 3) Nếu MFA bật: lưu vé \texttt{mfa:login:\{ticket\}} vào Redis (TTL 5'), trả \texttt{requiresMfa=true} \emph{chưa cấp token}. 4) Người dùng nhập mã TOTP 6 số. 5) Hệ thống xác minh TOTP (thư viện OtpNet, dung sai $\pm$window), tạo phiên \texttt{AuthUserSession}, phát JWT HS256 (claims \texttt{role}/\texttt{permission}) + refresh token, đặt cookie HttpOnly.}
+\ucrow{Ngoại lệ}{Sai mật khẩu $\rightarrow$ 401; email chưa xác minh $\rightarrow$ 409; tài khoản khoá $\rightarrow$ 403; mã TOTP sai $\rightarrow$ 401; vé hết hạn $\rightarrow$ 400.}
+\ucrow{Hậu điều kiện}{Có phiên đăng nhập và JWT mang đầy đủ vai trò/quyền để gọi API.}
+\end{ucspec}
+
+\begin{ucspec}{UC-B02 — Gán vai trò \& gán quyền (RBAC)}
+\ucrow{Tác nhân}{Quản trị viên.}
+\ucrow{Tiền điều kiện}{Đã có danh mục vai trò và quyền.}
+\ucrow{Luồng chính}{1) Chọn người dùng, gán tập vai trò (\texttt{RoleAssign}). 2) Chọn vai trò, gán tập quyền (\texttt{PermissionAssign}). 3) Ở lần đăng nhập/làm mới token kế tiếp, quyền mới nhất được truy vấn lại từ CSDL và nhúng vào JWT.}
+\ucrow{Hậu điều kiện}{Người dùng có tập quyền mới; hiệu lực ở token phát hành kế tiếp.}
+\end{ucspec}
+
+\subsection*{2.2. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}
+Hình~4 đặc tả tương tác đăng nhập hai pha đúng theo \texttt{AuthLoginService}. Pha 1: kiểm mật khẩu/trạng thái/email, nếu bật MFA thì lưu vé vào Redis và trả \texttt{requiresMfa} (chưa token). Pha 2: xác minh mã TOTP, tạo phiên, phát JWT + refresh token, đặt cookie HttpOnly. Lưu ý mỗi lời gọi đều có thông điệp trả về.
+
+\figland{images/fig_seq_login_mfa.pdf}{Hình 4. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}
+
+\subsection*{2.3. Sơ đồ luồng: Xác thực \& phân quyền cho mọi request}
+RBAC không chỉ là dữ liệu vai trò -- quyền mà được \emph{thực thi} ở mỗi request (Hình~5): tầng middleware xác thực JWT (HS256, còn hạn) $\rightarrow$ controller kiểm chính sách quyền (\texttt{[Authorize Policy=\ldots]}) $\rightarrow$ với các thao tác giới hạn theo phân công còn kiểm \emph{quyền hàng} (\texttt{DenyIfNotAssigned}: kỹ thuật viên chỉ thao tác phiếu của mình) $\rightarrow$ mới tới service. Cơ chế phân quyền dựa trên mô hình RBAC chuẩn (NIST) và token JWT (RFC 7519); MFA dùng TOTP (RFC 6238).
+
+\figland{images/fig_flow_auth.pdf}{Hình 5. Sơ đồ luồng xác thực \& phân quyền RBAC cho mỗi request}
+
+\notebox{\textbf{Mức độ hiện thực (trung thực).} Cơ chế xác thực JWT/MFA và ma trận RBAC (vai trò -- quyền) đã hiện thực đầy đủ và được enforce trên các controller của module Asset. Tuy nhiên một số controller phía Base (thông báo, cấu hình, danh mục toà/tầng/căn hộ, phí) \emph{hiện chưa gắn} thuộc tính \texttt{[Authorize]} ở tầng controller — quyền đã được seed nhưng chưa enforce; đây là điểm cần hoàn thiện. Ngoài ra: xác minh email khi đăng ký (bảng \texttt{AuthEmailVerification}) tồn tại nhưng \emph{chưa có endpoint tiêu thụ} (tài khoản tạo ra được đặt \texttt{isEmailVerified=true} trực tiếp); không có tác vụ nền nào trong Auth/Base (worker duy nhất là OCR của module Asset); thông báo chỉ gửi thật qua email + hộp thư, \emph{chưa có} cổng SMS/Push.}
+
+\subsection*{2.4. Sơ đồ trạng thái: MFA của tài khoản}
+Trạng thái MFA của tài khoản (\texttt{AuthMfaSecret.status}) đi theo Hình~6: \texttt{Pending} (đã sinh secret, chờ xác nhận) $\rightarrow$ \texttt{Enabled} (xác nhận mã đúng) $\rightarrow$ \texttt{Disabled} (tắt), và có thể bật lại. Chỉ trạng thái \texttt{Enabled} mới được chấp nhận mã khi đăng nhập.
+
+\fig{images/fig_state_mfa.pdf}{Hình 6. Sơ đồ trạng thái MFA của tài khoản}{0.42}
+
+\subsection*{2.5. Thiết kế cơ sở dữ liệu Base (schema auth) và phân tích từng bảng}
+Hình~7 là ERD schema \texttt{auth} với \texttt{AuthUser} làm trung tâm.
+
+\fig{images/fig_erd_auth.pdf}{Hình 7. ERD schema auth (Base)}{0.95}
+
+Vai trò từng bảng:
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+  \item \texttt{AuthUser}: tài khoản đăng nhập gốc (userName, email, passwordHash, googleSub, scope \texttt{staff}/\texttt{user}, status, tokenVersion).
+  \item \texttt{AuthProfile}: hồ sơ cá nhân 1--1 với tài khoản (họ tên, ảnh, giới tính, ngày sinh).
+  \item \texttt{AuthRole}, \texttt{AuthPermission}: danh mục vai trò và quyền (quyền có \texttt{code} dùng làm claim khi phát JWT).
+  \item \texttt{AuthUserRole}: bảng nối người dùng $\leftrightarrow$ vai trò (khóa chính tổ hợp).
+  \item \texttt{AuthRolePermission}: bảng nối vai trò $\leftrightarrow$ quyền — mắt xích RBAC.
+  \item \texttt{AuthUserSession}: phiên/thiết bị đăng nhập (deviceId, ip, userAgent, isRevoked).
+  \item \texttt{AuthRefreshToken}: refresh token xoay vòng, gắn phiên; \texttt{replacedByToken} lưu vết xoay vòng.
+  \item \texttt{AuthMfaSecret}: bí mật TOTP 1--1 với tài khoản (secret Base32, status).
+  \item \texttt{AuthEmailVerification}, \texttt{AuthPasswordReset}: mã xác minh email / đổi -- quên mật khẩu (codeHash, hạn, thời điểm dùng).
+  \item \texttt{AuthAuditLog}: nhật ký kiểm toán toàn hệ thống (action, result, ip, userAgent, thời điểm).
+\end{itemize}
+
+% =====================================================================
+\section*{3. Phân rã nhóm ``Bảo trì \& Sự cố'' (phần riêng)}
+\subsection*{3.1. Đặt vấn đề, phạm vi và cơ sở tham chiếu}
+Nhóm Bảo trì \& Sự cố gộp toàn bộ \emph{công việc hiện trường của kỹ thuật viên}: bảo trì phòng ngừa theo lịch (Work Order) và xử lý sự cố phát sinh (ticket). Hai luồng dùng chung tác nhân, cơ chế phân công -- checklist -- vật tư và dữ liệu tài sản. Phân hệ kế thừa Base (xác thực/JWT, RBAC, nhật ký).
+
+\textbf{Cơ sở tham chiếu.} Bảo trì phòng ngừa/khắc phục kế thừa mô-đun \emph{Odoo Maintenance} (\url{https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/maintenance/maintenance_requests.html}); vòng đời sự cố \& SLA kế thừa \emph{ITIL Incident Management} và chính sách leo thang của Atlassian (\url{https://www.atlassian.com/incident-management}, \url{https://www.atlassian.com/incident-management/on-call/escalation-policies}; khái niệm SLA: \url{https://www.atlassian.com/itsm/service-request-management/slas}); ký hiệu sơ đồ luồng theo \emph{BPMN 2.0} của OMG (\url{https://www.omg.org/spec/BPMN/2.0/}). TownHub bổ sung: cấu hình SLA theo tòa nhà/ưu tiên, liên kết \emph{ticket $\rightarrow$ PR} khi thiếu vật tư, quét QR check-in, đánh giá của cư dân, và \emph{đồng bộ trạng thái tài sản} theo tiến độ WO.
+
+\notebox{\textbf{Mức độ hiện thực (trung thực).} Cấu hình SLA (mốc phản hồi/xử lý, các mức leo thang L1/L2/L3), bảng nhật ký leo thang và màn hình tra cứu \emph{đã có}; nhưng \emph{tự động phát hiện quá hạn và gửi cảnh báo} (tác vụ nền) \emph{chưa hiện thực}. Lệnh công việc được \emph{tạo thủ công} từ danh sách lịch đến hạn (có truy vấn lịch quá hạn), chưa có tác vụ nền tự sinh. Các luồng sự cố/bảo trì \emph{không} tự gửi thông báo.}
+
+\subsection*{3.2. Biểu đồ use case phân hệ}
+Hình~8 là use case của phân hệ. Tác nhân: \textbf{Cư dân} (báo sự cố, theo dõi, đánh giá); \textbf{Kỹ thuật viên} (thực hiện WO, xử lý sự cố); \textbf{Kỹ sư trưởng} — kế thừa Kỹ thuật viên — (tạo WO từ lịch đến hạn, phân công, nghiệm thu, tiếp nhận \& phân công sự cố, đóng ticket); \textbf{Ban quản lý} (cấu hình lịch/SLA, xem dashboard \& lịch sử). Quan hệ: ``Thực hiện Work Order'' \guillemotleft include\guillemotright{} ``Điền checklist''/``Quét QR check-in''; ``Xử lý sự cố'' \guillemotleft include\guillemotright{} ``Cập nhật trạng thái''; các nhánh tùy điều kiện dùng \guillemotleft extend\guillemotright{} (``Ghi nhận vật tư'', ``Tạo PR / xuất vật tư'').
+
+\figland{images/fig_uc_baotri.pdf}{Hình 8. Biểu đồ use case phân hệ Bảo trì \& Sự cố (generalization tác nhân + include/extend)}
+
+\subsection*{3.3. Đặc tả use case chi tiết}
+\begin{ucspec}{UC-01 — Báo sự cố}
+\ucrow{Tác nhân}{Cư dân (nguồn \texttt{APP}); lễ tân/bảo vệ có thể báo hộ (\texttt{RECEPTION}/\texttt{PHONE}).}
+\ucrow{Tiền điều kiện}{Đã đăng nhập.}
+\ucrow{Luồng chính}{Nhập tiêu đề/mô tả/loại/ưu tiên/vị trí + ảnh $\rightarrow$ \texttt{POST /api/asset/ticket/create} $\rightarrow$ sinh mã \texttt{TK-yyyyMM-\#\#\#\#}, tạo phiếu + lịch sử trạng thái \texttt{NEW}.}
+\ucrow{Ngoại lệ}{Thiếu trường bắt buộc $\rightarrow$ 400; mã trùng (nếu client tự đặt) $\rightarrow$ 400.}
+\ucrow{Hậu điều kiện}{Phiếu ở \texttt{NEW}, chờ phân công (chưa tính SLA/tự phân công).}
+\end{ucspec}
+\begin{ucspec}{UC-02 — Tiếp nhận \& phân công xử lý}
+\ucrow{Tác nhân}{Kỹ sư trưởng (Ban quản lý có thể).}
+\ucrow{Tiền điều kiện}{Có phiếu \texttt{NEW}.}
+\ucrow{Luồng chính}{Xem phiếu \texttt{NEW}, chọn KTV, \texttt{POST /ticket/assign} $\rightarrow$ thêm phân công, cập nhật người phụ trách, chuyển \texttt{NEW}$\rightarrow$\texttt{ASSIGNED} + lịch sử.}
+\ucrow{Ngoại lệ}{KTV đã được phân công vào phiếu $\rightarrow$ 400.}
+\ucrow{Hậu điều kiện}{Phiếu \texttt{ASSIGNED}; KTV thấy phiếu trong danh sách của mình.}
+\end{ucspec}
+\begin{ucspec}{UC-03 — Thực hiện Work Order}
+\ucrow{Tác nhân}{Kỹ thuật viên được phân công.}
+\ucrow{Tiền điều kiện}{WO ở \texttt{ASSIGNED}.}
+\ucrow{Luồng chính}{Quét QR check-in $\rightarrow$ \texttt{IN\_PROGRESS} (tài sản $\rightarrow$ \texttt{MAINTENANCE}) $\rightarrow$ điền checklist $\rightarrow$ (nếu cần) xuất kho \& ghi vật tư $\rightarrow$ chụp ảnh $\rightarrow$ gửi nghiệm thu (\texttt{PENDING\_REVIEW}).}
+\ucrow{Ngoại lệ}{Chuyển trạng thái sai bị chặn (\texttt{WorkOrderState}); nghiệm thu không đạt $\rightarrow$ \texttt{REJECTED} $\rightarrow$ \texttt{ASSIGNED}/\texttt{IN\_PROGRESS}.}
+\ucrow{Hậu điều kiện}{WO \texttt{PENDING\_REVIEW} chờ nghiệm thu; khi \texttt{COMPLETED}, tài sản trở lại \texttt{ACTIVE}.}
+\end{ucspec}
+
+\subsection*{3.4. Nghiệp vụ Bảo trì phòng ngừa}
+Sơ đồ luồng Hình~9: Kỹ sư trưởng xem lịch đến hạn, tạo WO (\texttt{DRAFT}) và phân công KTV (\texttt{ASSIGNED}); KTV quét QR check-in, thực hiện (\texttt{IN\_PROGRESS}) và điền checklist, nếu cần vật tư thì làn Kho xuất kho \& ghi nhận, rồi gửi nghiệm thu (\texttt{PENDING\_REVIEW}); Kỹ sư trưởng nghiệm thu: đạt $\rightarrow$ \texttt{COMPLETED} (tài sản $\rightarrow$ \texttt{ACTIVE}), không đạt $\rightarrow$ \texttt{REJECTED} (làm lại).
+
+\figland{images/fig_flow_pm.pdf}{Hình 9. Sơ đồ luồng nghiệp vụ Bảo trì phòng ngừa}
+
+Vòng đời trạng thái Work Order (Hình~10) ràng buộc chặt trong mã (\texttt{WorkOrderState.CanTransition}): \texttt{DRAFT}$\rightarrow$\texttt{ASSIGNED}$\rightarrow$\texttt{IN\_PROGRESS}$\rightarrow$\texttt{PENDING\_REVIEW}$\rightarrow$\texttt{COMPLETED}; nhánh \texttt{REJECTED} quay lại \texttt{ASSIGNED}/\texttt{IN\_PROGRESS}; \texttt{CANCELLED} từ mọi trạng thái đang mở.
+
+\fig{images/fig_state_wo.pdf}{Hình 10. Sơ đồ trạng thái vòng đời Work Order}{0.6}
+
+Biểu đồ tuần tự Hình~11 đặc tả \emph{đầy đủ} vòng đời WO: xem lịch quá hạn $\rightarrow$ tạo (\texttt{DRAFT}) $\rightarrow$ phân công KTV rồi chuyển \texttt{ASSIGNED} (hai endpoint riêng — \texttt{assign-technician} không tự đổi trạng thái) $\rightarrow$ bắt đầu (\texttt{IN\_PROGRESS}, đồng bộ tài sản) $\rightarrow$ điền checklist/ghi vật tư/đính kèm $\rightarrow$ gửi nghiệm thu (\texttt{PENDING\_REVIEW}) $\rightarrow$ nghiệm thu \texttt{COMPLETED}/\texttt{REJECTED}.
+
+\figland{images/fig_seq_wo_full.pdf}{Hình 11. Biểu đồ tuần tự đầy đủ: Vòng đời Work Order (DRAFT $\rightarrow$ COMPLETED/REJECTED)}
+
+\subsection*{3.5. Nghiệp vụ Xử lý sự cố \& giám sát SLA}
+Sơ đồ luồng Hình~12: Cư dân báo sự cố (\texttt{NEW}) $\rightarrow$ Kỹ sư trưởng tiếp nhận \& phân công (\texttt{ASSIGNED}) $\rightarrow$ KTV bắt đầu (\texttt{IN\_PROGRESS}), nếu cần vật tư thì xuất kho/tạo PR $\rightarrow$ hoàn tất (\texttt{RESOLVED}) $\rightarrow$ Kỹ sư trưởng đóng (\texttt{CLOSED}) $\rightarrow$ cư dân đánh giá. SLA ở mức cấu hình \& tra cứu (xem ghi chú).
+
+\figland{images/fig_flow_sla.pdf}{Hình 12. Sơ đồ luồng nghiệp vụ Xử lý sự cố}
+
+Biểu đồ tuần tự Hình~13 đặc tả \emph{đầy đủ} vòng đời ticket đầu-cuối: báo (\texttt{NEW}) $\rightarrow$ Kỹ sư trưởng phân công (\texttt{ASSIGNED}) $\rightarrow$ KTV bắt đầu (\texttt{IN\_PROGRESS}) $\rightarrow$ ghi kết quả (\texttt{RESOLVED}) $\rightarrow$ Kỹ sư trưởng đóng (\texttt{CLOSED}) $\rightarrow$ Cư dân đánh giá. Việc chọn kỹ thuật viên là \emph{thao tác của Kỹ sư trưởng} (endpoint \texttt{assign}), không phải service tự chọn; create không tính SLA/tự phân công/gửi thông báo.
+
+\figland{images/fig_seq_incident_full.pdf}{Hình 13. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố (NEW $\rightarrow$ CLOSED $\rightarrow$ đánh giá)}
+
+Sơ đồ trạng thái Hình~14 mô hình hóa vòng đời ticket: \texttt{NEW}$\rightarrow$\texttt{ASSIGNED}$\rightarrow$\texttt{IN\_PROGRESS}$\rightarrow$\texttt{RESOLVED}$\rightarrow$\texttt{CLOSED}, có nhánh mở lại; leo thang SLA là cấu hình/nhật ký, không đổi trạng thái.
+
+\fig{images/fig_state_ticket.pdf}{Hình 14. Sơ đồ trạng thái vòng đời ticket sự cố}{0.6}
+
+\subsection*{3.6. Thiết kế cơ sở dữ liệu (ERD) và phân tích từng bảng}
+Hình~15 hợp nhất nhóm bảng bảo trì và nhóm bảng sự cố/SLA; tham chiếu nhóm khác (\texttt{assets}; \texttt{materials}/\texttt{warehouses}/\texttt{purchase\_requests}) vẽ hộp nét đứt.
+
+\fig{images/fig_erd_baotri.pdf}{Hình 15. ERD phân hệ Bảo trì \& Sự cố (Graphviz)}{0.92}
+
+Vai trò từng bảng:
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+  \item \texttt{checklist\_templates}, \texttt{checklist\_template\_items}: mẫu checklist bảo trì và các mục kiểm tra.
+  \item \texttt{maintenance\_schedules}: lịch bảo trì định kỳ theo tài sản (tần suất, ngày đến hạn kế tiếp).
+  \item \texttt{work\_orders}: lệnh công việc (mã, loại PM/CM, trạng thái, ưu tiên, giờ công/chi phí) — trung tâm bảo trì.
+  \item \texttt{work\_order\_assignments}: lịch sử phân công KTV cho WO, kèm QR check-in.
+  \item \texttt{work\_order\_checklist\_responses}: kết quả điền từng mục checklist (đạt/không, giá trị, ảnh).
+  \item \texttt{work\_order\_attachments}: tệp đính kèm của WO (ảnh trước/sau).
+  \item \texttt{work\_order\_materials\_used}: vật tư đã dùng cho WO, liên thông kho \& giao dịch xuất kho.
+  \item \texttt{sla\_configs}: cấu hình SLA theo tòa nhà/loại/ưu tiên (mốc phản hồi, xử lý, leo thang L1/L2/L3).
+  \item \texttt{tickets}: phiếu sự cố (mã, trạng thái, tài sản/vị trí, người báo, người phụ trách, SLA, liên kết PR).
+  \item \texttt{ticket\_assignments}: lịch sử phân công KTV xử lý sự cố.
+  \item \texttt{ticket\_attachments}: ảnh/tệp đính kèm sự cố.
+  \item \texttt{ticket\_ratings}: điểm đánh giá của cư dân sau xử lý.
+  \item \texttt{ticket\_status\_history}: nhật ký chuyển trạng thái ticket (truy vết).
+  \item \texttt{sla\_escalation\_log}: nhật ký leo thang (cấp, thời điểm, kênh, người nhận) — phục vụ tra cứu.
+\end{itemize}
+
+\end{document}

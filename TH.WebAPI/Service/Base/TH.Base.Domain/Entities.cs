@@ -43,6 +43,8 @@ namespace TH.TownHub.Domain.Entities
         [Required]
         public required string Status { get; set; } = "vacant"; // occupied | vacant | maintenance
 
+        public string? Owner { get; set; }      // Họ tên chủ căn hộ (nhập tay, không FK)
+
         public string? Note { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

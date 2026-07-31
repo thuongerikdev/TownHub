@@ -60,6 +60,22 @@
   \end{figure}%
   \end{landscape}%
 }
+% Hình dọc (đứng), cao tuỳ chỉnh: \figh{file}{heightFrac}{caption}{lof}
+\newcommand{\figh}[4]{%
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=#2\textheight,keepaspectratio]{#1}%
+  \caption*{\small #3}%
+  \addcontentsline{lof}{figure}{#4}%
+  \end{figure}}
+% Khối ghi chú + đặc tả use case
+\newcommand{\notebox}[1]{\par\noindent\begin{center}\fcolorbox{black!30}{black!4}{%
+\begin{minipage}{0.97\linewidth}\small #1\end{minipage}}\end{center}\par}
+\newcommand{\ucrow}[2]{\textbf{#1} & #2 \\ \hline}
+\newenvironment{ucspec}[1]{%
+ \par\small\renewcommand{\arraystretch}{1.2}%
+ \begin{longtable}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{11.0cm}|}\hline
+ \multicolumn{2}{|l|}{\textbf{#1}}\\ \hline}
+ {\end{longtable}}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage[table]{xcolor}
@@ -68,11 +84,16 @@
 % --- Nén khoảng trắng quanh tiêu đề (quy định KHÔNG quy định khoảng cách tiêu đề;
 %     chỉ bắt buộc font 13pt + dãn dòng 1,3, đều được giữ nguyên) ---
 \usepackage{titlesec}
-\titleformat{\chapter}[hang]{\normalfont\LARGE\bfseries}{}{0pt}{}
-\titlespacing*{\chapter}{0pt}{0pt}{10pt}        % bỏ ~50pt khoảng trống đầu chương
-\titlespacing*{\section}{0pt}{8pt plus 2pt minus 2pt}{4pt}
-\titlespacing*{\subsection}{0pt}{6pt plus 2pt minus 2pt}{3pt}
-\titlespacing*{\subsubsection}{0pt}{5pt plus 1pt minus 1pt}{2pt}
+% Cỡ tiêu đề gọn lại (trước đây chương \LARGE quá to, tràn 2 dòng):
+% phân cấp rõ chương > mục > tiểu mục nhưng không quá lớn so với thân bài 13pt.
+\titleformat{\chapter}[hang]{\normalfont\Large\bfseries}{}{0pt}{}
+\titleformat{\section}{\normalfont\large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\chapter}{0pt}{0pt}{12pt}         % bỏ ~50pt khoảng trống đầu chương
+\titlespacing*{\section}{0pt}{10pt plus 2pt minus 2pt}{5pt}
+\titlespacing*{\subsection}{0pt}{8pt plus 2pt minus 2pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{6pt plus 1pt minus 1pt}{3pt}
 % Giảm khoảng cách quanh hình/bảng nổi
 \setlength{\intextsep}{6pt plus 2pt minus 2pt}
 \setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
@@ -153,7 +174,7 @@
 {\Large\bfseries ĐỒ ÁN TỐT NGHIỆP\par}
 \vspace{0.4cm}
 {\bfseries Ngành: Công nghệ thông tin\par}
-{\bfseries Chuyên ngành: Công nghệ thông tin\par}
+{\bfseries Chuyên ngành: Khoa học Máy tính\par}
 \vfill
 {\bfseries HÀ NỘI -- 2026\par}
 \end{titlepage}
@@ -173,7 +194,7 @@
 {\Large\bfseries ĐỒ ÁN TỐT NGHIỆP\par}
 \vspace{0.4cm}
 {\bfseries Ngành: Công nghệ thông tin\par}
-{\bfseries Chuyên ngành: Công nghệ thông tin\par}
+{\bfseries Chuyên ngành: Khoa học Máy tính\par}
 \vspace{1.2cm}
 {\large
 \begin{tabular}{@{}l@{\hspace{6pt}}l@{}}

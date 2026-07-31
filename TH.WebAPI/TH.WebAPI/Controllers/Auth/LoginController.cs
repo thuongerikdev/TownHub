@@ -415,8 +415,24 @@ namespace TH.WebAPI.Controllers.Auth
 
             SetAuthCookies(access!, refresh!, accessExp, refreshExp);
 
-            // Có thể trả minimal cho FE
-            return Ok(new { authenticated = true });
+            // Set Permission Cookie (không HttpOnly) cho UI ẩn/hiện nút — đồng bộ với /login/userLogin
+            var perms = TryGetPermissions(result.Data);
+            if (perms != null)
+            {
+                Response.Cookies.Append("fz.permissions", JsonSerializer.Serialize(perms), new CookieOptions
+                {
+                    HttpOnly = false,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = accessExp
+                });
+            }
+
+            // Trả về ResponseDto<LoginResponse> (kèm token) — FE completeMfa cần res.data.token,
+            // giống hệt luồng /login/userLogin. Trước đây trả { authenticated = true } khiến FE
+            // hiểu nhầm verify thành công là THẤT BẠI (res.data = null), người dùng bấm lại và
+            // ticket dùng-một-lần đã bị xoá → "Ticket không hợp lệ hoặc đã hết hạn".
+            return Ok(result);
         }
 
         public sealed record RefreshRequest(string? RefreshToken);

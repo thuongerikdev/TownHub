@@ -28,6 +28,8 @@ namespace TH.TownHub.ApplicationService.Service
             : base(logger, dbContext)
         {
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+            // ngrok free chèn trang cảnh báo HTML nếu thiếu header này -> ReadFromJsonAsync sẽ lỗi.
+            _httpClient.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
             _aiBaseUrl = Environment.GetEnvironmentVariable("FACE_AI_URL") ?? "http://localhost:8001";
         }
 

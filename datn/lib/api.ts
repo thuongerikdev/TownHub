@@ -52,7 +52,7 @@ export interface Permission {
 }
 export interface ApartmentResponse {
   id: number; code: string; building: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string;
-  type: string; areaM2: number; status: string; note?: string; createdAt: string;
+  type: string; areaM2: number; status: string; owner?: string; note?: string; createdAt: string;
 }
 export interface ResidentResponse {
   id: number; fullName: string; phone: string; email?: string; idCard?: string;
@@ -477,7 +477,7 @@ export const apartments = {
     return apiFetch<ApartmentResponse[]>(`/api/Apartment/get-all${q ? "?" + q : ""}`);
   },
   getById: (id: number) => apiFetch<ApartmentResponse>(`/api/Apartment/get/${id}`),
-  create: (body: { code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; note?: string }) =>
+  create: (body: { code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status?: string; owner?: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/create", { method: "POST", body: JSON.stringify(body) }),
   update: (body: { id: number; code: string; building?: string; buildingId?: string; floorId?: string; floor: number; unitNumber: string; type: string; areaM2: number; status: string; note?: string }) =>
     apiFetch<boolean>("/api/Apartment/update", { method: "PUT", body: JSON.stringify(body) }),

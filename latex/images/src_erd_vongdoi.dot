@@ -1,0 +1,31 @@
+digraph ERD {
+rankdir=LR; splines=true; nodesep=0.45; ranksep=0.9;
+node [shape=plaintext, fontname="Arial", fontsize=11];
+edge [color="#666666", arrowsize=0.8, penwidth=1.0];
+assets [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>assets</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">assetCode, name, status (ACTIVE/MAINTENANCE/DISPOSED)</td></tr><tr><td align="left" balign="left">FK categoryId, locationId, parentAssetId</td></tr><tr><td align="left" balign="left">FK vendorId, vendorContractId</td></tr><tr><td align="left" balign="left">purchasePrice, usefulLifeMonths</td></tr><tr><td align="left" balign="left">depreciationMethod, accountCode</td></tr><tr><td align="left" balign="left">accumulatedDepreciation, bookValue</td></tr></table>>];
+asset_categories [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_categories</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">code, name</td></tr><tr><td align="left" balign="left">FK parentId</td></tr><tr><td align="left" balign="left">FK defaultChecklistTemplateId</td></tr></table>>];
+asset_locations [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_locations</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">buildingId, floorId, areaCode</td></tr></table>>];
+asset_qr_codes [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_qr_codes</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">FK assetId</td></tr><tr><td align="left" balign="left">qrCode</td></tr></table>>];
+asset_transfers [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_transfers</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">FK assetId</td></tr><tr><td align="left" balign="left">FK fromLocationId, toLocationId</td></tr><tr><td align="left" balign="left">transferredBy, FK workOrderId</td></tr></table>>];
+asset_depreciation_log [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_depreciation_log</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">FK assetId</td></tr><tr><td align="left" balign="left">periodYear, periodMonth</td></tr><tr><td align="left" balign="left">depreciationAmount</td></tr><tr><td align="left" balign="left">bookValueBefore/After</td></tr><tr><td align="left" balign="left">FK documentId</td></tr></table>>];
+asset_document [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_document</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">documentCode</td></tr><tr><td align="left" balign="left">documentType (GHI_TANG/KHAU_HAO/THANH_LY)</td></tr><tr><td align="left" balign="left">status (DRAFT/POSTED), totalAmount</td></tr></table>>];
+asset_document_line [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_document_line</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">FK documentId, assetId</td></tr><tr><td align="left" balign="left">debitAccount, creditAccount</td></tr><tr><td align="left" balign="left">amount</td></tr></table>>];
+asset_disposal [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>asset_disposal</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">FK assetId, documentId</td></tr><tr><td align="left" balign="left">originalCost, bookValue</td></tr><tr><td align="left" balign="left">disposalValue, gainLoss</td></tr><tr><td align="left" balign="left">disposalType, status</td></tr></table>>];
+iot_sensor_readings [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4" color="#8FA8D0"><tr><td bgcolor="#C9D4EC"><b>iot_sensor_readings</b></td></tr><tr><td><font point-size="1"> </font></td></tr><tr><td align="left" balign="left">PK id</td></tr><tr><td align="left" balign="left">FK assetId</td></tr><tr><td align="left" balign="left">sensorCode, readingValue, readingAt</td></tr></table>>];
+vendors [shape=box, style="dashed,rounded", color="#9aa7bd", fontcolor="#5a6b86", fontname="Arial", fontsize=10, label="vendors\n(Mua sắm)"];
+work_orders [shape=box, style="dashed,rounded", color="#9aa7bd", fontcolor="#5a6b86", fontname="Arial", fontsize=10, label="work_orders\n(Bảo trì)"];
+assets -> asset_categories;
+assets -> asset_locations;
+asset_qr_codes -> assets;
+asset_transfers -> assets;
+asset_transfers -> asset_locations;
+asset_depreciation_log -> assets;
+asset_depreciation_log -> asset_document;
+asset_document_line -> asset_document;
+asset_document_line -> assets;
+asset_disposal -> assets;
+asset_disposal -> asset_document;
+iot_sensor_readings -> assets;
+assets -> vendors [style=dashed, color="#9aa7bd", arrowsize=0.7];
+asset_transfers -> work_orders [style=dashed, color="#9aa7bd", arrowsize=0.7];
+}

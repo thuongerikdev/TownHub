@@ -247,7 +247,17 @@
       "PowerShell(Get-Command pandoc,soffice,python -ErrorAction SilentlyContinue)",
       "Bash(grep -iv \"using\\\\|//\")",
       "Bash(python -c \"import markitdown; print\\('markitdown ok'\\)\")",
-      "Bash(cd \"/c/Users/ADMIN/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/7559cbf1-47fb-4cf5-b644-383cf13e4b7b/7f810f91-8159-4168-9212-da6a7c3da2f0/skills/pptx\" && ls scripts/ && echo \"---\" && which markitdown node python soffice pdftoppm 2>&1)"
+      "Bash(cd \"/c/Users/ADMIN/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/7559cbf1-47fb-4cf5-b644-383cf13e4b7b/7f810f91-8159-4168-9212-da6a7c3da2f0/skills/pptx\" && ls scripts/ && echo \"---\" && which markitdown node python soffice pdftoppm 2>&1)",
+      "Bash(where xelatex *)",
+      "Bash(xelatex -interaction=nonstopmode -halt-on-error main.tex)",
+      "Bash(pandoc \"DATN-01_NhiemVu_TownHub.docx\" -t plain -o out01.txt)",
+      "Bash(PYTHONUTF8=1 python C:/Users/ADMIN/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/7559cbf1-47fb-4cf5-b644-383cf13e4b7b/7f810f91-8159-4168-9212-da6a7c3da2f0/skills/docx/scripts/office/validate.py out.docx)",
+      "Bash(python C:/Users/ADMIN/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/7559cbf1-47fb-4cf5-b644-383cf13e4b7b/7f810f91-8159-4168-9212-da6a7c3da2f0/skills/docx/scripts/office/soffice.py --headless --convert-to pdf --outdir C:/Users/ADMIN/AppData/Local/Temp/claude/D--DATN-TownHub/8bc089d9-2529-4b4f-90f0-eacf5ce0b256/scratchpad/d01 out.docx)",
+      "Bash(pdftoppm -jpeg -r 90 out.pdf pg)",
+      "Read(//c/Program Files/LibreOffice/program/**)",
+      "Bash(where soffice *)",
+      "Bash(ls \"C:/Program Files/LibreOffice/program/soffice.exe\" \"C:/Program Files \\(x86\\)/LibreOffice/program/soffice.exe\" 2>&1; echo \"---miktex pdf via docx? skip---\")",
+      "Bash(markitdown --version)"
     ]
   }
 }

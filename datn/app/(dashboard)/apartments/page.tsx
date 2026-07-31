@@ -32,7 +32,7 @@ const GENDERS = [
 // ─── Form types ───────────────────────────────────────────────────────────────
 interface AptForm {
   code: string; building: string; floorId: string; floor: string; unitNumber: string;
-  type: string; areaM2: string; status: string; note: string;
+  type: string; areaM2: string; status: string; owner: string; note: string;
 }
 interface ResidentForm {
   fullName: string; phone: string; email: string; idCard: string;
@@ -42,7 +42,7 @@ interface ResidentForm {
 
 const DEFAULT_APT: AptForm = {
   code: "", building: "Tòa A", floorId: "", floor: "", unitNumber: "",
-  type: "2PN", areaM2: "", status: "vacant", note: "",
+  type: "2PN", areaM2: "", status: "vacant", owner: "", note: "",
 };
 const DEFAULT_RESIDENT: ResidentForm = {
   fullName: "", phone: "", email: "", idCard: "",
@@ -222,7 +222,8 @@ export default function ApartmentsPage() {
         floorId: aptForm.floorId || undefined,
         floor: Number(aptForm.floor), unitNumber: aptForm.unitNumber,
         type: aptForm.type, areaM2: Number(aptForm.areaM2),
-        status: aptForm.status, note: aptForm.note || undefined,
+        status: aptForm.status, owner: aptForm.owner || undefined,
+        note: aptForm.note || undefined,
       });
       if (res.errorCode === 200) {
         setShowCreate(false);
@@ -658,6 +659,11 @@ export default function ApartmentsPage() {
                       <span className="text-xs text-zinc-500 font-medium px-2 py-0.5 rounded bg-black/50 border border-white/5">{apt.type}</span>
                       <span className="text-xs text-zinc-600">{apt.areaM2}m²</span>
                     </div>
+                    {apt.owner && (
+                      <p className="flex items-center gap-1 mt-1.5 text-xs text-zinc-400 truncate">
+                        <Crown className="w-3 h-3 text-amber-400 shrink-0" />{apt.owner}
+                      </p>
+                    )}
                   </div>
                   <div className="border-t border-white/5 pt-3 flex items-center justify-between">
                     <div>
@@ -723,6 +729,7 @@ export default function ApartmentsPage() {
                   } />
                   <FieldRow label="Số căn" value={selectedApt.unitNumber} />
                   <FieldRow label="Ngày tạo" value={fmtDate(selectedApt.createdAt)} />
+                  <FieldRow label="Chủ căn hộ" value={selectedApt.owner || "—"} />
                   {selectedApt.note && <div className="col-span-2"><FieldRow label="Ghi chú" value={selectedApt.note} /></div>}
                 </div>
 
@@ -994,6 +1001,9 @@ export default function ApartmentsPage() {
                     ))}
                   </div>
                 </div>
+
+                <InputField label="Chủ căn hộ" value={aptForm.owner}
+                  onChange={(e) => setAptForm((p) => ({ ...p, owner: e.target.value }))} placeholder="Họ tên chủ căn hộ (tùy chọn)" />
 
                 <InputField label="Ghi chú" value={aptForm.note}
                   onChange={(e) => setAptForm((p) => ({ ...p, note: e.target.value }))} placeholder="Thông tin thêm (tùy chọn)" />

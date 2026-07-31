@@ -61,6 +61,7 @@ namespace TH.TownHub.ApplicationService.Service
                     Type = request.type,
                     AreaM2 = request.areaM2,
                     Status = request.status,
+                    Owner = request.owner,
                     Note = request.note
                 };
 
@@ -103,6 +104,7 @@ namespace TH.TownHub.ApplicationService.Service
                 entity.Type = request.type;
                 entity.AreaM2 = request.areaM2;
                 entity.Status = request.status;
+                entity.Owner = request.owner;
                 entity.Note = request.note;
                 entity.UpdatedAt = DateTime.UtcNow;
 
@@ -175,6 +177,7 @@ namespace TH.TownHub.ApplicationService.Service
                         type = x.Type,
                         areaM2 = x.AreaM2,
                         status = x.Status,
+                        owner = x.Owner,
                         note = x.Note,
                         createdAt = x.CreatedAt
                     })
@@ -207,6 +210,7 @@ namespace TH.TownHub.ApplicationService.Service
                         type = x.Type,
                         areaM2 = x.AreaM2,
                         status = x.Status,
+                        owner = x.Owner,
                         note = x.Note,
                         createdAt = x.CreatedAt
                     })

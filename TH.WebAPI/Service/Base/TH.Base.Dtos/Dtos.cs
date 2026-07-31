@@ -18,6 +18,7 @@ namespace TH.TownHub.Dtos
         public required string type { get; set; }
         public decimal areaM2 { get; set; }
         public string status { get; set; } = "vacant";
+        public string? owner { get; set; }
         public string? note { get; set; }
     }
 
@@ -38,6 +39,7 @@ namespace TH.TownHub.Dtos
         public string type { get; set; } = null!;
         public decimal areaM2 { get; set; }
         public string status { get; set; } = null!;
+        public string? owner { get; set; }
         public string? note { get; set; }
         public DateTime createdAt { get; set; }
     }
