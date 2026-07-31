@@ -1,9 +1,9 @@
 \subsection*{4.4.1. Chi tiết kỹ thuật OCR hóa đơn: mô hình, huấn luyện và đánh giá}
 \addcontentsline{toc}{subsection}{4.4.1. Chi tiết kỹ thuật OCR hóa đơn: mô hình, huấn luyện và đánh giá}
-Mục này trình bày chi tiết thành phần AI/OCR dùng để số hóa hóa đơn trong phân hệ Kho – Mua sắm: kiến trúc dịch vụ, cơ sở lý thuyết các mô hình, quá trình huấn luyện trên dữ liệu tự sinh và kết quả đánh giá – so sánh giữa các engine. Đây là phần đóng góp kỹ thuật của tác giả cho phân hệ.
+Mục này trình bày thành phần AI/OCR dùng để số hóa hóa đơn trong phân hệ Kho – Mua sắm: kiến trúc dịch vụ, cơ sở lý thuyết các mô hình, quá trình huấn luyện trên dữ liệu tự sinh và kết quả đánh giá – so sánh giữa các engine. Đây là phần đóng góp kỹ thuật của tác giả cho phân hệ.
 
 \subsubsection*{a) Kiến trúc dịch vụ OCR đa engine}
-Dịch vụ OCR được viết bằng Python/FastAPI, tách riêng khỏi backend .NET và gọi qua HTTP (POST /extract). Việc nhận dạng chạy bất đồng bộ: mỗi yêu cầu được đưa vào hàng đợi (OcrJobQueue) và một tiến trình nền (OcrProcessingWorker) lần lượt lấy ra xử lý, nhờ đó giao diện không phải chờ. Ảnh đầu vào là tệp ảnh JPG/PNG (ảnh chụp hoặc scan hóa đơn). Dịch vụ cài đặt \textbf{ba engine OCR tự chủ} và người dùng chọn trực tiếp trên giao diện (lưu ở cột \texttt{ocr\_jobs.ocrEngine}): \texttt{paddleocr} (mặc định), \texttt{vietocr} (EasyOCR phát hiện + VietOCR nhận dạng) và biến thể lai \texttt{paddledet\_viet} (DBNet của Paddle phát hiện + VietOCR nhận dạng) — vừa để so sánh mô hình vừa chọn engine phù hợp cho từng loại hóa đơn. Dù dùng engine nào, kết quả cũng được quy về một cấu trúc dòng chuẩn hóa [\{text, box, prob\}] rồi đưa vào chung một hàm bóc tách trường (dựa trên biểu thức chính quy và vị trí ô chữ), nên việc đổi engine không ảnh hưởng tới khâu lấy trường.
+Dịch vụ OCR viết bằng Python/FastAPI, tách khỏi backend .NET và gọi qua HTTP (POST /extract). Nhận dạng chạy bất đồng bộ: mỗi yêu cầu vào hàng đợi (OcrJobQueue) và một tiến trình nền (OcrProcessingWorker) lấy ra xử lý, nhờ đó giao diện không phải chờ. Dịch vụ cài đặt \textbf{ba engine OCR tự chủ}, người dùng chọn trên giao diện (lưu ở \texttt{ocr\_jobs.ocrEngine}): \texttt{paddleocr} (mặc định), \texttt{vietocr} (EasyOCR phát hiện + VietOCR nhận dạng) và biến thể lai \texttt{paddledet\_viet} (DBNet của Paddle phát hiện + VietOCR nhận dạng). Dù dùng engine nào, kết quả cũng quy về cấu trúc dòng chuẩn hóa [\{text, box, prob\}] rồi đưa vào chung một hàm bóc tách trường, nên việc đổi engine không ảnh hưởng khâu lấy trường.
 
 \begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/5-2\tabcolsep-\arrayrulewidth\relax}|}
@@ -14,20 +14,15 @@ paddleocr & PaddleOCR (DBNet) & PP-OCRv4 (SVTR\_LCNet) & detect + recognize & H�
 paddledet\_viet & PaddleOCR (DBNet) & VietOCR (VGG + Transformer) & detect + recognition & Hybrid: DBNet mạnh + VietOCR đọc dấu tốt \\ \hline
 \end{tabular}}\end{center}
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img27.pdf}
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img27.pdf}
 \caption*{\small Hình 4.20. Kiến trúc pipeline trích xuất hóa đơn của dịch vụ OCR}
 \addcontentsline{lof}{figure}{Hình 4.20. Kiến trúc pipeline trích xuất hóa đơn của dịch vụ OCR}
 \end{figure}
-\subsubsection*{b) Cơ sở lý thuyết và thuật toán các mô hình}
-\textbf{VietOCR (vgg\_transformer) - chỉ nhận dạng. }Gồm hai khối: (1) trích đặc trưng thị giác bằng CNN VGG19 (batch-norm) - nén chiều cao ảnh dòng về 1, giữ chiều rộng làm chuỗi đặc trưng; (2) Transformer encoder–decoder (seq2seq + attention) sinh lần lượt từng ký tự, huấn luyện bằng cross-entropy trên từ điển tiếng Việt (dịch vụ giải mã greedy). Ưu điểm: đọc dấu thanh rất tốt; nhược điểm: chỉ nhận dạng nên buộc ghép một bộ phát hiện bên ngoài.
+\subsubsection*{b) Cơ sở lý thuyết các mô hình}
+\textbf{VietOCR} (vgg\_transformer, chỉ nhận dạng): CNN VGG19 trích đặc trưng ảnh dòng rồi Transformer encoder–decoder (seq2seq + attention) sinh từng ký tự theo từ điển tiếng Việt — đọc dấu thanh rất tốt nhưng buộc ghép một bộ phát hiện bên ngoài. \textbf{PaddleOCR} (PP-OCRv4, hợp nhất phát hiện + nhận dạng): DBNet (Differentiable Binarization) tách vùng chữ gọn, phân loại góc xoay dòng, rồi SVTR\_LCNet (huấn luyện GTC = CTC + NRTR) nhận dạng theo bảng ký tự \texttt{dict\_vi.txt} (137 ký tự) — một bộ công cụ, fine-tune được cả hai tầng, nhẹ, chạy offline. \textbf{EasyOCR (CRAFT)}: pipeline \texttt{vietocr} chỉ mượn CRAFT để cắt dòng; vì CRAFT không được fine-tune trên hóa đơn nên trở thành nút cổ chai — cũng là lý do thử biến thể hybrid \texttt{paddledet\_viet} ở mục h.
 
-\textbf{PaddleOCR (PP-OCRv4) - phát hiện + nhận dạng hợp nhất. }Ba bước: (1) DBNet (Differentiable Binarization) dự đoán bản đồ xác suất và bản đồ ngưỡng rồi nhị phân hóa khả vi ngay trong huấn luyện, tách biên vùng chữ gọn; (2) phân loại góc xoay dòng đúng chiều; (3) nhận dạng SVTR\_LCNet huấn luyện theo cơ chế GTC kết hợp CTC và NRTR (ghi nhận trong train.log qua CTCLoss/NRTRLoss), dùng bảng ký tự tiếng Việt dict\_vi.txt (137 ký tự). Ưu điểm: một bộ công cụ, det + rec đồng bộ, fine-tune được cả hai tầng, nhẹ, chạy offline.
-
-\textbf{EasyOCR (CRAFT). }Pipeline vietocr chỉ mượn bộ phát hiện CRAFT của EasyOCR để cắt dòng (nhận dạng giao cho VietOCR). Vì CRAFT không được fine-tune trên dữ liệu hóa đơn nên trở thành nút cổ chai của pipeline này – đây cũng là lý do đề tài thử nghiệm biến thể hybrid \texttt{paddledet\_viet} (DBNet đã fine-tune + VietOCR) ở mục h.
-
-\figland{images/img28.png}{Hình 4.21. Luồng AI hai tầng (EasyOCR + VietOCR) so với PaddleOCR hợp nhất}{Hình 4.21. Luồng AI hai tầng (EasyOCR + VietOCR) so với PaddleOCR hợp nhất}
 \subsubsection*{c) Dữ liệu, huấn luyện và luồng xử lý}
-Vì không có sẵn dữ liệu hóa đơn thật đã gán nhãn, đề tài tự sinh dữ liệu hóa đơn GTGT tiếng Việt tổng hợp (synthetic): script tự render hóa đơn và tự ghi lại tọa độ + nội dung từng ô chữ, nên xuất được cả nhãn phát hiện (det) lẫn nhận dạng (rec) mà không cần gán tay, kèm bảng ký tự dict\_vi.txt. Dữ liệu được random đa dạng bố cục và tăng cường cho ``giống thật'' (nền giấy, nghiêng/méo, nhiễu, nén JPEG, dấu mộc đỏ, chữ ký tay); mọi phép biến hình đều kéo theo tọa độ box nên nhãn luôn khớp. Quy mô mặc định 400–500 hóa đơn, chia train/val 90/10. Cả hai mô hình đều fine-tune từ trọng số pretrained (transfer learning) để hội tụ nhanh, cần ít dữ liệu. Cấu hình thật (đọc từ config.yml):
+Vì không có sẵn dữ liệu hóa đơn thật đã gán nhãn, đề tài tự sinh dữ liệu hóa đơn GTGT tiếng Việt tổng hợp (synthetic): script tự render hóa đơn và tự ghi tọa độ + nội dung từng ô chữ, nên xuất được cả nhãn phát hiện (det) lẫn nhận dạng (rec) mà không cần gán tay, kèm bảng ký tự \texttt{dict\_vi.txt}. Dữ liệu được random đa dạng bố cục và tăng cường cho ``giống thật'' (nền giấy, nghiêng/méo, nhiễu, nén JPEG, dấu mộc đỏ, chữ ký tay); mọi phép biến hình đều kéo theo tọa độ box nên nhãn luôn khớp. Quy mô mặc định 400–500 hóa đơn, chia train/val 90/10; cả hai mô hình đều fine-tune từ trọng số pretrained (transfer learning) để hội tụ nhanh. Cấu hình thật (đọc từ config.yml):
 
 \begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.3}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr0.16\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr0.35\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr0.13\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr0.09\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr0.27\linewidth-2\tabcolsep-\arrayrulewidth\relax}|}
@@ -37,20 +32,20 @@ VietOCR (rec) & VGG19 + Transformer, từ vgg\_\allowbreak{}transformer & 20\,00
 PaddleOCR rec & SVTR\_\allowbreak{}LCNet + GTC(CTC+NRTR), từ PP-OCRv4 & 80 & 64 & Adam + Cosine, lr 0,001 \\ \hline
 PaddleOCR det & DBNet, từ PP-OCRv4 det & 150 & 8 & lr 0,001 \\ \hline
 \end{tabular}}\end{center}
-\textbf{Luồng xử lý. }Pipeline vietocr: ảnh $\rightarrow$ EasyOCR/CRAFT phát hiện dòng $\rightarrow$ cắt dòng $\rightarrow$ VietOCR (VGG19 $\rightarrow$ Transformer) $\rightarrow$ chuỗi text. Pipeline paddleocr: ảnh $\rightarrow$ DBNet phát hiện $\rightarrow$ phân loại góc $\rightarrow$ SVTR\_LCNet nhận dạng $\rightarrow$ chuỗi text. Cả hai gộp về danh sách dòng, đưa vào hàm bóc tách trường và ghi Invoice/InvoiceItem để đối chiếu PO.
+\textbf{Luồng xử lý. }Pipeline vietocr: ảnh $\rightarrow$ EasyOCR/CRAFT phát hiện dòng $\rightarrow$ cắt dòng $\rightarrow$ VietOCR (VGG19 $\rightarrow$ Transformer) $\rightarrow$ text. Pipeline paddleocr: ảnh $\rightarrow$ DBNet $\rightarrow$ phân loại góc $\rightarrow$ SVTR\_LCNet $\rightarrow$ text. Cả hai gộp về danh sách dòng, đưa vào hàm bóc tách trường và ghi Invoice/InvoiceItem để đối chiếu PO.
 
-\textbf{Kết quả huấn luyện PaddleOCR (số thật từ train.log). }Với nhận dạng (rec), loss giảm nhanh về gần 0 quanh bước \textasciitilde{}2 500 và độ chính xác huấn luyện tiến sát 1,0; trên tập val, accuracy toàn chuỗi đạt 0,9964 (99,64\%) và norm\_edit\_dis 0,9992 tại epoch 41. Với phát hiện (det), hmean tốt nhất trên val chỉ đạt 0,2298 (precision 0,228; recall 0,232) - cho thấy phát hiện bố cục hóa đơn học trên dữ liệu synthetic còn yếu; khuyến nghị bổ sung 50–150 hóa đơn thật gán bằng PPOCRLabel, hoặc kết hợp detector pretrain với recognizer đã fine-tune.
+\textbf{Kết quả huấn luyện PaddleOCR (số thật từ train.log). }Với nhận dạng (rec), loss giảm nhanh về gần 0 quanh bước \textasciitilde{}2\,500, trên tập val accuracy toàn chuỗi đạt 0,9964 (99,64\%) và norm\_edit\_dis 0,9992 tại epoch 41. Với phát hiện (det), hmean tốt nhất trên val chỉ đạt 0,2298 — cho thấy phát hiện bố cục trên dữ liệu synthetic còn yếu; khuyến nghị bổ sung 50–150 hóa đơn thật gán bằng PPOCRLabel, hoặc kết hợp detector pretrain với recognizer đã fine-tune.
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img29.png}
-\caption*{\small Hình 4.22. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}
-\addcontentsline{lof}{figure}{Hình 4.22. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}
+\includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/img29.png}
+\caption*{\small Hình 4.21. Đường cong huấn luyện PaddleOCR (rec): loss và accuracy theo bước}
+\addcontentsline{lof}{figure}{Hình 4.21. Đường cong huấn luyện PaddleOCR (rec)}
 \end{figure}
 \subsubsection*{d) So sánh và đánh giá ba engine}
 Ba engine (EasyOCR, VietOCR, PaddleOCR) được đánh giá trên cùng tập val 300 mẫu với các chỉ số: Seq-acc (đọc đúng toàn chuỗi), Char-acc (1 $-$ CER), NED, CER<0,1 và độ trễ (ms/ảnh, đo trên CPU):
 
-\begin{landscape}\begin{center}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|}
+\begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr0.30\linewidth-2\tabcolsep-\arrayrulewidth\relax}|c|c|c|c|c|}
 \hline
 \textbf{Cấu hình} & \textbf{Seq-acc} & \textbf{Char-acc} & \textbf{NED} & \textbf{CER<0,1} & \textbf{ms/ảnh} \\ \hline
 VietOCR gốc (trước) & 0,870 & 0,976 & 0,977 & 0,903 & - \\ \hline
@@ -60,162 +55,66 @@ PaddleOCR fine-tune (sau) & 0,893 & 0,967 & 0,968 & 0,913 & 65 \\ \hline
 EasyOCR (baseline) & 0,510 & 0,811 & 0,818 & 0,613 & 156 \\ \hline
 Ensemble (bỏ phiếu) & 0,920 & 0,974 & 0,974 & 0,933 & - \\ \hline
 Oracle (best-of-3, chặn trên) & 1,000 & - & - & - & - \\ \hline
-\end{tabular}}\end{center}\end{landscape}
+\end{tabular}}\end{center}
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img30.png}
-\caption*{\small Hình 4.23. Tác động của fine-tune (Sequence và Character accuracy)}
-\addcontentsline{lof}{figure}{Hình 4.23. Tác động của fine-tune (Sequence và Character accuracy)}
+\includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/img31.png}
+\caption*{\small Hình 4.22. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}
+\addcontentsline{lof}{figure}{Hình 4.22. So sánh ba engine theo Seq-acc / Char-acc / NED}
 \end{figure}
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img31.png}
-\caption*{\small Hình 4.24. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}
-\addcontentsline{lof}{figure}{Hình 4.24. So sánh ba engine theo Seq-acc / Char-acc / NED (tập val 300 mẫu)}
-\end{figure}
-\textbf{Nhận xét. }(1) Fine-tune có tác động lớn: Seq-acc VietOCR tăng 0,870 $\rightarrow$ 1,000; PaddleOCR tăng 0,463 $\rightarrow$ 0,893 (PaddleOCR gốc pretrain tiếng Trung nên yếu trên tiếng Việt, hưởng lợi nhiều nhất). (2) Về độ chính xác nhận dạng, VietOCR fine-tune đứng đầu (đọc đúng cả 300/300 mẫu), trên PaddleOCR (0,893) và EasyOCR (0,510). (3) Về tốc độ, PaddleOCR nhanh nhất (65 ms/ảnh, nhanh hơn VietOCR \textasciitilde{}4,9 lần) và hợp nhất det+rec.
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img32.png}
-\caption*{\small Hình 4.25. Độ trễ suy luận (ms/ảnh) và thông lượng (ảnh/giây) trên CPU}
-\addcontentsline{lof}{figure}{Hình 4.25. Độ trễ suy luận (ms/ảnh) và thông lượng (ảnh/giây) trên CPU}
-\end{figure}
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img33.png}
-\caption*{\small Hình 4.26. Tính bổ trợ giữa các engine (mẫu nào engine nào đọc đúng)}
-\addcontentsline{lof}{figure}{Hình 4.26. Tính bổ trợ giữa các engine (mẫu nào engine nào đọc đúng)}
-\end{figure}
-\textbf{Tính bổ trợ và kết hợp. }Trong 300 mẫu, số mẫu ``cả ba cùng sai'' = 0; VietOCR đọc đúng 300, PaddleOCR 268, EasyOCR 153; ``chỉ VietOCR đúng'' = 24, còn ``chỉ PaddleOCR/chỉ EasyOCR đúng'' = 0. Do đó bỏ phiếu ba engine chỉ đạt 0,920 - thấp hơn VietOCR đơn lẻ (1,000) vì bị kéo xuống bởi engine yếu hơn; cận trên Oracle = 1,000. Với bài toán này, dùng một engine mạnh hợp lý hơn là bỏ phiếu.
+\textbf{Nhận xét. }(1) Fine-tune có tác động lớn: Seq-acc VietOCR tăng 0,870 $\rightarrow$ 1,000; PaddleOCR tăng 0,463 $\rightarrow$ 0,893 (PaddleOCR gốc pretrain tiếng Trung nên hưởng lợi nhiều nhất). (2) Về độ chính xác nhận dạng, VietOCR fine-tune đứng đầu (đúng 300/300 mẫu), trên PaddleOCR (0,893) và EasyOCR (0,510). (3) Về tốc độ, PaddleOCR nhanh nhất (65 ms/ảnh, nhanh hơn VietOCR \textasciitilde{}4,9 lần) và hợp nhất det+rec. Về \textbf{tính bổ trợ}: trong 300 mẫu không có mẫu nào cả ba cùng sai; ``chỉ VietOCR đúng'' = 24, ``chỉ PaddleOCR/chỉ EasyOCR đúng'' = 0, nên bỏ phiếu ba engine (0,920) còn thấp hơn VietOCR đơn lẻ (1,000) — với bài toán này dùng một engine mạnh hợp lý hơn là bỏ phiếu.
 
 \subsubsection*{e) Lựa chọn mô hình}
-\textbf{Vì sao chọn PaddleOCR thay vì kết hợp EasyOCR + VietOCR. }Phương án EasyOCR + VietOCR có recognizer VietOCR rất chính xác nhưng vướng ba nhược điểm: tầng phát hiện CRAFT của EasyOCR không được fine-tune (thành nút cổ chai), phải nạp hai bộ công cụ/hai mô hình (nặng), và chậm nhất (317 ms/ảnh). PaddleOCR là một bộ công cụ hợp nhất, fine-tune được cả DBNet lẫn recognizer trên cùng dataset tự gán nhãn, nhẹ và nhanh nhất (65 ms/ảnh). Vì vậy PaddleOCR được chọn làm engine tự chủ mặc định (đánh đổi một phần độ chính xác nhận dạng lấy pipeline gọn – nhanh – tinh chỉnh trọn gói); VietOCR được giữ làm lựa chọn khi cần độ chính xác nhận dạng cao nhất; biến thể hybrid \texttt{paddledet\_viet} kết hợp điểm mạnh hai bên. Toàn bộ đều là giải pháp tự chủ, chạy offline, không phụ thuộc API bên ngoài.
+\textbf{Vì sao chọn PaddleOCR thay vì kết hợp EasyOCR + VietOCR. }Phương án EasyOCR + VietOCR có recognizer rất chính xác nhưng vướng ba nhược điểm: tầng phát hiện CRAFT không được fine-tune (nút cổ chai), phải nạp hai bộ công cụ (nặng), và chậm nhất (317 ms/ảnh). PaddleOCR là một bộ công cụ hợp nhất, fine-tune được cả DBNet lẫn recognizer trên cùng dataset tự gán nhãn, nhẹ và nhanh nhất (65 ms/ảnh). Vì vậy PaddleOCR được chọn làm engine tự chủ mặc định; VietOCR giữ làm lựa chọn khi cần độ chính xác cao nhất; biến thể hybrid \texttt{paddledet\_viet} kết hợp điểm mạnh hai bên. Toàn bộ đều là giải pháp tự chủ, chạy offline, không phụ thuộc API bên ngoài.
 
 \subsubsection*{f) Thuật toán bóc tách cấu trúc hóa đơn kháng nghiêng (deskew)}
-\textbf{Đặt vấn đề. }Tầng OCR chỉ trả về danh sách ô văn bản kèm hộp bao (toạ độ), chưa phải dữ liệu có cấu trúc. Để dựng lại các trường (số hóa đơn, ngày, mã số thuế, các dòng tiền) và bảng chi tiết hàng hóa, hệ thống phải gom các ô về đúng hàng và cột dựa trên toạ độ. Ảnh hóa đơn chụp bằng điện thoại thường bị nghiêng vài độ; khi đó độ lệch tung độ giữa mép trái và mép phải của bảng (xấp xỉ tan$\theta$ nhân với bề rộng bảng) vượt quá chiều cao một dòng, khiến thao tác gom theo tung độ y gộp nhầm hai dòng sản phẩm liền kề vào cùng một hàng. Đề tài đề xuất thuật toán hai pha khắc phục bằng hình học – thống kê, chạy sau tầng OCR và không cần huấn luyện.
+\textbf{Đặt vấn đề. }Tầng OCR chỉ trả về danh sách ô văn bản kèm hộp bao, chưa phải dữ liệu có cấu trúc. Để dựng lại các trường (số hóa đơn, ngày, MST, các dòng tiền) và bảng chi tiết, hệ thống phải gom ô về đúng hàng và cột theo tọa độ. Ảnh chụp điện thoại thường nghiêng vài độ; khi đó độ lệch tung độ giữa mép trái–phải của bảng vượt quá chiều cao một dòng, khiến gom theo y gộp nhầm hai dòng liền kề. Đề tài đề xuất thuật toán hai pha khắc phục bằng hình học – thống kê, chạy sau tầng OCR và không cần huấn luyện.
 
-\textbf{Pha A – Ước lượng và khử nghiêng. }Các ô thuộc hàng tiêu đề bảng (STT, Tên hàng, ĐVT, SL, Đơn giá, Thành tiền) trong thực tế nằm trên cùng một phương ngang. Thuật toán lọc các ô này rồi khớp một đường thẳng qua tâm của chúng bằng phương pháp bình phương tối thiểu; hệ số góc a của đường thẳng chính là độ nghiêng của trang (góc $\theta$ = arctan a). Sau đó áp phép biến đổi trượt (shear) ngược trên trục tung cho mọi ô để nắn thẳng toạ độ:
+\textbf{Pha A – Ước lượng và khử nghiêng. }Các ô thuộc hàng tiêu đề bảng (STT, Tên hàng, ĐVT, SL, Đơn giá, Thành tiền) vốn nằm trên cùng một phương ngang. Thuật toán khớp một đường thẳng qua tâm các ô này bằng bình phương tối thiểu; hệ số góc $a$ chính là độ nghiêng ($\theta$ = arctan $a$), rồi áp phép trượt (shear) ngược trên trục tung: $a = \Sigma(x_i - \bar{x})(y_i - \bar{y}) / \Sigma(x_i - \bar{x})^2$ và $y' = y - a\cdot x_i$. Sau đó mọi ô cùng một dòng vật lý có $y'$ xấp xỉ bằng nhau. Nếu $|a| < \varepsilon$ (ảnh vốn thẳng) thì bỏ qua bước trừ, bảo đảm bất biến với ảnh không nghiêng.
 
-\textit{a = $\Sigma$(xᵢ $-$ x̄)(yᵢ $-$ ȳ) / $\Sigma$(xᵢ $-$ x̄)²        ;        y$'$ = y $-$ a$\cdot$xᵢ}
-
-Sau bước này, mọi ô thuộc cùng một dòng vật lý có tung độ y$'$ xấp xỉ bằng nhau (bảng được ``làm thẳng'' về mặt toạ độ mà không phải xử lý lại ảnh). Nếu |a| nhỏ hơn một ngưỡng $\varepsilon$ (ảnh vốn thẳng) thì bỏ qua bước trừ, bảo đảm tính bất biến với ảnh không nghiêng.
-
-\textbf{Pha B – Tái tạo bảng theo cụm toạ độ. }Trên hệ toạ độ đã nắn thẳng, thuật toán lần lượt: (1) xác định biên bảng nằm giữa hàng tiêu đề và dòng ``Tổng/Thuế''; (2) gom dòng bằng phân cụm một chiều theo y$'$ với ngưỡng bằng 0,6 lần chiều cao dòng trung vị; (3) gán mỗi ô vào cột có tâm hoành độ gần nhất, riêng các cột số (SL, đơn giá, thành tiền) chọn ô gần tâm cột nhất thay vì nối chuỗi nhằm tránh dính các con số; (4) ghép mỗi cụm thành một dòng hàng và loại bỏ các dòng rác (không có mô tả chữ hoặc không có số tiền).
+\textbf{Pha B – Tái tạo bảng theo cụm tọa độ. }Trên hệ tọa độ đã nắn thẳng: (1) xác định biên bảng giữa hàng tiêu đề và dòng ``Tổng/Thuế''; (2) gom dòng bằng phân cụm một chiều theo $y'$ với ngưỡng 0,6 lần chiều cao dòng trung vị; (3) gán mỗi ô vào cột có tâm hoành độ gần nhất (cột số chọn ô gần tâm cột nhất để tránh dính con số); (4) ghép mỗi cụm thành một dòng hàng và loại dòng rác. Độ phức tạp tổng thể $O(n\log n)$, bộ nhớ $O(n)$ với $n$ là số ô OCR. Trên hóa đơn thử nghiệm bị nghiêng, thuật toán tách đúng 7/7 dòng hàng, trong khi gom theo y thô chỉ nhận 3 hàng do bị dồn — thuần hình học, không cần mạng nơ-ron.
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img34.png}
-\caption*{\small Hình 4.27. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew).}
-\addcontentsline{lof}{figure}{Hình 4.27. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew).}
+\includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/img34.png}
+\caption*{\small Hình 4.23. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng (deskew)}
+\addcontentsline{lof}{figure}{Hình 4.23. Sơ đồ khối thuật toán bóc tách hóa đơn kháng nghiêng}
 \end{figure}
-\textbf{Mã giả.} Toàn bộ thuật toán được tóm tắt như sau:
-
-Thuật toán ExtractInvoiceTable(L)            \# L: tập ô OCR (văn bản + hộp bao)
-
-  H   <- các ô có từ khóa cột tiêu đề
-
-  a   <- HồiQuyHệSốGóc(\{ (xc, yc) : c thuộc H \})    \# bình phương tối thiểu
-
-  nếu |a| >= eps:  y'(c) <- yc(c) - a * xc(c)   với mọi c thuộc L   \# khử nghiêng
-
-  ngược lại:       y'(c) <- yc(c)
-
-  Xk  <- tâm hoành độ các cột (từ H)
-
-  tau <- 0.6 * trung\_vị(chiều cao ô)
-
-  B   <- \{ c : y'\_tiêuđề < y'(c) < y'\_dừng \}        \# vùng bảng
-
-  R   <- PhânCụm1D(B theo y', ngưỡng tau)           \# gom dòng
-
-  với mỗi cụm r trong R:
-
-      cột(c) <- argmin\_k |xc(c) - Xk|   với mọi c trong r
-
-      dòng   <- \{ mô tả: nối ô chữ ; số: ô gần tâm mỗi cột số \}
-
-      nếu hợp lệ: xuất dòng
-
-  trả về R
-
-\textbf{Độ phức tạp và kết quả.} Chi phí gồm hồi quy O(|H|), sắp xếp để gom cụm O(n log n) và gán cột O(n$\cdot$K) với K là số cột (khoảng 6), do đó tổng độ phức tạp là O(n log n) và bộ nhớ O(n), với n là số ô OCR. Trên hóa đơn thử nghiệm bị nghiêng, thuật toán tách đúng toàn bộ 7/7 dòng hàng cùng các trường tổng tiền, trong khi cách gom theo tung độ thô chỉ nhận được 3 hàng do bị dồn. Ưu điểm là thuần hình học – thống kê, không cần mạng nơ-ron, và tự bất biến khi ảnh đã thẳng.
-
 \subsubsection*{g) Tổng hợp luồng xử lý AI end-to-end}
-\textbf{Tổng quan. }Hình 4.28 tổng hợp toàn bộ luồng xử lý AI từ ảnh đầu vào đến JSON đầu ra, làm rõ dữ liệu đi qua những lớp nào, được xử lý và bóc tách ra sao, và vị trí của bước khử nghiêng.
-
-\textbf{Các lớp xử lý. }(1) Đầu vào là ảnh hóa đơn (JPG/PNG). (2) Tiền xử lý (\texttt{\_to\_images}) chuẩn hóa ảnh về hệ màu RGB. (3) Tùy engine người dùng chọn (trường \texttt{ocrEngine} truyền từ backend .NET), luồng rẽ nhánh giữa ba engine tự chủ: pipeline \texttt{vietocr}, pipeline \texttt{paddleocr} và biến thể lai \texttt{paddledet\_viet} (DBNet phát hiện + VietOCR nhận dạng); cả ba đều đi tiếp qua lớp Phát hiện rồi Nhận dạng. (4) Lớp Phát hiện: pipeline vietocr dùng EasyOCR/CRAFT để tìm và cắt từng dòng, pipeline paddleocr dùng DBNet kèm bộ phân loại góc (cls). (5) Lớp Nhận dạng: VietOCR (VGG19 + Transformer) hoặc SVTR\_LCNet (PP-OCRv4, đã fine-tune) đọc chữ, tạo ra danh sách ô OCR gồm văn bản, hộp bao (toạ độ) và độ tin cậy.
-
-\textbf{Bóc tách và vị trí khử nghiêng. }(6) Lớp Hậu xử lý (parse) biến danh sách ô rời rạc thành dữ liệu có cấu trúc qua năm bước: \textcircled{\scriptsize 1} Khử nghiêng (deskew) — ước lượng độ nghiêng từ hàng tiêu đề và nắn toạ độ theo y$'$ = y $-$ a$\cdot$x; \textcircled{\scriptsize 2} Gom hàng theo y$'$ đã nắn; \textcircled{\scriptsize 3} Trích các trường bằng nhãn và biểu thức chính quy (số hóa đơn, ngày, MST, tiền hàng, thuế, tổng); \textcircled{\scriptsize 4} Trích bảng chi tiết bằng cách gán ô vào cột theo tâm hoành độ; \textcircled{\scriptsize 5} Chuẩn hóa con số và bù giá trị tổng. Đáng chú ý, khử nghiêng là bước ĐẦU TIÊN của lớp hậu xử lý, chạy ngay sau khi có danh sách ô OCR và trước mọi thao tác gom hàng, gán cột — vì các bước sau đều dựa trên toạ độ đã được nắn thẳng. (7) Đầu ra là JSON gồm fields, lineItems và confidence, được backend .NET lưu vào Invoice/InvoiceItem và hiển thị ở màn hình xác nhận.
+Hình 4.24 tổng hợp toàn bộ luồng từ ảnh đầu vào đến JSON đầu ra. (1) Đầu vào ảnh hóa đơn (JPG/PNG); (2) tiền xử lý chuẩn hóa RGB; (3) rẽ nhánh theo \texttt{ocrEngine} giữa ba engine tự chủ, đều đi qua lớp Phát hiện rồi Nhận dạng; (4) Phát hiện: CRAFT (vietocr) hoặc DBNet + phân loại góc (paddleocr); (5) Nhận dạng: VietOCR hoặc SVTR\_LCNet tạo danh sách ô OCR (text, box, prob). (6) Hậu xử lý biến ô rời rạc thành dữ liệu có cấu trúc qua năm bước: \textcircled{\scriptsize 1} khử nghiêng ($y' = y - a\cdot x$, bước ĐẦU TIÊN), \textcircled{\scriptsize 2} gom hàng theo $y'$, \textcircled{\scriptsize 3} trích trường bằng nhãn + regex, \textcircled{\scriptsize 4} trích bảng theo tâm cột, \textcircled{\scriptsize 5} chuẩn hóa số và bù tổng. (7) Đầu ra JSON (fields, lineItems, confidence) được backend .NET lưu vào Invoice/InvoiceItem và hiển thị ở màn hình xác nhận.
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img35.pdf}
-\caption*{\small Hình 4.28. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng.}
-\addcontentsline{lof}{figure}{Hình 4.28. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng.}
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/img35.pdf}
+\caption*{\small Hình 4.24. Luồng xử lý AI end-to-end của dịch vụ OCR: các lớp xử lý và vị trí bước khử nghiêng}
+\addcontentsline{lof}{figure}{Hình 4.24. Luồng xử lý AI end-to-end của dịch vụ OCR}
 \end{figure}
 \subsubsection*{h) Biến thể hybrid: Paddle DBNet (phát hiện) + VietOCR (nhận dạng)}
-\textbf{Ý tưởng. }Từ kết quả ở mục d), VietOCR cho độ chính xác nhận dạng cao nhất trong ba engine, trong khi bộ phát hiện DBNet của PaddleOCR (đã fine-tune) tốt hơn CRAFT của EasyOCR — vốn không được fine-tune và là nút cổ chai của pipeline vietocr. Vì vậy đề tài thử nghiệm thêm một biến thể hybrid (engine paddledet\_viet) ghép hai điểm mạnh: dùng DBNet để phát hiện dòng, rồi đưa từng vùng vào VietOCR để nhận dạng.
+\textbf{Ý tưởng \& cơ chế. }VietOCR cho độ chính xác nhận dạng cao nhất, còn DBNet của PaddleOCR (đã fine-tune) phát hiện tốt hơn CRAFT của EasyOCR. Biến thể hybrid (\texttt{paddledet\_viet}) ghép hai điểm mạnh: DBNet phát hiện dòng, sau đó phép biến đổi phối cảnh đưa mỗi vùng (đa giác bốn điểm của DBNet) về ảnh dòng nằm ngang rồi giao VietOCR nhận dạng. Kết quả trả về cùng định dạng danh sách ô nên tái dùng nguyên vẹn bộ hậu xử lý ở mục f, g.
 
-\textbf{Cơ chế ghép. }Do DBNet trả về đa giác bốn điểm (có thể xoay, nghiêng), lớp ghép thực hiện phép biến đổi phối cảnh để đưa mỗi vùng về ảnh dòng nằm ngang (tương tự hàm get\_rotate\_crop\_image của PaddleOCR) trước khi VietOCR đọc. Kết quả trả về cùng định dạng danh sách ô (văn bản, hộp bao, độ tin cậy) nên tái sử dụng nguyên vẹn bộ hậu xử lý ở mục f và g (khử nghiêng, trích trường và bảng).
-
-\textbf{Phân tích ablation. }So sánh paddleocr (DBNet + Paddle SVTR) với paddledet\_viet (DBNet + VietOCR) là một ablation giữ nguyên detector, chỉ thay recognizer, do đó cô lập đúng ảnh hưởng của tầng nhận dạng. Cần lưu ý: phép đánh giá nhận dạng ở mục d) chạy trên các dòng đã cắt sẵn (ground-truth) nên không phụ thuộc detector; ở mức này biến thể hybrid dùng recognizer VietOCR nên có độ chính xác nhận dạng trùng với cột VietOCR (cao nhất). Khác biệt thực sự của hybrid nằm ở tầng phát hiện: DBNet fine-tune cắt dòng tốt và ổn định hơn CRAFT, nên khi chạy end-to-end trên hóa đơn cả trang, hybrid được kỳ vọng vượt pipeline vietocr (CRAFT + VietOCR) nhờ detector mạnh hơn, đồng thời giữ chất lượng đọc của VietOCR. Việc đối chiếu end-to-end trên từng hóa đơn được thực hiện bằng công cụ so sánh ba pipeline (mục g).
-
-\textbf{Đánh đổi và lựa chọn. }Bù lại các ưu điểm trên, hybrid phải nạp đồng thời hai framework (PaddlePaddle và PyTorch) nên tốn bộ nhớ hơn; VietOCR nhận dạng theo từng dòng thay vì theo lô như SVTR nên chậm hơn; và triển khai một dịch vụ dùng hai framework cũng phức tạp hơn PaddleOCR hợp nhất. Vì vậy hệ thống chọn PaddleOCR làm engine mặc định cho vận hành, còn biến thể hybrid được cung cấp như một tùy chọn (paddledet\_viet) phục vụ đối chiếu và các tình huống ưu tiên độ chính xác nhận dạng hơn tốc độ.
+\textbf{Đánh đổi và lựa chọn. }So sánh \texttt{paddleocr} với \texttt{paddledet\_viet} là một ablation giữ nguyên detector, chỉ thay recognizer. Khác biệt của hybrid nằm ở tầng phát hiện: DBNet cắt dòng ổn định hơn CRAFT nên khi chạy end-to-end trên hóa đơn cả trang, hybrid được kỳ vọng vượt pipeline vietocr. Bù lại, hybrid phải nạp đồng thời hai framework (PaddlePaddle + PyTorch) nên tốn bộ nhớ và chậm hơn, triển khai phức tạp hơn PaddleOCR hợp nhất. Vì vậy hệ thống chọn PaddleOCR làm engine mặc định, còn hybrid là tùy chọn phục vụ đối chiếu và tình huống ưu tiên độ chính xác nhận dạng hơn tốc độ.
 
 \phantomsection
 \subsection*{4.4.2. Khảo sát các giải pháp AI OCR khác và lý do lựa chọn}
 \addcontentsline{toc}{subsection}{4.4.2. Khảo sát các giải pháp AI OCR khác và lý do lựa chọn}
-Bóc tách hóa đơn bằng AI là bài toán đã trưởng thành, có nhiều giải pháp thương mại và mã nguồn mở. Trước khi tự xây dựng engine, nhóm đã khảo sát ba nhóm giải pháp phổ biến để làm căn cứ lựa chọn. Tất cả ảnh minh chứng dưới đây là ảnh chụp màn hình trang chính thức của từng sản phẩm, kèm đường dẫn nguồn ngay bên dưới; các số liệu giá tham khảo tại thời điểm khảo sát (07/2026).
+Bóc tách hóa đơn bằng AI là bài toán đã trưởng thành, có nhiều giải pháp thương mại và mã nguồn mở. Trước khi tự xây dựng engine, nhóm đã khảo sát ba nhóm giải pháp phổ biến để làm căn cứ lựa chọn (số liệu giá tham khảo tại thời điểm khảo sát 07/2026); bảng tổng hợp và bảng xếp hạng công khai ở cuối mục.
 
-\textbf{a) Nhóm dịch vụ đám mây (Cloud OCR/IDP API).} Đây là các API trả tiền theo lượt gọi, độ chính xác cao và không phải tự vận hành hạ tầng, nhưng dữ liệu phải gửi ra máy chủ bên thứ ba và chi phí tăng theo sản lượng:
+\textbf{a) Nhóm dịch vụ đám mây (Cloud OCR/IDP API).} Các API trả tiền theo lượt gọi, độ chính xác cao và không phải tự vận hành hạ tầng, nhưng dữ liệu phải gửi ra máy chủ bên thứ ba và chi phí tăng theo sản lượng:
 \begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
-  \item \textbf{Google Cloud Vision / Document AI} (Hình 4.29): trích văn bản và tài liệu, giá cơ bản \textasciitilde{}1,5 USD/1.000 trang, bản trích cấu trúc (Document AI) cao hơn nhiều; miễn phí 1.000 đơn vị/tháng.
-  \item \textbf{Azure AI Document Intelligence} (Hình 4.30): có sẵn mô hình hóa đơn dựng sẵn (prebuilt-invoice), giá trích cấu trúc \textasciitilde{}10 USD/1.000 trang; miễn phí 500 trang/tháng.
-  \item \textbf{Amazon Textract} (Hình 4.31): trích chữ, bảng, biểu mẫu; DetectDocumentText \textasciitilde{}1,5 USD/1.000 trang, còn AnalyzeDocument (bảng/biểu mẫu) lên tới \textasciitilde{}65 USD/1.000 trang.
+  \item \textbf{Google Cloud Vision / Document AI}: giá cơ bản \textasciitilde{}1,5 USD/1.000 trang, bản trích cấu trúc (Document AI) cao hơn nhiều; miễn phí 1.000 đơn vị/tháng.
+  \item \textbf{Azure AI Document Intelligence}: có mô hình hóa đơn dựng sẵn (prebuilt-invoice), \textasciitilde{}10 USD/1.000 trang; miễn phí 500 trang/tháng.
+  \item \textbf{Amazon Textract}: DetectDocumentText \textasciitilde{}1,5 USD/1.000 trang, AnalyzeDocument (bảng/biểu mẫu) tới \textasciitilde{}65 USD/1.000 trang.
 \end{itemize}
 
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_google.png}
-\caption*{\small Hình 4.29. Google Cloud Vision AI — trích xuất văn bản/tài liệu qua API đám mây}
-\addcontentsline{lof}{figure}{Hình 4.29. Google Cloud Vision AI (API đám mây)}
-\end{figure}
-\noindent\textit{\small Nguồn: \url{https://cloud.google.com/vision} (truy cập 07/2026).}
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_azure.png}
-\caption*{\small Hình 4.30. Azure AI Document Intelligence — mô hình hóa đơn dựng sẵn}
-\addcontentsline{lof}{figure}{Hình 4.30. Azure AI Document Intelligence}
-\end{figure}
-\noindent\textit{\small Nguồn: \url{https://azure.microsoft.com/en-us/products/ai-services/ai-document-intelligence} (truy cập 07/2026).}
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_textract.png}
-\caption*{\small Hình 4.31. Amazon Textract — trích chữ, bảng và biểu mẫu từ tài liệu}
-\addcontentsline{lof}{figure}{Hình 4.31. Amazon Textract}
-\end{figure}
-\noindent\textit{\small Nguồn: \url{https://aws.amazon.com/textract/} (truy cập 07/2026).}
-
-\textbf{b) Nhóm SDK thương mại cài tại chỗ.} Tiêu biểu là \textbf{ABBYY FineReader Engine} (Hình 4.32) -- bộ SDK OCR lâu đời, độ chính xác cao, chạy được on-premise (bảo mật tốt) nhưng chi phí bản quyền lớn và mô hình đóng, không tùy biến sâu cho hóa đơn tiếng Việt.
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_abbyy.png}
-\caption*{\small Hình 4.32. ABBYY FineReader Engine — SDK OCR thương mại cài tại chỗ}
-\addcontentsline{lof}{figure}{Hình 4.32. ABBYY FineReader Engine (SDK thương mại)}
-\end{figure}
-\noindent\textit{\small Nguồn: \url{https://www.abbyy.com/ocr-sdk/} (truy cập 07/2026).}
+\textbf{b) Nhóm SDK thương mại cài tại chỗ.} Tiêu biểu là \textbf{ABBYY FineReader Engine} — bộ SDK OCR lâu đời, độ chính xác cao, chạy được on-premise (bảo mật tốt) nhưng chi phí bản quyền lớn và mô hình đóng, không tùy biến sâu cho hóa đơn tiếng Việt.
 
 \textbf{c) Nhóm mã nguồn mở, tự triển khai.} Miễn phí, chạy offline, tùy biến và fine-tune được:
 \begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
-  \item \textbf{Tesseract} (Hình 4.33): engine mã nguồn mở lâu đời của Google; đọc tài liệu in tốt nhưng yếu với hóa đơn tiếng Việt bố cục phức tạp nếu không huấn luyện lại, và chậm hơn (CPU \textasciitilde{}25 trang/phút).
-  \item \textbf{PaddleOCR} (Hình 4.34): bộ công cụ OCR nhẹ, hợp nhất phát hiện + nhận dạng, hỗ trợ 100+ ngôn ngữ, fine-tune được cả hai tầng, nhanh (GPU \textasciitilde{}120 trang/phút) -- đây là engine nhóm chọn, kết hợp thêm \textbf{VietOCR} (recognizer mạnh về dấu tiếng Việt) và bộ phát hiện CRAFT của EasyOCR.
+  \item \textbf{Tesseract}: engine mã nguồn mở lâu đời của Google; đọc tài liệu in tốt nhưng yếu với hóa đơn tiếng Việt bố cục phức tạp nếu không huấn luyện lại, và chậm hơn.
+  \item \textbf{PaddleOCR} (Hình 4.25): bộ công cụ OCR nhẹ, hợp nhất phát hiện + nhận dạng, hỗ trợ 100+ ngôn ngữ, fine-tune được cả hai tầng, nhanh — đây là engine nhóm chọn, kết hợp thêm \textbf{VietOCR} (recognizer mạnh về dấu tiếng Việt) và bộ phát hiện CRAFT của EasyOCR.
 \end{itemize}
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_tesseract.png}
-\caption*{\small Hình 4.33. Tesseract OCR (mã nguồn mở) trên GitHub}
-\addcontentsline{lof}{figure}{Hình 4.33. Tesseract OCR (mã nguồn mở)}
-\end{figure}
-\noindent\textit{\small Nguồn: \url{https://github.com/tesseract-ocr/tesseract} (truy cập 07/2026).}
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/ocr_paddle.png}
-\caption*{\small Hình 4.34. PaddleOCR (mã nguồn mở, Apache-2.0, \textasciitilde{}86k sao GitHub) -- engine nhóm lựa chọn}
-\addcontentsline{lof}{figure}{Hình 4.34. PaddleOCR (mã nguồn mở) -- engine được chọn}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{images/ocr_paddle.png}
+\caption*{\small Hình 4.25. PaddleOCR (mã nguồn mở, Apache-2.0, \textasciitilde{}86k sao GitHub) -- engine nhóm lựa chọn}
+\addcontentsline{lof}{figure}{Hình 4.25. PaddleOCR (mã nguồn mở) -- engine được chọn}
 \end{figure}
 \noindent\textit{\small Nguồn: \url{https://github.com/PaddlePaddle/PaddleOCR} (truy cập 07/2026).}
 
@@ -233,9 +132,9 @@ Tesseract & Mã nguồn mở & Trung bình–thấp & Miễn phí & Có & Có (k
 \textbf{PaddleOCR (chọn)} & Mã nguồn mở & \textbf{Cao} (0,893 seq; 65 ms) & Miễn phí & \textbf{Có} & \textbf{Có (det+rec)} & \textbf{Rất phù hợp} \\ \hline
 \textbf{VietOCR (chọn)} & Mã nguồn mở & \textbf{Rất cao} (1,000 seq) & Miễn phí & \textbf{Có} & \textbf{Có (rec)} & \textbf{Rất phù hợp} \\ \hline
 \end{tabular}}\end{center}\end{landscape}
-\noindent\textit{\small Nguồn số liệu giá: tổng hợp từ trang giá chính thức của Google Cloud Vision, Azure AI Document Intelligence và \url{https://aws.amazon.com/textract/pricing/} (07/2026); số liệu độ chính xác/tốc độ engine lấy từ thực nghiệm của nhóm ở mục 4.4.1.d.}
+\noindent\textit{\small Nguồn số liệu giá: trang giá chính thức của Google Cloud Vision, Azure AI Document Intelligence và \url{https://aws.amazon.com/textract/pricing/} (07/2026); số liệu độ chính xác/tốc độ engine lấy từ thực nghiệm của nhóm ở mục 4.4.1.d.}
 
-\textbf{Đối chiếu với bảng xếp hạng AI công khai (OmniDocBench).} Ngoài bảng chấm điểm theo tiêu chí riêng ở trên, nhóm còn đối chiếu lựa chọn của mình với một \emph{bảng xếp hạng độc lập, công khai} do cộng đồng nghiên cứu duy trì để tăng tính khách quan. \textbf{OmniDocBench} (công bố tại hội nghị CVPR 2025, nhóm OpenDataLab) là bộ benchmark chuẩn cho bài toán bóc tách tài liệu (document parsing), chấm điểm end-to-end trên nhiều loại tài liệu (gồm bảng, công thức, chữ) và duy trì bảng xếp hạng cập nhật liên tục cho cả mô hình mã nguồn mở lẫn mô hình thương mại. Điều đáng chú ý cho đề tài là \textbf{PaddleOCR — chính là họ engine mà đề tài sử dụng — góp mặt và hiện dẫn đầu bảng xếp hạng này}: biến thể pipeline \texttt{PP-StructureV3} và các mô hình \texttt{PaddleOCR-VL} do cùng nhóm PaddleOCR phát triển đạt điểm tổng cao nhất, vượt cả các mô hình đa phương thức thương mại như GPT-5.2 hay Gemini~3~Pro. Trích một phần bảng xếp hạng (điểm tổng \emph{Overall}, thang 100, tại thời điểm khảo sát 07/2026):
+\textbf{Đối chiếu với bảng xếp hạng AI công khai (OmniDocBench).} Để tăng tính khách quan, nhóm đối chiếu lựa chọn của mình với bảng xếp hạng độc lập, công khai \textbf{OmniDocBench} (CVPR 2025, nhóm OpenDataLab) — benchmark chuẩn cho bài toán bóc tách tài liệu, chấm điểm end-to-end trên nhiều loại tài liệu và cập nhật liên tục cho cả mô hình mã nguồn mở lẫn thương mại. Đáng chú ý, \textbf{PaddleOCR — chính là họ engine đề tài sử dụng — hiện dẫn đầu bảng}: biến thể \texttt{PP-StructureV3} và các mô hình \texttt{PaddleOCR-VL} đạt điểm tổng cao nhất, vượt cả mô hình đa phương thức thương mại như GPT-5.2 hay Gemini~3~Pro. Trích một phần bảng xếp hạng (điểm \emph{Overall}, thang 100, 07/2026):
 
 \begin{center}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}
 \begin{tabular}{|c|>{\raggedright\arraybackslash}p{5.0cm}|>{\raggedright\arraybackslash}p{3.4cm}|c|}
@@ -243,29 +142,17 @@ Tesseract & Mã nguồn mở & Trung bình–thấp & Miễn phí & Có & Có (k
 \textbf{Hạng} & \textbf{Mô hình / công cụ} & \textbf{Loại} & \textbf{Overall} \\ \hline
 1 & \textbf{PaddleOCR-VL-1.6} \textit{(họ PaddleOCR)} & Mã nguồn mở & \textbf{96,34} \\ \hline
 2 & MinerU2.5-Pro & Mã nguồn mở & 95,75 \\ \hline
-3 & GLM-OCR & Mã nguồn mở & 95,22 \\ \hline
 4 & \textbf{PaddleOCR-VL-1.5} \textit{(họ PaddleOCR)} & Mã nguồn mở & \textbf{94,93} \\ \hline
-5 & \textbf{PaddleOCR-VL} \textit{(họ PaddleOCR)} & Mã nguồn mở & \textbf{94,18} \\ \hline
 13 & Gemini 3 Pro \textit{(tham chiếu)} & VLM thương mại & 92,91 \\ \hline
 \end{tabular}}\end{center}
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/ocr_leaderboard_omnidocbench.png}
-\caption*{\small Hình 4.35. Bảng xếp hạng AI công khai OmniDocBench (CVPR 2025) — họ engine PaddleOCR dẫn đầu bảng xếp hạng bóc tách tài liệu}
-\addcontentsline{lof}{figure}{Hình 4.35. Bảng xếp hạng AI công khai OmniDocBench — PaddleOCR dẫn đầu}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{images/ocr_leaderboard_omnidocbench.png}
+\caption*{\small Hình 4.26. Bảng xếp hạng AI công khai OmniDocBench (CVPR 2025) — họ engine PaddleOCR dẫn đầu}
+\addcontentsline{lof}{figure}{Hình 4.26. Bảng xếp hạng AI công khai OmniDocBench — PaddleOCR dẫn đầu}
 \end{figure}
-\noindent\textit{\small Nguồn: OmniDocBench, OpenDataLab (CVPR 2025). Kho mã và bảng xếp hạng: \url{https://github.com/opendatalab/OmniDocBench}; trang xếp hạng trực tuyến: \url{https://opendatalab.com/OmniDocBench}; bài báo: \url{https://huggingface.co/papers/2412.07626} (truy cập 07/2026).}
+\noindent\textit{\small Nguồn: OmniDocBench, OpenDataLab (CVPR 2025): \url{https://github.com/opendatalab/OmniDocBench}; \url{https://opendatalab.com/OmniDocBench} (truy cập 07/2026).}
 
-\noindent Việc engine mà đề tài lựa chọn cũng chính là engine đang đứng đầu một bảng xếp hạng AI độc lập, công khai củng cố thêm cho quyết định kỹ thuật ở trên: PaddleOCR không chỉ phù hợp về chi phí và khả năng tùy biến, mà còn nằm trong nhóm dẫn đầu về độ chính xác bóc tách tài liệu theo đánh giá khách quan của cộng đồng.
-
-\textbf{Lý do lựa chọn PaddleOCR + VietOCR (tự triển khai).} Trên cơ sở khảo sát, nhóm chọn hướng \emph{tự triển khai mã nguồn mở} thay vì API đám mây hay SDK thương mại, vì:
-\begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
-  \item \textbf{Bảo mật dữ liệu:} hóa đơn chứa thông tin tài chính – thuế nhạy cảm của tòa nhà; giải pháp tự triển khai chạy \emph{offline}, dữ liệu không rời khỏi hệ thống, tránh rủi ro khi gửi lên máy chủ bên thứ ba.
-  \item \textbf{Chi phí:} miễn phí bản quyền, không phát sinh phí theo lượt gọi – phù hợp khi số lượng hóa đơn lớn và ngân sách đồ án hạn chế (các API đám mây tính \textasciitilde{}1,5–65 USD/1.000 trang).
-  \item \textbf{Fine-tune được trên dữ liệu tiếng Việt:} nhóm tự sinh dataset hóa đơn GTGT và fine-tune, đạt độ chính xác nhận dạng 99,64\% (PaddleOCR) và 100\% (VietOCR) trên tập val – điều mà các API/SDK đóng không cho phép tùy biến sâu (xem mục 4.4.1.d).
-  \item \textbf{Chủ động và không phụ thuộc:} không lệ thuộc Internet hay nhà cung cấp (vendor lock-in), phù hợp môi trường vận hành tòa nhà.
-  \item \textbf{Đúng tinh thần đồ án tốt nghiệp:} thể hiện năng lực \emph{xây dựng, huấn luyện và đánh giá} mô hình AI, thay vì chỉ gọi dịch vụ có sẵn.
-\end{itemize}
-Tóm lại, các giải pháp đám mây/thương mại chính xác và tiện nhưng đánh đổi chi phí, quyền riêng tư dữ liệu và khả năng tùy biến; hướng tự triển khai PaddleOCR + VietOCR đáp ứng tốt nhất các tiêu chí của đề tài.
+\textbf{Lý do lựa chọn PaddleOCR + VietOCR (tự triển khai).} Trên cơ sở khảo sát, nhóm chọn hướng \emph{tự triển khai mã nguồn mở} thay vì API đám mây hay SDK thương mại, vì: \textbf{(1) Bảo mật} — hóa đơn chứa thông tin tài chính–thuế nhạy cảm, giải pháp tự triển khai chạy offline, dữ liệu không rời khỏi hệ thống; \textbf{(2) Chi phí} — miễn phí bản quyền, không phí theo lượt gọi (API đám mây \textasciitilde{}1,5–65 USD/1.000 trang); \textbf{(3) Fine-tune được trên dữ liệu tiếng Việt} — nhóm tự sinh dataset và fine-tune đạt 99,64\% (PaddleOCR) và 100\% (VietOCR), điều mà API/SDK đóng không cho phép; \textbf{(4) Chủ động}, không lệ thuộc Internet hay vendor lock-in; \textbf{(5) Đúng tinh thần đồ án} — thể hiện năng lực xây dựng, huấn luyện và đánh giá mô hình AI thay vì chỉ gọi dịch vụ có sẵn. Tóm lại, các giải pháp đám mây/thương mại chính xác và tiện nhưng đánh đổi chi phí, quyền riêng tư và khả năng tùy biến; hướng tự triển khai PaddleOCR + VietOCR đáp ứng tốt nhất các tiêu chí của đề tài.
 
 \phantomsection

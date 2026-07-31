@@ -130,6 +130,35 @@ Quản lý sự cố \& SLA & Riêng & Nguyễn Xuân Thưởng \\ \hline
 Quản lý dân cư (căn hộ, cư dân, phí) & Riêng & Lương Thanh Tài \\ \hline
 Quản lý dịch vụ & Riêng & Nguyễn Xuân Khải \\ \hline
 \end{tabular}}\end{center}
+Theo Điều 7 Quy định ĐATN, sản phẩm nhóm thể hiện rõ phần chung và phần riêng, mỗi thành viên chịu trách nhiệm phần cá nhân của mình. Báo cáo trình bày phần Base (chung) và phân hệ Quản lý tài sản do Nguyễn Xuân Thưởng đảm nhiệm (gồm các nghiệp vụ Tài sản \& bảo trì, Kho – Mua sắm – Nhà cung cấp, Sự cố \& SLA). Hai phân hệ Quản lý dân cư (Lương Thanh Tài) và Quản lý dịch vụ (Nguyễn Xuân Khải) do các thành viên khác đảm nhiệm, không nằm trong phạm vi báo cáo này. Đóng góp cá nhân của tác giả được nêu rõ ở phần Kết luận.
+
+Nhóm áp dụng quy trình làm việc chuyên nghiệp: lập kế hoạch và theo dõi tiến độ bằng biểu đồ Gantt (Hình 0.1); quản trị công việc trực quan trên bảng Kanban (Hình 0.2); họp nhóm định kỳ hằng tuần (trực tiếp và trực tuyến, Hình 0.3) và trao đổi công việc hằng ngày qua nhóm chat (Hình 0.4); mỗi buổi họp đều lập biên bản (Hình 0.5). Toàn bộ minh chứng được tổng hợp trong Hồ sơ minh chứng kèm theo.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img01.png}
+\caption*{\small Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
+\addcontentsline{lof}{figure}{Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img02.png}
+\caption*{\small Hình 0.2. Bảng công việc Kanban của nhóm}
+\addcontentsline{lof}{figure}{Hình 0.2. Bảng công việc Kanban của nhóm}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img03.png}
+\caption*{\small Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
+\addcontentsline{lof}{figure}{Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img04.png}
+\caption*{\small Hình 0.4. Trao đổi công việc trên nhóm chat}
+\addcontentsline{lof}{figure}{Hình 0.4. Trao đổi công việc trên nhóm chat}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img05.png}
+\caption*{\small Hình 0.5. Biên bản họp nhóm (bản mẫu)}
+\addcontentsline{lof}{figure}{Hình 0.5. Biên bản họp nhóm (bản mẫu)}
+\end{figure}
 \phantomsection
 \section*{6. Bố cục báo cáo}
 \addcontentsline{toc}{section}{6. Bố cục báo cáo}
@@ -662,7 +691,7 @@ CLO1 & Phân tích có hệ thống bài toán KHMT & Khảo sát bài toán và
 CLO2 & Thiết kế \& triển khai đáp ứng yêu cầu; cân nhắc khả thi, hiệu quả, đạo đức, bối cảnh & Kiến trúc module hóa (.NET 8, Next.js 16, PostgreSQL); hệ thống chạy được với API và giao diện hoàn chỉnh; kiểm thử hệ thống (Chương 5); đánh giá đạo đức, an toàn dữ liệu và bối cảnh xã hội (§5.6). & S \\ \hline
 CLO3 & Áp dụng hiệu quả kiến thức trí tuệ nhân tạo & OCR hóa đơn tiếng Việt bằng VietOCR/PaddleOCR: sinh dataset, huấn luyện – đánh giá (val-acc 99,64\%), tích hợp qua worker nền và đối chiếu ba chiều (§4.4). & S–E \\ \hline
 CLO4 & Trình bày hiệu quả (viết, thuyết trình, thảo luận) & Quyển thuyết minh trình bày theo QĐ 483/QĐ-ĐHXDHN, hệ thống hình vẽ – bảng biểu; slide và bảo vệ trước hội đồng; tiếp thu, phản hồi ý kiến phản biện. & S \\ \hline
-CLO5 & Làm việc nhóm hiệu quả & Đồ án nhóm 03 sinh viên với phần Base dùng chung; quản trị công việc bằng Git, Kanban, biểu đồ Gantt và biên bản họp (minh chứng ở Hồ sơ kèm theo); phân công module rõ ràng và review chéo khi hợp nhất mã nguồn. & S \\ \hline
+CLO5 & Làm việc nhóm hiệu quả & Đồ án nhóm 03 sinh viên với phần Base dùng chung; quản trị công việc bằng Git, Kanban, biểu đồ Gantt và biên bản họp (Hình 0.1–0.5); phân công module rõ ràng và review chéo khi hợp nhất mã nguồn. & S \\ \hline
 \end{tabular}}\end{center}
 Trong đó CLO1 và CLO2 là hai chuẩn đầu ra trọng tâm của học phần; kết quả đồ án đáp ứng từ mức Đạt (S) trở lên ở cả năm CLO, phù hợp ngưỡng công nhận hoàn thành (mỗi CLO tối thiểu mức Developing – D).
 

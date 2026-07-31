@@ -67,6 +67,14 @@
   \caption*{\small #3}%
   \addcontentsline{lof}{figure}{#4}%
   \end{figure}}
+% Hình use case dạng dọc, chèn thẳng vào lề (KHÔNG chiếm trang ngang riêng) -> tiết kiệm trang.
+% Biểu đồ use case bề ngang rộng nên width=\linewidth đã đủ to; cap chiều cao 0.5 trang.
+\newcommand{\figuc}[3]{%
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{#1}%
+  \caption*{\small #2}%
+  \addcontentsline{lof}{figure}{#3}%
+  \end{figure}}
 % Khối ghi chú + đặc tả use case
 \newcommand{\notebox}[1]{\par\noindent\begin{center}\fcolorbox{black!30}{black!4}{%
 \begin{minipage}{0.97\linewidth}\small #1\end{minipage}}\end{center}\par}

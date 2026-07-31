@@ -1,0 +1,37 @@
+<mxfile host="app.diagrams.net">
+<diagram id="d1" name="Use case Base — Vận hành, danh mục &amp; thông báo">
+<mxGraphModel dx="800" dy="600" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+<root>
+<mxCell id="0"/>
+<mxCell id="1" parent="0"/>
+<mxCell id="n12" value="Vận hành, danh mục &amp; thông báo" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;dashed=1;verticalAlign=top;fontSize=12;fontStyle=2;fontColor=#3b5b8c;" vertex="1" parent="1"><mxGeometry x="202" y="70" width="276" height="676" as="geometry"/></mxCell>
+<mxCell id="n1" value="Cấu hình hệ thống (tham số)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="110" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n2" value="Quản lý toà nhà &amp; tầng" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="192" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n3" value="Quản lý căn hộ" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="274" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n4" value="Danh mục dùng chung (loại phí, loại TS…)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="356" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n5" value="Soạn &amp; gửi thông báo" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="438" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n6" value="Xem hộp thư cá nhân" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="520" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n7" value="Tra cứu nhật ký hoạt động (Audit log)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="602" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n8" value="Dashboard &amp; KPI" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="230" y="684" width="220" height="46" as="geometry"/></mxCell>
+<mxCell id="n9" value="Chọn đối tượng nhận" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="332" width="205" height="46" as="geometry"/></mxCell>
+<mxCell id="n10" value="Gửi email" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="396" width="205" height="46" as="geometry"/></mxCell>
+<mxCell id="n11" value="Ghi hộp thư trong hệ thống" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="460" width="205" height="46" as="geometry"/></mxCell>
+<mxCell id="n13" value="Ban quản lý" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" vertex="1" parent="1"><mxGeometry x="40" y="397.0" width="30" height="60" as="geometry"/></mxCell>
+<mxCell id="n14" value="Quản trị viên" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" vertex="1" parent="1"><mxGeometry x="940" y="150" width="30" height="60" as="geometry"/></mxCell>
+<mxCell id="n15" value="Cư dân" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" vertex="1" parent="1"><mxGeometry x="940" y="520" width="30" height="60" as="geometry"/></mxCell>
+<mxCell id="n16" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n13" target="n1"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n17" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n13" target="n2"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n18" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n13" target="n3"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n19" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n13" target="n4"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n20" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n13" target="n5"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n21" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n13" target="n8"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n22" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n14" target="n7"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="880" y="540"/><mxPoint x="470" y="540"/></Array></mxGeometry></mxCell>
+<mxCell id="n23" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n14" target="n1"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n24" value="" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" edge="1" parent="1" source="n15" target="n6"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n25" value="«include»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" edge="1" parent="1" source="n5" target="n9"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n26" value="«include»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" edge="1" parent="1" source="n5" target="n10"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="n27" value="«include»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" edge="1" parent="1" source="n5" target="n11"><mxGeometry relative="1" as="geometry"/></mxCell>
+</root>
+</mxGraphModel>
+</diagram>
+</mxfile>

@@ -236,7 +236,7 @@ Mỗi use case tiêu biểu của Base được đặc tả theo mẫu \emph{đ�
 \addcontentsline{toc}{subsection}{3.3.2. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}
 Hình 3.5 đặc tả tương tác đăng nhập hai pha theo \texttt{AuthLoginService}: Pha 1 kiểm mật khẩu/trạng thái/email, nếu bật MFA thì lưu vé Redis và trả \texttt{requiresMfa}; Pha 2 xác minh TOTP, tạo phiên, phát JWT + refresh token, đặt cookie.
 
-\figland{images/fig_seq_login_mfa.pdf}{Hình 3.5. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}{Hình 3.5. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}
+\figuc{images/fig_seq_login_mfa.pdf}{Hình 3.5. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}{Hình 3.5. Biểu đồ tuần tự: Đăng nhập có MFA và cấp JWT}
 
 \phantomsection
 \subsection*{3.3.3. Sơ đồ luồng: Xác thực \& phân quyền cho mỗi request}
@@ -303,7 +303,7 @@ Kiểm kê kho & KST & \guillemotleft include\guillemotright{} nhập số đế
 Xem cảnh báo tồn thấp & KTV & Danh sách vật tư dưới ngưỡng (\texttt{get-low-stock}). \\ \hline
 \end{longtable}}
 
-\figland{images/fig_uc_ms_p2p.pdf}{Hình 4.1b. Biểu đồ use case Mua sắm — Quy trình P2P}{Hình 4.1b. Use case Mua sắm — Quy trình P2P}
+\figuc{images/fig_uc_ms_p2p.pdf}{Hình 4.1b. Biểu đồ use case Mua sắm — Quy trình P2P}{Hình 4.1b. Use case Mua sắm — Quy trình P2P}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -457,23 +457,23 @@ Sơ đồ luồng P2P (Hình 4.2): lập PR $\rightarrow$ duyệt $\rightarrow$ 
 
 \figuc{images/fig_flow_p2p.pdf}{Hình 4.2. Sơ đồ luồng nghiệp vụ mua sắm (PR $\rightarrow$ PO $\rightarrow$ nhập kho $\rightarrow$ hóa đơn $\rightarrow$ thanh toán)}{Hình 4.2. Sơ đồ luồng nghiệp vụ mua sắm}
 
-\figland{images/fig_seq_ocr.pdf}{Hình 4.3. Biểu đồ tuần tự: OCR hóa đơn bất đồng bộ (worker nền)}{Hình 4.3. Biểu đồ tuần tự: OCR hóa đơn bất đồng bộ}
+\figuc{images/fig_seq_ocr.pdf}{Hình 4.3. Biểu đồ tuần tự: OCR hóa đơn bất đồng bộ (worker nền)}{Hình 4.3. Biểu đồ tuần tự: OCR hóa đơn bất đồng bộ}
 
 \phantomsection
 \subsection*{4.1.4. Sơ đồ trạng thái}
 \addcontentsline{toc}{subsection}{4.1.4. Sơ đồ trạng thái}
 Vòng đời đề nghị mua PR (Hình 4.4) và vòng đời job OCR (Hình 4.5) phản ánh đúng trạng thái trong mã.
 
-\figh{images/fig_state_pr.pdf}{0.26}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}
+\figh{images/fig_state_pr.pdf}{0.4}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}
 
-\figh{images/fig_state_ocr.pdf}{0.32}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}
+\figh{images/fig_state_ocr.pdf}{0.52}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}
 
 \phantomsection
 \subsection*{4.1.5. Thiết kế cơ sở dữ liệu (ERD) nhóm Mua sắm}
 \addcontentsline{toc}{subsection}{4.1.5. Thiết kế cơ sở dữ liệu (ERD) nhóm Mua sắm}
 Hình 4.6 là ERD nhóm Mua sắm. Các bảng chính: \texttt{warehouses}, \texttt{material\_categories}, \texttt{materials} (danh mục vật tư, mức tồn tối thiểu/điểm đặt hàng lại); \texttt{inventory\_levels} (tồn theo kho); \texttt{inventory\_transactions} (nhập/xuất/điều chỉnh/điều chuyển); \texttt{purchase\_requests} + \texttt{purchase\_request\_items} (đề nghị mua); \texttt{purchase\_orders} + \texttt{purchase\_order\_items} + \texttt{po\_approval\_workflow} (đơn mua \& duyệt); \texttt{invoices} + \texttt{invoice\_items} (hóa đơn \& thanh toán); \texttt{ocr\_jobs} (job OCR); \texttt{stock\_takes} + \texttt{stock\_take\_lines} (kiểm kê); và cụm nhà cung cấp \texttt{vendors} + \texttt{vendor\_contracts} + \texttt{vendor\_contract\_services} + \texttt{vendor\_evaluations}. Bảng \texttt{purchase\_requests} tham chiếu chéo sang \texttt{tickets}/\texttt{work\_orders} (nhóm Bảo trì) khi PR phát sinh từ sự cố/lệnh bảo trì.
 
-\figland{images/fig_erd_muasam.pdf}{Hình 4.6. ERD nhóm Mua sắm (kho, mua sắm P2P, nhà cung cấp)}{Hình 4.6. ERD nhóm Mua sắm}
+\figuc{images/fig_erd_muasam.pdf}{Hình 4.6. ERD nhóm Mua sắm (kho, mua sắm P2P, nhà cung cấp)}{Hình 4.6. ERD nhóm Mua sắm}
 Chi tiết kỹ thuật OCR hóa đơn (mô hình, huấn luyện, đánh giá) được trình bày sâu ở §4.4.
 
 % -------------------- 4.2 VÒNG ĐỜI TÀI SẢN --------------------
@@ -613,7 +613,7 @@ Sơ đồ luồng vòng đời + kế toán (Hình 4.8): ghi tăng (chứng từ
 
 \figuc{images/fig_flow_asset.pdf}{Hình 4.8. Sơ đồ luồng nghiệp vụ vòng đời tài sản và kế toán}{Hình 4.8. Sơ đồ luồng nghiệp vụ vòng đời tài sản và kế toán}
 
-\figland{images/fig_seq_ghitang.pdf}{Hình 4.9. Biểu đồ tuần tự: Ghi tăng tài sản kèm chứng từ kế toán}{Hình 4.9. Biểu đồ tuần tự: Ghi tăng tài sản}
+\figuc{images/fig_seq_ghitang.pdf}{Hình 4.9. Biểu đồ tuần tự: Ghi tăng tài sản kèm chứng từ kế toán}{Hình 4.9. Biểu đồ tuần tự: Ghi tăng tài sản}
 
 \figh{images/fig_state_asset.pdf}{0.5}{Hình 4.10. Sơ đồ trạng thái vòng đời tài sản}{Hình 4.10. Sơ đồ trạng thái vòng đời tài sản}
 
@@ -782,7 +782,7 @@ Sơ đồ luồng bảo trì phòng ngừa (Hình 4.13): Kỹ sư trưởng xem 
 
 \figh{images/fig_state_wo.pdf}{0.6}{Hình 4.14. Sơ đồ trạng thái vòng đời Work Order}{Hình 4.14. Sơ đồ trạng thái vòng đời Work Order}
 
-\figland{images/fig_seq_wo_full.pdf}{Hình 4.15. Biểu đồ tuần tự đầy đủ: Vòng đời Work Order}{Hình 4.15. Biểu đồ tuần tự đầy đủ: Vòng đời Work Order}
+\figuc{images/fig_seq_wo_full.pdf}{Hình 4.15. Biểu đồ tuần tự đầy đủ: Vòng đời Work Order}{Hình 4.15. Biểu đồ tuần tự đầy đủ: Vòng đời Work Order}
 
 \phantomsection
 \subsection*{4.3.4. Xử lý sự cố \& giám sát SLA: luồng, tuần tự, trạng thái}
@@ -791,7 +791,7 @@ Sơ đồ luồng xử lý sự cố (Hình 4.16): Cư dân báo (\texttt{NEW}) 
 
 \figuc{images/fig_flow_sla.pdf}{Hình 4.16. Sơ đồ luồng nghiệp vụ Xử lý sự cố}{Hình 4.16. Sơ đồ luồng nghiệp vụ Xử lý sự cố}
 
-\figland{images/fig_seq_incident_full.pdf}{Hình 4.17. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố}{Hình 4.17. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố}
+\figuc{images/fig_seq_incident_full.pdf}{Hình 4.17. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố}{Hình 4.17. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố}
 
 \figh{images/fig_state_ticket.pdf}{0.6}{Hình 4.18. Sơ đồ trạng thái vòng đời ticket sự cố}{Hình 4.18. Sơ đồ trạng thái vòng đời ticket sự cố}
 

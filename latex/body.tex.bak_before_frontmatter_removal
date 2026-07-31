@@ -1,4 +1,92 @@
 \phantomsection
+\chapter*{Nhận xét của giảng viên hướng dẫn}
+\addcontentsline{toc}{chapter}{Nhận xét của giảng viên hướng dẫn}
+\markboth{Nhận xét của giảng viên hướng dẫn}{Nhận xét của giảng viên hướng dẫn}
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Phiếu nhận xét của giảng viên hướng dẫn}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên SV} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Tên đề tài} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Đợt} & 2026 \\ \hline
+\textbf{GV hướng dẫn} & ThS. Hoàng Nam Thắng \\ \hline
+\textbf{Đơn vị} & Khoa Công nghệ thông tin \\ \hline
+\end{tabular}}\end{center}
+\textbf{I. Nội dung nhận xét}
+
+\textbf{II. Kết luận}
+
+$\square$ Đồng ý cho bảo vệ                    $\square$ Không đồng ý cho bảo vệ
+
+Điểm đánh giá của GVHD (nếu có):  \ldots{}\ldots{}\ldots{}\ldots{}\ldots{} /10
+
+\textit{\ldots{}\ldots{}, ngày \ldots{}.. tháng \ldots{}.. năm 2026}
+
+\textbf{Giảng viên hướng dẫn}
+
+\textit{(Ký, ghi rõ họ tên)}
+
+\phantomsection
+\chapter*{Nhận xét của giảng viên phản biện}
+\addcontentsline{toc}{chapter}{Nhận xét của giảng viên phản biện}
+\markboth{Nhận xét của giảng viên phản biện}{Nhận xét của giảng viên phản biện}
+\textit{Mẫu ĐATN-05}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Phiếu phản biện đồ án tốt nghiệp}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên SV} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Tên đề tài} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Đợt} & 2026 \\ \hline
+\textbf{Người phản biện} & \ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{} \\ \hline
+\textbf{Đơn vị} & \ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{} \\ \hline
+\textbf{Ngày phản biện} & \ldots{}\ldots{}/\ldots{}\ldots{}/2026 \\ \hline
+\end{tabular}}\end{center}
+\textbf{I. Nhận xét chung}
+
+\textbf{II. Đánh giá theo CLO}
+
+\begin{landscape}\begin{center}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{CLO} & \textbf{Nội dung/​tiêu chí đánh giá} & \textbf{F} & \textbf{B} & \textbf{D} & \textbf{S} & \textbf{E} & \textbf{Nhận xét/​minh chứng} \\ \hline
+CLO1 & Phân tích có hệ thống bài toán KHMT (vận dụng kiến thức toán/​khoa học tự nhiên/​chuyên ngành). & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO2 & Thiết kế \& triển khai đáp ứng yêu cầu; cân nhắc tính khả thi, hiệu quả, đạo đức và bối cảnh kỹ thuật – xã hội. & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO3 & Áp dụng hiệu quả kiến thức trí tuệ nhân tạo để giải quyết bài toán (OCR hóa đơn). & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO4 & Trình bày hiệu quả bằng viết, thuyết trình, thảo luận, tiếp thu và phản hồi. & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO5 & Làm việc nhóm hiệu quả: tổ chức, phân công, phối hợp (dùng công cụ số). & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+\end{tabular}}\end{center}\end{landscape}
+\textit{Thang đánh giá (Rubric): F – Fail (0–39\%) · B – Beginning (40–54\%) · D – Developing (55–69\%) · S – Sufficient (70–84\%) · E – Exemplary (85–100\%).}
+\textbf{III. Kiến nghị của người phản biện}
+
+$\square$ Đồng ý cho bảo vệ          $\square$ Đề nghị chỉnh sửa trước bảo vệ          $\square$ Chưa đủ điều kiện bảo vệ
+
+\textbf{Các yêu cầu chỉnh sửa chính:}
+
+\textit{\ldots{}\ldots{}, ngày \ldots{}.. tháng \ldots{}.. năm 2026}
+
+\textbf{Người phản biện}
+
+\textit{(Ký, ghi rõ họ tên)}
+
+\phantomsection
 \chapter*{Tóm tắt}
 \addcontentsline{toc}{chapter}{Tóm tắt}
 \markboth{Tóm tắt}{Tóm tắt}
@@ -16,6 +104,87 @@ Kết quả, nhóm đã hoàn thiện hệ thống chạy được với đầy 
 
 \textbf{Từ khóa: }\textit{quản lý vận hành tòa nhà, quản lý tài sản, bảo trì phòng ngừa, SLA, OCR hóa đơn, quản lý dân cư, nhận diện khuôn mặt, quản lý dịch vụ, .NET 8, Next.js.}
 
+\phantomsection
+\chapter*{Nhiệm vụ đồ án tốt nghiệp}
+\addcontentsline{toc}{chapter}{Nhiệm vụ đồ án tốt nghiệp}
+\markboth{Nhiệm vụ đồ án tốt nghiệp}{Nhiệm vụ đồ án tốt nghiệp}
+\textit{Mẫu ĐATN-01}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Nhiệm vụ đồ án tốt nghiệp}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên sinh viên} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Lớp} & 66KSCS \\ \hline
+\textbf{Khóa} & 66 \\ \hline
+\textbf{Ngành / Chuyên ngành} & Công nghệ thông tin / Khoa học Máy tính \\ \hline
+\textbf{Hệ đào tạo} & Chính quy \\ \hline
+\textbf{Tên đề tài ĐATN} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Khoa} & Công nghệ thông tin \\ \hline
+\textbf{Nhóm chuyên môn} & Công nghệ phần mềm \\ \hline
+\textbf{GV hướng dẫn} & ThS. Hoàng Nam Thắng \\ \hline
+\textbf{Email / ĐT} & \ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{} \\ \hline
+\textbf{GV đồng hướng dẫn (nếu có)} & (không có) \\ \hline
+\textbf{Doanh nghiệp/đơn vị phối hợp (nếu có)} & (không có) \\ \hline
+\textbf{Địa điểm thực hiện} & Trường Đại học Xây dựng Hà Nội \\ \hline
+\textbf{Thời gian thực hiện} & Học kỳ đồ án tốt nghiệp, năm 2026 \\ \hline
+\textbf{Đợt ĐATN} & 2026 \\ \hline
+\end{tabular}}\end{center}
+\textbf{1. Mục tiêu và yêu cầu của ĐATN}
+
+\textbullet{}  Xây dựng hệ thống quản lý vận hành tòa nhà TownHub theo kiến trúc module hóa trên nền .NET 8, Next.js 16 và PostgreSQL.
+
+\textbullet{}  Phần do sinh viên đảm nhiệm gồm: (a) phần Base (lõi dùng chung: xác thực – phân quyền, quản lý người dùng, thông báo, cấu hình, báo cáo) do cả nhóm cùng phát triển; và (b) phân hệ Quản lý tài sản (phần riêng của sinh viên), gồm các nghiệp vụ Tài sản \& bảo trì; Kho – Mua sắm – Nhà cung cấp (kèm OCR hóa đơn tự động); Quản lý sự cố \& SLA.
+
+\textbullet{}  Ứng dụng AI/OCR (VietOCR, PaddleOCR) để số hóa hóa đơn; tự động hóa khấu hao, mã QR tài sản và quy trình mua sắm PR $\rightarrow$ PO.
+
+\textbf{2. Phạm vi, nội dung công việc và sản phẩm cần nộp}
+
+\textbullet{}  Phân tích yêu cầu, thiết kế cơ sở dữ liệu (phần Base dùng chung và schema asset), thiết kế API và giao diện cho phần Base và các phân hệ phụ trách.
+
+\textbullet{}  Cài đặt chức năng; tích hợp, huấn luyện và đánh giá mô hình OCR; kiểm thử hệ thống.
+
+\textbullet{}  Sản phẩm cần nộp: mã nguồn, cơ sở dữ liệu, hệ thống chạy được (demo), quyển thuyết minh ĐATN và biên bản kiểm thử.
+
+\textbf{3. Dữ liệu đầu vào, giả thiết, tiêu chuẩn/quy chuẩn, phần mềm/công cụ sử dụng}
+
+\textbullet{}  \textbf{Dữ liệu đầu vào:} dữ liệu vận hành tòa nhà mô phỏng (tòa nhà, tầng, căn hộ, cư dân, tài sản, vật tư); bộ dữ liệu hóa đơn tiếng Việt tổng hợp phục vụ huấn luyện – đánh giá OCR.
+
+\textbullet{}  \textbf{Giả thiết:} (i) dữ liệu vận hành là dữ liệu giả lập, không gắn với một tòa nhà thật cụ thể; (ii) hệ thống triển khai ở mức nguyên mẫu (prototype) trên một máy chủ, chưa xét tải cực lớn và tính sẵn sàng cao (HA); (iii) người dùng truy cập qua trình duyệt hiện đại có kết nối Internet, thiết bị hỗ trợ camera cho chức năng nhận diện khuôn mặt; (iv) tài khoản và vai trò phân quyền được quản trị viên cấu hình sẵn; (v) tích hợp cổng thanh toán và thiết bị IoT nằm ngoài phạm vi, chỉ nêu định hướng.
+
+\textbullet{}  \textbf{Tiêu chuẩn/quy chuẩn áp dụng:} kiến trúc dịch vụ và API theo phong cách \textbf{REST}, phản hồi thống nhất \texttt{ResponseDto<T>}; bảo mật theo \textbf{JWT} (RFC 7519), \textbf{OAuth 2.0/OIDC} (đăng nhập Google), \textbf{MFA TOTP} (RFC 6238) và \textbf{RBAC}, có tham chiếu khuyến nghị \textbf{OWASP}; phân tích – thiết kế theo \textbf{UML} (use case, tuần tự, trạng thái) và mô hình \textbf{ERD}, cơ sở dữ liệu chuẩn hóa quan hệ; giao diện \emph{responsive} đa thiết bị; mã nguồn tuân thủ quy ước .NET/TypeScript và quản lý phiên bản bằng Git; thuyết minh trình bày theo Quy định tổ chức thực hiện và đánh giá ĐATN của Trường ĐHXD Hà Nội (QĐ 483/QĐ-ĐHXDHN).
+
+\textbullet{}  \textbf{Phần mềm/công cụ:} .NET 8, Next.js 16, PostgreSQL, Redis, Cloudinary; AI/OCR: PaddleOCR, VietOCR; draw.io, Graphviz, Git.
+
+\textbf{4. Kế hoạch/mốc tiến độ dự kiến}
+
+\textit{(Bám khung 15 tuần theo đề cương học phần ĐATN — mục 5.2; các mốc M1/M2/M3 tương ứng đầu kỳ — giữa kỳ — bảo vệ.)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\centering\arraybackslash}p{\dimexpr\linewidth/12-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr7\linewidth/12-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{STT} & \textbf{Kế hoạch (khối lượng/sản phẩm dự kiến)} & \textbf{Thời gian (Mốc)} & \textbf{Ghi chú} \\ \hline
+1 & Tuần 1 — Hình thành ý tưởng, xác định và phát biểu đề tài; phân tích sơ bộ bài toán và yêu cầu; tổ chức nhóm và phân công nhiệm vụ. & 25/01 – 01/02/2026 &  \\ \hline
+2 & Tuần 2 — Hoàn thành và trình bày đề cương sơ bộ; tiếp thu phản biện của GVHD, điều chỉnh đề cương. & 02/02 – 15/02/2026 & \textbf{Mốc M1: đánh giá đề cương/định hướng đầu kỳ} \\ \hline
+3 & Tuần 3–6 — Phân tích yêu cầu chi tiết và thiết kế (CSDL base/auth và schema asset, API, phân quyền RBAC, sơ đồ UML); xây dựng module Base dùng chung. & 16/02 – 29/03/2026 &  \\ \hline
+4 & Tuần 7 — Báo cáo giữa kỳ: viết báo cáo thu hoạch, trình bày tiến độ và kết quả sơ bộ; tiếp thu góp ý của GVHD. & 30/03 – 05/04/2026 & \textbf{Mốc M2: đánh giá triển khai \& mức đạt CLO} \\ \hline
+5 & Tuần 8–11 — Triển khai phân hệ Quản lý tài sản: vòng đời \& khấu hao; bảo trì phòng ngừa (PM/WO); Kho – Mua sắm – NCC và OCR hóa đơn; Sự cố \& SLA; tích hợp hệ thống. & 06/04 – 28/06/2026 &  \\ \hline
+6 & Tuần 10–13 — Viết thuyết minh ĐATN; thử nghiệm các thành phần chính; kiểm thử tổng thể (song song giai đoạn triển khai). & 18/05 – 12/07/2026 &  \\ \hline
+7 & Tuần 14 — Hoàn thành báo cáo và gửi GVHD; GVHD đánh giá và duyệt; báo cáo, phản biện và chỉnh sửa theo góp ý. & 13/07 – 17/07/2026 &  \\ \hline
+8 & Tuần 15 — Bảo vệ đồ án tốt nghiệp, thuyết trình trước hội đồng. & 18/07 – 20/07/2026 & \textbf{Mốc M3: bảo vệ} \\ \hline
+\end{tabular}}\end{center}
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{Sinh viên} \newline \textit{(Ký, ghi rõ họ tên)} & \textbf{GV hướng dẫn} \newline \textit{(Ký, ghi rõ họ tên)} \\
+\end{tabular}}\end{center}
 \phantomsection
 \chapter*{Lời nói đầu}
 \addcontentsline{toc}{chapter}{Lời nói đầu}
@@ -130,6 +299,35 @@ Quản lý sự cố \& SLA & Riêng & Nguyễn Xuân Thưởng \\ \hline
 Quản lý dân cư (căn hộ, cư dân, phí) & Riêng & Lương Thanh Tài \\ \hline
 Quản lý dịch vụ & Riêng & Nguyễn Xuân Khải \\ \hline
 \end{tabular}}\end{center}
+Theo Điều 7 Quy định ĐATN, sản phẩm nhóm thể hiện rõ phần chung và phần riêng, mỗi thành viên chịu trách nhiệm phần cá nhân của mình. Báo cáo trình bày phần Base (chung) và phân hệ Quản lý tài sản do Nguyễn Xuân Thưởng đảm nhiệm (gồm các nghiệp vụ Tài sản \& bảo trì, Kho – Mua sắm – Nhà cung cấp, Sự cố \& SLA). Hai phân hệ Quản lý dân cư (Lương Thanh Tài) và Quản lý dịch vụ (Nguyễn Xuân Khải) do các thành viên khác đảm nhiệm, không nằm trong phạm vi báo cáo này. Đóng góp cá nhân của tác giả được nêu rõ ở phần Kết luận.
+
+Nhóm áp dụng quy trình làm việc chuyên nghiệp: lập kế hoạch và theo dõi tiến độ bằng biểu đồ Gantt (Hình 0.1); quản trị công việc trực quan trên bảng Kanban (Hình 0.2); họp nhóm định kỳ hằng tuần (trực tiếp và trực tuyến, Hình 0.3) và trao đổi công việc hằng ngày qua nhóm chat (Hình 0.4); mỗi buổi họp đều lập biên bản (Hình 0.5). Toàn bộ minh chứng được tổng hợp trong Hồ sơ minh chứng kèm theo.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img01.png}
+\caption*{\small Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
+\addcontentsline{lof}{figure}{Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img02.png}
+\caption*{\small Hình 0.2. Bảng công việc Kanban của nhóm}
+\addcontentsline{lof}{figure}{Hình 0.2. Bảng công việc Kanban của nhóm}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img03.png}
+\caption*{\small Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
+\addcontentsline{lof}{figure}{Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img04.png}
+\caption*{\small Hình 0.4. Trao đổi công việc trên nhóm chat}
+\addcontentsline{lof}{figure}{Hình 0.4. Trao đổi công việc trên nhóm chat}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img05.png}
+\caption*{\small Hình 0.5. Biên bản họp nhóm (bản mẫu)}
+\addcontentsline{lof}{figure}{Hình 0.5. Biên bản họp nhóm (bản mẫu)}
+\end{figure}
 \phantomsection
 \section*{6. Bố cục báo cáo}
 \addcontentsline{toc}{section}{6. Bố cục báo cáo}
@@ -662,7 +860,7 @@ CLO1 & Phân tích có hệ thống bài toán KHMT & Khảo sát bài toán và
 CLO2 & Thiết kế \& triển khai đáp ứng yêu cầu; cân nhắc khả thi, hiệu quả, đạo đức, bối cảnh & Kiến trúc module hóa (.NET 8, Next.js 16, PostgreSQL); hệ thống chạy được với API và giao diện hoàn chỉnh; kiểm thử hệ thống (Chương 5); đánh giá đạo đức, an toàn dữ liệu và bối cảnh xã hội (§5.6). & S \\ \hline
 CLO3 & Áp dụng hiệu quả kiến thức trí tuệ nhân tạo & OCR hóa đơn tiếng Việt bằng VietOCR/PaddleOCR: sinh dataset, huấn luyện – đánh giá (val-acc 99,64\%), tích hợp qua worker nền và đối chiếu ba chiều (§4.4). & S–E \\ \hline
 CLO4 & Trình bày hiệu quả (viết, thuyết trình, thảo luận) & Quyển thuyết minh trình bày theo QĐ 483/QĐ-ĐHXDHN, hệ thống hình vẽ – bảng biểu; slide và bảo vệ trước hội đồng; tiếp thu, phản hồi ý kiến phản biện. & S \\ \hline
-CLO5 & Làm việc nhóm hiệu quả & Đồ án nhóm 03 sinh viên với phần Base dùng chung; quản trị công việc bằng Git, Kanban, biểu đồ Gantt và biên bản họp (minh chứng ở Hồ sơ kèm theo); phân công module rõ ràng và review chéo khi hợp nhất mã nguồn. & S \\ \hline
+CLO5 & Làm việc nhóm hiệu quả & Đồ án nhóm 03 sinh viên với phần Base dùng chung; quản trị công việc bằng Git, Kanban, biểu đồ Gantt và biên bản họp (Hình 0.1–0.5); phân công module rõ ràng và review chéo khi hợp nhất mã nguồn. & S \\ \hline
 \end{tabular}}\end{center}
 Trong đó CLO1 và CLO2 là hai chuẩn đầu ra trọng tâm của học phần; kết quả đồ án đáp ứng từ mức Đạt (S) trở lên ở cả năm CLO, phù hợp ngưỡng công nhận hoàn thành (mỗi CLO tối thiểu mức Developing – D).
 

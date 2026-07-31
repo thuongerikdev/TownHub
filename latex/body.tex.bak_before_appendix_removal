@@ -1,4 +1,92 @@
 \phantomsection
+\chapter*{Nhận xét của giảng viên hướng dẫn}
+\addcontentsline{toc}{chapter}{Nhận xét của giảng viên hướng dẫn}
+\markboth{Nhận xét của giảng viên hướng dẫn}{Nhận xét của giảng viên hướng dẫn}
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Phiếu nhận xét của giảng viên hướng dẫn}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên SV} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Tên đề tài} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Đợt} & 2026 \\ \hline
+\textbf{GV hướng dẫn} & ThS. Hoàng Nam Thắng \\ \hline
+\textbf{Đơn vị} & Khoa Công nghệ thông tin \\ \hline
+\end{tabular}}\end{center}
+\textbf{I. Nội dung nhận xét}
+
+\textbf{II. Kết luận}
+
+$\square$ Đồng ý cho bảo vệ                    $\square$ Không đồng ý cho bảo vệ
+
+Điểm đánh giá của GVHD (nếu có):  \ldots{}\ldots{}\ldots{}\ldots{}\ldots{} /10
+
+\textit{\ldots{}\ldots{}, ngày \ldots{}.. tháng \ldots{}.. năm 2026}
+
+\textbf{Giảng viên hướng dẫn}
+
+\textit{(Ký, ghi rõ họ tên)}
+
+\phantomsection
+\chapter*{Nhận xét của giảng viên phản biện}
+\addcontentsline{toc}{chapter}{Nhận xét của giảng viên phản biện}
+\markboth{Nhận xét của giảng viên phản biện}{Nhận xét của giảng viên phản biện}
+\textit{Mẫu ĐATN-05}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Phiếu phản biện đồ án tốt nghiệp}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên SV} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Tên đề tài} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Đợt} & 2026 \\ \hline
+\textbf{Người phản biện} & \ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{} \\ \hline
+\textbf{Đơn vị} & \ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{} \\ \hline
+\textbf{Ngày phản biện} & \ldots{}\ldots{}/\ldots{}\ldots{}/2026 \\ \hline
+\end{tabular}}\end{center}
+\textbf{I. Nhận xét chung}
+
+\textbf{II. Đánh giá theo CLO}
+
+\begin{landscape}\begin{center}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{CLO} & \textbf{Nội dung/​tiêu chí đánh giá} & \textbf{F} & \textbf{B} & \textbf{D} & \textbf{S} & \textbf{E} & \textbf{Nhận xét/​minh chứng} \\ \hline
+CLO1 & Phân tích có hệ thống bài toán KHMT (vận dụng kiến thức toán/​khoa học tự nhiên/​chuyên ngành). & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO2 & Thiết kế \& triển khai đáp ứng yêu cầu; cân nhắc tính khả thi, hiệu quả, đạo đức và bối cảnh kỹ thuật – xã hội. & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO3 & Áp dụng hiệu quả kiến thức trí tuệ nhân tạo để giải quyết bài toán (OCR hóa đơn). & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO4 & Trình bày hiệu quả bằng viết, thuyết trình, thảo luận, tiếp thu và phản hồi. & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+CLO5 & Làm việc nhóm hiệu quả: tổ chức, phân công, phối hợp (dùng công cụ số). & $\square$ & $\square$ & $\square$ & $\square$ & $\square$ &  \\ \hline
+\end{tabular}}\end{center}\end{landscape}
+\textit{Thang đánh giá (Rubric): F – Fail (0–39\%) · B – Beginning (40–54\%) · D – Developing (55–69\%) · S – Sufficient (70–84\%) · E – Exemplary (85–100\%).}
+\textbf{III. Kiến nghị của người phản biện}
+
+$\square$ Đồng ý cho bảo vệ          $\square$ Đề nghị chỉnh sửa trước bảo vệ          $\square$ Chưa đủ điều kiện bảo vệ
+
+\textbf{Các yêu cầu chỉnh sửa chính:}
+
+\textit{\ldots{}\ldots{}, ngày \ldots{}.. tháng \ldots{}.. năm 2026}
+
+\textbf{Người phản biện}
+
+\textit{(Ký, ghi rõ họ tên)}
+
+\phantomsection
 \chapter*{Tóm tắt}
 \addcontentsline{toc}{chapter}{Tóm tắt}
 \markboth{Tóm tắt}{Tóm tắt}
@@ -16,6 +104,87 @@ Kết quả, nhóm đã hoàn thiện hệ thống chạy được với đầy 
 
 \textbf{Từ khóa: }\textit{quản lý vận hành tòa nhà, quản lý tài sản, bảo trì phòng ngừa, SLA, OCR hóa đơn, quản lý dân cư, nhận diện khuôn mặt, quản lý dịch vụ, .NET 8, Next.js.}
 
+\phantomsection
+\chapter*{Nhiệm vụ đồ án tốt nghiệp}
+\addcontentsline{toc}{chapter}{Nhiệm vụ đồ án tốt nghiệp}
+\markboth{Nhiệm vụ đồ án tốt nghiệp}{Nhiệm vụ đồ án tốt nghiệp}
+\textit{Mẫu ĐATN-01}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Nhiệm vụ đồ án tốt nghiệp}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên sinh viên} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Lớp} & 66KSCS \\ \hline
+\textbf{Khóa} & 66 \\ \hline
+\textbf{Ngành / Chuyên ngành} & Công nghệ thông tin / Khoa học Máy tính \\ \hline
+\textbf{Hệ đào tạo} & Chính quy \\ \hline
+\textbf{Tên đề tài ĐATN} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Khoa} & Công nghệ thông tin \\ \hline
+\textbf{Nhóm chuyên môn} & Công nghệ phần mềm \\ \hline
+\textbf{GV hướng dẫn} & ThS. Hoàng Nam Thắng \\ \hline
+\textbf{Email / ĐT} & \ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{}\ldots{} \\ \hline
+\textbf{GV đồng hướng dẫn (nếu có)} & (không có) \\ \hline
+\textbf{Doanh nghiệp/đơn vị phối hợp (nếu có)} & (không có) \\ \hline
+\textbf{Địa điểm thực hiện} & Trường Đại học Xây dựng Hà Nội \\ \hline
+\textbf{Thời gian thực hiện} & Học kỳ đồ án tốt nghiệp, năm 2026 \\ \hline
+\textbf{Đợt ĐATN} & 2026 \\ \hline
+\end{tabular}}\end{center}
+\textbf{1. Mục tiêu và yêu cầu của ĐATN}
+
+\textbullet{}  Xây dựng hệ thống quản lý vận hành tòa nhà TownHub theo kiến trúc module hóa trên nền .NET 8, Next.js 16 và PostgreSQL.
+
+\textbullet{}  Phần do sinh viên đảm nhiệm gồm: (a) phần Base (lõi dùng chung: xác thực – phân quyền, quản lý người dùng, thông báo, cấu hình, báo cáo) do cả nhóm cùng phát triển; và (b) phân hệ Quản lý tài sản (phần riêng của sinh viên), gồm các nghiệp vụ Tài sản \& bảo trì; Kho – Mua sắm – Nhà cung cấp (kèm OCR hóa đơn tự động); Quản lý sự cố \& SLA.
+
+\textbullet{}  Ứng dụng AI/OCR (VietOCR, PaddleOCR) để số hóa hóa đơn; tự động hóa khấu hao, mã QR tài sản và quy trình mua sắm PR $\rightarrow$ PO.
+
+\textbf{2. Phạm vi, nội dung công việc và sản phẩm cần nộp}
+
+\textbullet{}  Phân tích yêu cầu, thiết kế cơ sở dữ liệu (phần Base dùng chung và schema asset), thiết kế API và giao diện cho phần Base và các phân hệ phụ trách.
+
+\textbullet{}  Cài đặt chức năng; tích hợp, huấn luyện và đánh giá mô hình OCR; kiểm thử hệ thống.
+
+\textbullet{}  Sản phẩm cần nộp: mã nguồn, cơ sở dữ liệu, hệ thống chạy được (demo), quyển thuyết minh ĐATN và biên bản kiểm thử.
+
+\textbf{3. Dữ liệu đầu vào, giả thiết, tiêu chuẩn/quy chuẩn, phần mềm/công cụ sử dụng}
+
+\textbullet{}  \textbf{Dữ liệu đầu vào:} dữ liệu vận hành tòa nhà mô phỏng (tòa nhà, tầng, căn hộ, cư dân, tài sản, vật tư); bộ dữ liệu hóa đơn tiếng Việt tổng hợp phục vụ huấn luyện – đánh giá OCR.
+
+\textbullet{}  \textbf{Giả thiết:} (i) dữ liệu vận hành là dữ liệu giả lập, không gắn với một tòa nhà thật cụ thể; (ii) hệ thống triển khai ở mức nguyên mẫu (prototype) trên một máy chủ, chưa xét tải cực lớn và tính sẵn sàng cao (HA); (iii) người dùng truy cập qua trình duyệt hiện đại có kết nối Internet, thiết bị hỗ trợ camera cho chức năng nhận diện khuôn mặt; (iv) tài khoản và vai trò phân quyền được quản trị viên cấu hình sẵn; (v) tích hợp cổng thanh toán và thiết bị IoT nằm ngoài phạm vi, chỉ nêu định hướng.
+
+\textbullet{}  \textbf{Tiêu chuẩn/quy chuẩn áp dụng:} kiến trúc dịch vụ và API theo phong cách \textbf{REST}, phản hồi thống nhất \texttt{ResponseDto<T>}; bảo mật theo \textbf{JWT} (RFC 7519), \textbf{OAuth 2.0/OIDC} (đăng nhập Google), \textbf{MFA TOTP} (RFC 6238) và \textbf{RBAC}, có tham chiếu khuyến nghị \textbf{OWASP}; phân tích – thiết kế theo \textbf{UML} (use case, tuần tự, trạng thái) và mô hình \textbf{ERD}, cơ sở dữ liệu chuẩn hóa quan hệ; giao diện \emph{responsive} đa thiết bị; mã nguồn tuân thủ quy ước .NET/TypeScript và quản lý phiên bản bằng Git; thuyết minh trình bày theo Quy định tổ chức thực hiện và đánh giá ĐATN của Trường ĐHXD Hà Nội (QĐ 483/QĐ-ĐHXDHN).
+
+\textbullet{}  \textbf{Phần mềm/công cụ:} .NET 8, Next.js 16, PostgreSQL, Redis, Cloudinary; AI/OCR: PaddleOCR, VietOCR; draw.io, Graphviz, Git.
+
+\textbf{4. Kế hoạch/mốc tiến độ dự kiến}
+
+\textit{(Bám khung 15 tuần theo đề cương học phần ĐATN — mục 5.2; các mốc M1/M2/M3 tương ứng đầu kỳ — giữa kỳ — bảo vệ.)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\centering\arraybackslash}p{\dimexpr\linewidth/12-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr7\linewidth/12-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/6-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{STT} & \textbf{Kế hoạch (khối lượng/sản phẩm dự kiến)} & \textbf{Thời gian (Mốc)} & \textbf{Ghi chú} \\ \hline
+1 & Tuần 1 — Hình thành ý tưởng, xác định và phát biểu đề tài; phân tích sơ bộ bài toán và yêu cầu; tổ chức nhóm và phân công nhiệm vụ. & 25/01 – 01/02/2026 &  \\ \hline
+2 & Tuần 2 — Hoàn thành và trình bày đề cương sơ bộ; tiếp thu phản biện của GVHD, điều chỉnh đề cương. & 02/02 – 15/02/2026 & \textbf{Mốc M1: đánh giá đề cương/định hướng đầu kỳ} \\ \hline
+3 & Tuần 3–6 — Phân tích yêu cầu chi tiết và thiết kế (CSDL base/auth và schema asset, API, phân quyền RBAC, sơ đồ UML); xây dựng module Base dùng chung. & 16/02 – 29/03/2026 &  \\ \hline
+4 & Tuần 7 — Báo cáo giữa kỳ: viết báo cáo thu hoạch, trình bày tiến độ và kết quả sơ bộ; tiếp thu góp ý của GVHD. & 30/03 – 05/04/2026 & \textbf{Mốc M2: đánh giá triển khai \& mức đạt CLO} \\ \hline
+5 & Tuần 8–11 — Triển khai phân hệ Quản lý tài sản: vòng đời \& khấu hao; bảo trì phòng ngừa (PM/WO); Kho – Mua sắm – NCC và OCR hóa đơn; Sự cố \& SLA; tích hợp hệ thống. & 06/04 – 28/06/2026 &  \\ \hline
+6 & Tuần 10–13 — Viết thuyết minh ĐATN; thử nghiệm các thành phần chính; kiểm thử tổng thể (song song giai đoạn triển khai). & 18/05 – 12/07/2026 &  \\ \hline
+7 & Tuần 14 — Hoàn thành báo cáo và gửi GVHD; GVHD đánh giá và duyệt; báo cáo, phản biện và chỉnh sửa theo góp ý. & 13/07 – 17/07/2026 &  \\ \hline
+8 & Tuần 15 — Bảo vệ đồ án tốt nghiệp, thuyết trình trước hội đồng. & 18/07 – 20/07/2026 & \textbf{Mốc M3: bảo vệ} \\ \hline
+\end{tabular}}\end{center}
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{Sinh viên} \newline \textit{(Ký, ghi rõ họ tên)} & \textbf{GV hướng dẫn} \newline \textit{(Ký, ghi rõ họ tên)} \\
+\end{tabular}}\end{center}
 \phantomsection
 \chapter*{Lời nói đầu}
 \addcontentsline{toc}{chapter}{Lời nói đầu}
@@ -130,10 +299,39 @@ Quản lý sự cố \& SLA & Riêng & Nguyễn Xuân Thưởng \\ \hline
 Quản lý dân cư (căn hộ, cư dân, phí) & Riêng & Lương Thanh Tài \\ \hline
 Quản lý dịch vụ & Riêng & Nguyễn Xuân Khải \\ \hline
 \end{tabular}}\end{center}
+Theo Điều 7 Quy định ĐATN, sản phẩm nhóm thể hiện rõ phần chung và phần riêng, mỗi thành viên chịu trách nhiệm phần cá nhân của mình. Báo cáo trình bày phần Base (chung) và phân hệ Quản lý tài sản do Nguyễn Xuân Thưởng đảm nhiệm (gồm các nghiệp vụ Tài sản \& bảo trì, Kho – Mua sắm – Nhà cung cấp, Sự cố \& SLA). Hai phân hệ Quản lý dân cư (Lương Thanh Tài) và Quản lý dịch vụ (Nguyễn Xuân Khải) do các thành viên khác đảm nhiệm, không nằm trong phạm vi báo cáo này. Đóng góp cá nhân của tác giả được nêu rõ ở phần Kết luận.
+
+Nhóm áp dụng quy trình làm việc chuyên nghiệp: lập kế hoạch và theo dõi tiến độ bằng biểu đồ Gantt (Hình 0.1); quản trị công việc trực quan trên bảng Kanban (Hình 0.2); họp nhóm định kỳ hằng tuần (trực tiếp và trực tuyến, Hình 0.3) và trao đổi công việc hằng ngày qua nhóm chat (Hình 0.4); mỗi buổi họp đều lập biên bản (Hình 0.5). Toàn bộ minh chứng được tổng hợp trong Hồ sơ minh chứng kèm theo.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img01.png}
+\caption*{\small Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
+\addcontentsline{lof}{figure}{Hình 0.1. Kế hoạch – tiến độ nhóm (biểu đồ Gantt)}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img02.png}
+\caption*{\small Hình 0.2. Bảng công việc Kanban của nhóm}
+\addcontentsline{lof}{figure}{Hình 0.2. Bảng công việc Kanban của nhóm}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img03.png}
+\caption*{\small Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
+\addcontentsline{lof}{figure}{Hình 0.3. Họp nhóm trực tuyến (đang trình bày tiến độ)}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img04.png}
+\caption*{\small Hình 0.4. Trao đổi công việc trên nhóm chat}
+\addcontentsline{lof}{figure}{Hình 0.4. Trao đổi công việc trên nhóm chat}
+\end{figure}
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/img05.png}
+\caption*{\small Hình 0.5. Biên bản họp nhóm (bản mẫu)}
+\addcontentsline{lof}{figure}{Hình 0.5. Biên bản họp nhóm (bản mẫu)}
+\end{figure}
 \phantomsection
 \section*{6. Bố cục báo cáo}
 \addcontentsline{toc}{section}{6. Bố cục báo cáo}
-Báo cáo gồm năm chương: Chương 1 tổng quan và khảo sát bài toán; Chương 2 cơ sở lý thuyết và công nghệ; Chương 3 phân tích – thiết kế module chung (Base); Chương 4 phân hệ Quản lý tài sản do tác giả đảm nhiệm (gồm Tài sản \& bảo trì, Kho – Mua sắm – Nhà cung cấp, Sự cố \& SLA); Chương 5 triển khai, kiểm thử và đánh giá; cuối cùng là Kết luận và Tài liệu tham khảo.
+Báo cáo gồm năm chương: Chương 1 tổng quan và khảo sát bài toán; Chương 2 cơ sở lý thuyết và công nghệ; Chương 3 phân tích – thiết kế module chung (Base); Chương 4 phân hệ Quản lý tài sản do tác giả đảm nhiệm (gồm Tài sản \& bảo trì, Kho – Mua sắm – Nhà cung cấp, Sự cố \& SLA); Chương 5 triển khai, kiểm thử và đánh giá; cuối cùng là Kết luận, Tài liệu tham khảo và Phụ lục.
 
 \phantomsection
 \chapter*{Chương 1. Tổng quan và khảo sát bài toán}
@@ -497,119 +695,6 @@ Toàn bộ ca kiểm thử và nhật ký lỗi được quản lý chi tiết t
 \end{figure}
 Kết quả kiểm thử cho thấy các chức năng chính hoạt động đúng yêu cầu. Các lỗi phát hiện trong quá trình phát triển đã được ghi nhận và khắc phục qua các vòng test.
 
-\medskip
-\noindent Bên cạnh các ca kiểm thử tiêu biểu trên, tác giả xây dựng thêm một bộ kiểm thử \textbf{đầu--cuối (E2E) theo vai trò} được \textbf{tự động hoá} bằng Playwright và thực thi \textbf{trực tiếp trên hệ thống đang chạy} (không dùng dữ liệu giả lập), bao trùm bốn luồng nghiệp vụ chính của TownHub. Điểm cốt lõi: kịch bản được xây dựng \textit{theo vai trò} — mỗi vai trò đăng nhập bằng tài khoản riêng và chỉ thực hiện đúng phần việc được phân quyền trong quy trình, thay vì để một tài khoản quản trị làm toàn bộ. Nhờ đó bộ kiểm thử đồng thời kiểm chứng được cả nghiệp vụ (happy case) lẫn cơ chế kiểm soát truy cập/tách bạch nhiệm vụ (side case — kỳ vọng bị chặn \texttt{403}).
-
-\textbf{Môi trường kiểm thử:}
-\begin{itemize}[leftmargin=1.5em,itemsep=1pt,topsep=2pt]
-  \item \textbf{Backend:} ASP.NET Core .NET 8, chạy tại \texttt{localhost:5267}; CSDL PostgreSQL (Neon).
-  \item \textbf{Frontend:} Next.js 16 (React 19), chạy tại \texttt{localhost:3000}.
-  \item \textbf{Dịch vụ OCR:} worker nền xử lý hàng đợi; ở môi trường kiểm thử dùng engine mô phỏng nên job OCR chạy đến trạng thái \texttt{COMPLETED} (mô hình OCR thực tế được đánh giá riêng ở Chương~2).
-  \item \textbf{Công cụ:} Playwright (trình duyệt Chromium), chạy tuần tự một luồng để không quá tải CSDL đám mây.
-  \item \textbf{Tài khoản:} 6 tài khoản ứng với 6 vai trò RBAC (Quản trị viên, Ban quản lý, Kỹ sư trưởng, Kỹ thuật viên, Kế toán, Cư dân).
-\end{itemize}
-
-\textbf{Kết quả tổng hợp:} \textbf{40/40} ca kiểm thử chức năng \textbf{ĐẠT} (20 ca thao tác hợp lệ + 20 ca kiểm soát/từ chối truy cập \texttt{403}). Chi tiết ở các bảng bên dưới.
-
-\medskip
-\textbf{Bảng 5.1. Tổng hợp kết quả kiểm thử theo vai trò (theo nhóm chức năng)}
-
-\begin{center}{\small\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.40\linewidth}|c|c|c|}
-\hline
-\rowcolor{gray!15}\textbf{Nhóm chức năng} & \textbf{Happy} & \textbf{Side} & \textbf{Đạt} \\ \hline
-Xác thực \& Phân quyền (Auth/RBAC) & 6 & 5 & 11/11 \\ \hline
-Luồng Sự cố (Cư dân → BQL → KTV) & 3 & 4 & 7/7 \\ \hline
-Luồng Mua sắm \& OCR (KST → BQL → Kế toán) & 4 & 4 & 8/8 \\ \hline
-Luồng Tài sản (KST tạo · Kế toán vận hành) & 4 & 4 & 8/8 \\ \hline
-Luồng Bảo trì / Work Order (BQL giao · KTV thực thi) & 3 & 3 & 6/6 \\ \hline
-\rowcolor{gray!15}\textbf{Tổng} & \textbf{20} & \textbf{20} & \textbf{40/40} \\ \hline
-\end{tabular}}\end{center}
-
-\medskip
-\textbf{Bảng 5.2. Ma trận phân quyền theo vai trò (kiểm chứng bằng kiểm thử)}
-
-\noindent Ký hiệu: \checkmark{} = được phép (kiểm thử happy \texttt{200}); $\times$ = bị chặn (kiểm thử side \texttt{403}). Viết tắt vai trò: QTV = Quản trị viên, BQL = Ban quản lý, KST = Kỹ sư trưởng, KTV = Kỹ thuật viên, KT = Kế toán, CD = Cư dân.
-
-\begin{center}{\small\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.34\linewidth}|c|c|c|c|c|c|}
-\hline
-\rowcolor{gray!15}\textbf{Hành động nghiệp vụ} & \textbf{QTV} & \textbf{BQL} & \textbf{KST} & \textbf{KTV} & \textbf{KT} & \textbf{CD} \\ \hline
-Đăng nhập hệ thống & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\ \hline
-Xem danh sách tài sản & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & $\times$ \\ \hline
-Tạo mới tài sản & \checkmark & $\times$ & \checkmark & $\times$ & $\times$ & $\times$ \\ \hline
-Cập nhật / khấu hao tài sản & \checkmark & \checkmark & \checkmark & $\times$ & \checkmark & $\times$ \\ \hline
-Tạo ticket sự cố & \checkmark & $\times$ & \checkmark & $\times$ & $\times$ & \checkmark \\ \hline
-Phân công ticket cho KTV & \checkmark & \checkmark & \checkmark & $\times$ & $\times$ & $\times$ \\ \hline
-Xử lý (chuyển trạng thái) ticket & \checkmark & $\times$ & \checkmark & \checkmark & $\times$ & $\times$ \\ \hline
-Tạo phiếu yêu cầu mua sắm (PR) & \checkmark & \checkmark & \checkmark & $\times$ & $\times$ & $\times$ \\ \hline
-Duyệt phiếu yêu cầu mua sắm & \checkmark & \checkmark & $\times$ & $\times$ & $\times$ & $\times$ \\ \hline
-Xử lý OCR hoá đơn & \checkmark & $\times$ & $\times$ & $\times$ & \checkmark & $\times$ \\ \hline
-Tạo lệnh công việc (Work Order) & \checkmark & \checkmark & \checkmark & $\times$ & $\times$ & $\times$ \\ \hline
-Thực thi Work Order (đính minh chứng) & \checkmark & $\times$ & \checkmark & \checkmark & $\times$ & $\times$ \\ \hline
-\end{tabular}}\end{center}
-
-\smallskip
-\noindent\textit{Nhận xét: ma trận thể hiện rõ nguyên tắc tách bạch nhiệm vụ — người đề xuất mua sắm (Kỹ sư trưởng) không được tự duyệt; Ban quản lý điều phối/giao việc nhưng không trực tiếp thực thi kỹ thuật; Kế toán phụ trách hoá đơn nhưng không được duyệt phiếu yêu cầu; Cư dân chỉ báo sự cố và tra cứu.}
-
-\begin{landscape}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}\setlength{\LTleft}{0pt}\setlength{\LTright}{0pt}
-\textbf{Bảng 5.3. Chi tiết ca kiểm thử theo vai trò và kết quả thực tế}\par\smallskip
-\begin{longtable}{|>{\raggedright\arraybackslash}p{0.07\linewidth}|>{\raggedright\arraybackslash}p{0.11\linewidth}|>{\raggedright\arraybackslash}p{0.30\linewidth}|>{\raggedright\arraybackslash}p{0.27\linewidth}|>{\raggedright\arraybackslash}p{0.13\linewidth}|c|}
-\hline
-\rowcolor{gray!20}\textbf{Mã} & \textbf{Vai trò} & \textbf{Kịch bản / thao tác} & \textbf{Kết quả mong đợi} & \textbf{Thực tế} & \textbf{KQ} \\ \hline
-\endhead
-
-\multicolumn{6}{|l|}{\cellcolor{blue!8}\textbf{A. Xác thực \& Phân quyền (Auth/RBAC)}} \\ \hline
-TC-AUTH-01 & (mọi) & Đăng nhập với thông tin hợp lệ trên giao diện & Vào được dashboard, hiện menu theo quyền & Vào dashboard & \checkmark \\ \hline
-TC-AUTH-03 & (mọi) & Đăng nhập sai mật khẩu & Báo lỗi, ở lại trang đăng nhập & Báo lỗi & \checkmark \\ \hline
-TC-AUTH-04 & (mọi) & Bỏ trống tài khoản/mật khẩu & Chặn phía client, nhắc nhập & Bị chặn & \checkmark \\ \hline
-TC-AUTH-05 & (mọi) & Đăng nhập qua API & Trả token JWT kèm danh sách quyền & Có token+quyền & \checkmark \\ \hline
-TC-AUTH-06 & (mọi) & Đăng nhập API sai mật khẩu & Không trả token & Không token & \checkmark \\ \hline
-TC-AUTH-07 & — & Gọi API bảo vệ khi chưa đăng nhập & Bị từ chối \texttt{401 Unauthorized} & \texttt{401} & \checkmark \\ \hline
-TC-RBAC-a & Ban quản lý & Quyền trong JWT đúng thiết kế (có duyệt PR/phân công; không tạo ticket, không thực thi WO) & Khớp ma trận Bảng 5.2 & Khớp & \checkmark \\ \hline
-TC-RBAC-b & Kỹ sư trưởng & Có tạo tài sản/ticket/WO, đề xuất PR; không duyệt PR, không OCR & Khớp ma trận Bảng 5.2 & Khớp & \checkmark \\ \hline
-TC-RBAC-c & Kỹ thuật viên & Có xem tài sản, xử lý ticket, thực thi WO; không tạo ticket/WO/tài sản & Khớp ma trận Bảng 5.2 & Khớp & \checkmark \\ \hline
-TC-RBAC-d & Kế toán & Có OCR/hoá đơn, cập nhật tài sản, báo cáo; không tạo tài sản, không duyệt PR & Khớp ma trận Bảng 5.2 & Khớp & \checkmark \\ \hline
-TC-RBAC-e & Cư dân & Chỉ có tạo/xem ticket, xem thông báo; không xem tài sản, không duyệt & Khớp ma trận Bảng 5.2 & Khớp & \checkmark \\ \hline
-
-\multicolumn{6}{|l|}{\cellcolor{blue!8}\textbf{B. Luồng Sự cố: Cư dân → Ban quản lý → Kỹ thuật viên}} \\ \hline
-TC-INC-10 & Cư dân & Tạo ticket báo sự cố (mất điện hành lang) & Tạo thành công, sinh mã \texttt{TK-*} & Mã \texttt{TK-*} & \checkmark \\ \hline
-TC-INC-11 & Cư dân & Thử xem danh sách tài sản & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-TC-INC-12 & Kỹ thuật viên & Thử tạo ticket & Bị chặn \texttt{403} (KTV không có quyền tạo) & \texttt{403} & \checkmark \\ \hline
-TC-INC-13 & Ban quản lý & Phân công KTV xử lý ticket & Phân công thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-INC-14 & Ban quản lý & Thử tự chuyển trạng thái (resolve) ticket & Bị chặn \texttt{403} (không có quyền xử lý) & \texttt{403} & \checkmark \\ \hline
-TC-INC-15 & Kỹ thuật viên & Chuyển ticket sang trạng thái đang xử lý & Cập nhật thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-INC-16 & Cư dân & Thử phân công ticket & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-
-\multicolumn{6}{|l|}{\cellcolor{blue!8}\textbf{C. Luồng Mua sắm \& OCR: Kỹ sư trưởng → Ban quản lý → Kế toán}} \\ \hline
-TC-PRO-10 & Kỹ sư trưởng & Tạo và gửi duyệt phiếu yêu cầu (PR) & Tạo được, sinh mã \texttt{PR-*}, gửi duyệt & Mã \texttt{PR-*} & \checkmark \\ \hline
-TC-PRO-11 & Kỹ sư trưởng & Thử tự duyệt PR do mình đề xuất & Bị chặn \texttt{403} (tách bạch nhiệm vụ) & \texttt{403} & \checkmark \\ \hline
-TC-PRO-12 & Ban quản lý & Duyệt PR do Kỹ sư trưởng gửi & Duyệt thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-PRO-13 & Kế toán & Thử duyệt PR & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-TC-PRO-14 & Cư dân & Thử tạo PR & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-TC-OCR-15 & Kế toán & Gửi hoá đơn cho OCR & Job được xử lý đến trạng thái kết thúc & \texttt{COMPLETED} & \checkmark \\ \hline
-TC-OCR-16 & Ban quản lý & Thử gửi OCR hoá đơn & Bị chặn \texttt{403} (không có quyền hoá đơn) & \texttt{403} & \checkmark \\ \hline
-TC-PRO-x & (kết hợp) & Chuỗi PR: đề xuất → gửi → duyệt hoàn tất & Vòng đời PR chạy đúng qua 2 vai trò & Đúng & \checkmark \\ \hline
-
-\multicolumn{6}{|l|}{\cellcolor{blue!8}\textbf{D. Luồng Quản lý tài sản: Kỹ sư trưởng tạo · Kế toán vận hành}} \\ \hline
-TC-AST-10 & Kỹ sư trưởng & Tạo mới tài sản (kèm nguyên giá, khấu hao) & Tạo thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-AST-11 & Kỹ thuật viên & Thử tạo tài sản & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-TC-AST-12 & Kế toán & Thử tạo tài sản & Bị chặn \texttt{403} (chỉ được cập nhật) & \texttt{403} & \checkmark \\ \hline
-TC-AST-13 & Kế toán & Xem tài sản + báo cáo bảng cân đối thử & Truy cập thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-AST-14 & Kế toán & Cập nhật tài sản (kiểm tra phân quyền) & Được phép (không bị \texttt{403}) & Không \texttt{403} & \checkmark \\ \hline
-TC-AST-15 & Kỹ thuật viên & Thử cập nhật tài sản & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-TC-AST-16 & Kỹ thuật viên & Xem danh sách tài sản & Truy cập thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-AST-17 & Cư dân & Thử xem danh sách tài sản & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-
-\multicolumn{6}{|l|}{\cellcolor{blue!8}\textbf{E. Luồng Bảo trì / Work Order: Ban quản lý giao · Kỹ thuật viên thực thi}} \\ \hline
-TC-WO-10 & Ban quản lý & Tạo lệnh công việc (Work Order) & Tạo được, sinh mã \texttt{WO-*} & Mã \texttt{WO} & \checkmark \\ \hline
-TC-WO-11 & Ban quản lý & Phân công KTV cho Work Order & Phân công thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-WO-12 & Ban quản lý & Thử tự thực thi WO (đính minh chứng) & Bị chặn \texttt{403} (chỉ giao, không thực thi) & \texttt{403} & \checkmark \\ \hline
-TC-WO-13 & Kỹ thuật viên & Thử tạo Work Order & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-TC-WO-14 & Kỹ thuật viên & Thực thi WO: đính kèm ảnh minh chứng & Thực thi thành công \texttt{200} & \texttt{200} & \checkmark \\ \hline
-TC-WO-15 & Kế toán & Thử xem danh sách Work Order & Bị chặn \texttt{403} & \texttt{403} & \checkmark \\ \hline
-\end{longtable}}\end{landscape}
-
 \phantomsection
 \section*{5.5. Đánh giá hệ thống}
 \addcontentsline{toc}{section}{5.5. Đánh giá hệ thống}
@@ -662,7 +747,7 @@ CLO1 & Phân tích có hệ thống bài toán KHMT & Khảo sát bài toán và
 CLO2 & Thiết kế \& triển khai đáp ứng yêu cầu; cân nhắc khả thi, hiệu quả, đạo đức, bối cảnh & Kiến trúc module hóa (.NET 8, Next.js 16, PostgreSQL); hệ thống chạy được với API và giao diện hoàn chỉnh; kiểm thử hệ thống (Chương 5); đánh giá đạo đức, an toàn dữ liệu và bối cảnh xã hội (§5.6). & S \\ \hline
 CLO3 & Áp dụng hiệu quả kiến thức trí tuệ nhân tạo & OCR hóa đơn tiếng Việt bằng VietOCR/PaddleOCR: sinh dataset, huấn luyện – đánh giá (val-acc 99,64\%), tích hợp qua worker nền và đối chiếu ba chiều (§4.4). & S–E \\ \hline
 CLO4 & Trình bày hiệu quả (viết, thuyết trình, thảo luận) & Quyển thuyết minh trình bày theo QĐ 483/QĐ-ĐHXDHN, hệ thống hình vẽ – bảng biểu; slide và bảo vệ trước hội đồng; tiếp thu, phản hồi ý kiến phản biện. & S \\ \hline
-CLO5 & Làm việc nhóm hiệu quả & Đồ án nhóm 03 sinh viên với phần Base dùng chung; quản trị công việc bằng Git, Kanban, biểu đồ Gantt và biên bản họp (minh chứng ở Hồ sơ kèm theo); phân công module rõ ràng và review chéo khi hợp nhất mã nguồn. & S \\ \hline
+CLO5 & Làm việc nhóm hiệu quả & Đồ án nhóm 03 sinh viên với phần Base dùng chung; quản trị công việc bằng Git, Kanban, biểu đồ Gantt và biên bản họp (Hình 0.1–0.5); phân công module rõ ràng và review chéo khi hợp nhất mã nguồn. & S \\ \hline
 \end{tabular}}\end{center}
 Trong đó CLO1 và CLO2 là hai chuẩn đầu ra trọng tâm của học phần; kết quả đồ án đáp ứng từ mức Đạt (S) trở lên ở cả năm CLO, phù hợp ngưỡng công nhận hoàn thành (mỗi CLO tối thiểu mức Developing – D).
 
@@ -682,3 +767,128 @@ Trong đó CLO1 và CLO2 là hai chuẩn đầu ra trọng tâm của học ph�
   \item Báo Tuổi Trẻ, ``Ứng dụng giải bài toán hết cảnh xếp hàng đóng phí chung cư'', 01/05/2023, \url{https://tuoitre.vn/ung-dung-giai-bai-toan-het-canh-xep-hang-dong-phi-chung-cu-20230425232909509.htm}.
   \item CYFEER, ``CyHome PMS'' (ứng dụng cho kỹ thuật viên), Google Play, \url{https://play.google.com/store/apps/details?id=com.cyfeer.cyhome_manager&hl=vi}.
 \end{itemize}
+\phantomsection
+\chapter*{Phụ lục}
+\addcontentsline{toc}{chapter}{Phụ lục}
+\markboth{Phụ lục}{Phụ lục}
+\textbf{Phụ lục. Nhật ký thực hiện ĐATN (Mẫu ĐATN-02)}
+
+\textit{Mẫu ĐATN-02}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}>{\centering\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep\relax}}
+\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \newline \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM} \newline \textbf{Độc lập - Tự do - Hạnh phúc} \\
+\end{tabular}}\end{center}
+\textbf{Nhật ký thực hiện ĐATN}
+
+\textit{(Ban hành kèm theo Quyết định số 483/QĐ-ĐHXDHN ngày 20 tháng 3 năm 2026 của Hiệu trưởng Trường Đại học Xây dựng Hà Nội)}
+
+\begin{center}{\singlespacing\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Họ và tên SV} & Nguyễn Xuân Thưởng \\ \hline
+\textbf{Mã SV} & 0220766 \\ \hline
+\textbf{Tên đề tài} & Xây dựng hệ thống quản lý vận hành tòa nhà – TownHub \\ \hline
+\textbf{Đợt} & 2026 \\ \hline
+\textbf{GVHD} & ThS. Hoàng Nam Thắng \\ \hline
+\textbf{Đơn vị} & Khoa Công nghệ thông tin \\ \hline
+\textbf{GV đồng hướng dẫn (nếu có)} & (không có) \\ \hline
+\end{tabular}}\end{center}
+\begin{landscape}{\footnotesize\singlespacing\renewcommand{\arraystretch}{1.25}\setlength{\LTleft}{0pt}\setlength{\LTright}{0pt}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr\linewidth/8-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Loại công việc} & \textbf{Thời gian làm việc} & \textbf{Nhiệm vụ được giao} & \textbf{Kết quả thực hiện} & \textbf{Kiến thức/​kỹ năng áp dụng} & \textbf{Vấn đề cần bổ sung, chỉnh sửa} & \textbf{Tự đánh giá \& rút kinh nghiệm} & \textbf{Chữ ký} \\ \hline
+\endhead
+\textbf{Tuần 1: 25/01/2026 – 01/02/2026 — Hình thành ý tưởng \& xác định đề tài} &  &  &  &  &  &  &  \\ \hline
+Làm việc theo nhóm & \textasciitilde{}10 giờ & Hình thành ý tưởng và nhóm ĐATN; xác định, phát biểu đề tài; phân tích sơ bộ bài toán quản lý vận hành tòa nhà; tổ chức nhóm, lập kế hoạch, phân công nhiệm vụ. & Thống nhất đề tài và phạm vi 3 phân hệ; khung nhóm \& kế hoạch làm việc; phân công module. & Phân tích yêu cầu; làm việc nhóm; quản lý dự án. & Chuẩn hóa phạm vi từng phân hệ. & Cần bám sát chuẩn đầu ra học phần. & SV / GVHD \\ \hline
+\textbf{Tuần 2: 02/02/2026 – 15/02/2026 — Đề cương sơ bộ (Mốc M1)} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}12 giờ & Hoàn thành và trình bày đề cương sơ bộ; đọc chương 1 học phần ĐATN; đặc tả yêu cầu phần phụ trách. & Đề cương sơ bộ được thông qua; tiếp thu phản biện của GVHD và điều chỉnh. & Viết đề cương kỹ thuật; trình bày; tiếp thu phản hồi. & Điều chỉnh đề cương theo góp ý GVHD. & Cần làm rõ tiêu chí đạt của từng phân hệ. & SV / GVHD \\ \hline
+\textbf{Tuần 3: 16/02/2026 – 23/02/2026 — Phân tích yêu cầu chi tiết} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}12 giờ & Phân tích yêu cầu chi tiết 3 phân hệ (Tài sản \& bảo trì, Kho–Mua sắm–NCC, Sự cố \& SLA); khảo sát phần mềm quản lý vận hành tòa nhà tương tự. & Đặc tả use case \& yêu cầu chức năng/phi chức năng; biên bản khảo sát phần mềm tương tự. & Phân tích yêu cầu; UML use case; nghiên cứu thị trường. & Bổ sung yêu cầu phi chức năng (bảo mật, hiệu năng). & Cần đối chiếu kỹ với nghiệp vụ thực tế. & SV / GVHD \\ \hline
+\textbf{Tuần 4: 24/02/2026 – 02/03/2026 — Thiết kế CSDL} &  &  &  &  &  &  &  \\ \hline
+Làm việc theo nhóm & \textasciitilde{}10 giờ & Cùng nhóm thiết kế CSDL dùng chung (schema base/auth) và chuẩn khóa ngoại liên phân hệ; thiết kế schema asset (ERD). & Sơ đồ ERD Base/auth và schema asset; chuẩn dữ liệu dùng chung cho cả 3 phân hệ. & Thiết kế CSDL quan hệ; chuẩn hóa; đồng bộ Guid liên service. & Rà soát ràng buộc khóa ngoại. & Cần đặt tên nhất quán giữa các service. & SV / GVHD \\ \hline
+\textbf{Tuần 5: 03/03/2026 – 15/03/2026 — Thiết kế API, phân quyền \& kiến trúc} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}14 giờ & Thiết kế API và phân quyền RBAC cho phân hệ Tài sản; kiến trúc module; dựng sơ đồ UML (use case, tuần tự, trạng thái) bằng draw.io. & Bộ hợp đồng API tài sản; ma trận phân quyền; sơ đồ thiết kế. & REST API; RBAC; UML; draw.io/Graphviz. & Chuẩn hóa mã lỗi \& định dạng ResponseDto. & Nên tài liệu hóa API sớm. & SV / GVHD \\ \hline
+\textbf{Tuần 6: 16/03/2026 – 29/03/2026 — Xây dựng module Base (làm chung cả nhóm)} &  &  &  &  &  &  &  \\ \hline
+Làm việc theo nhóm & \textasciitilde{}20 giờ & Cùng nhóm xây dựng module Base dùng chung (Auth \& bảo mật, Quản lý người dùng, Thông báo, Cấu hình, Báo cáo, Audit log); cá nhân phụ trách phần Backend của Base; tích hợp FE–BE và review chéo. & API Base hoàn thiện: xác thực JWT/refresh, middleware RBAC, CRUD tài khoản, liên kết tài khoản$\leftrightarrow$cư dân, thông báo, dashboard; Base tích hợp làm nền cho 3 phân hệ. & .NET 8/EF Core; JWT/OAuth/RBAC; kiến trúc module; PostgreSQL; code review. & Chuẩn hóa hợp đồng API giữa 3 thành viên; thiết lập CI. & Phối hợp nhóm hiệu quả. & SV / GVHD \\ \hline
+\textbf{Tuần 7: 30/03/2026 – 05/04/2026 — Báo cáo giữa kỳ (Mốc M2)} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}10 giờ & Viết báo cáo thu hoạch giữa kỳ; trình bày tiến độ và kết quả sơ bộ (Base + thiết kế phân hệ Tài sản); tiếp thu góp ý của GVHD. & Báo cáo giữa kỳ được thông qua; kế hoạch triển khai giai đoạn sau được điều chỉnh. & Viết báo cáo kỹ thuật; trình bày; tự đánh giá tiến độ. & Điều chỉnh kế hoạch triển khai theo góp ý. & Bám sát mức đạt CLO ở mốc giữa kỳ. & SV / GVHD \\ \hline
+\textbf{Tuần 8: 06/04/2026 – 26/04/2026 — Vòng đời tài sản \& khấu hao} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}16 giờ & Triển khai vòng đời tài sản: ghi tăng, điều chuyển, thanh lý; khấu hao tự động theo kỳ; sinh \& in mã QR; định khoản kế toán (TT200/133). & Chức năng tài sản chạy được; khấu hao định kỳ và chứng từ kế toán tự sinh. & EF Core; job nền; sinh mã QR; nghiệp vụ kế toán TSCĐ. & Kiểm thử các phương pháp khấu hao. & Cần thêm ràng buộc nghiệp vụ. & SV / GVHD \\ \hline
+\textbf{Tuần 9: 27/04/2026 – 17/05/2026 — Bảo trì phòng ngừa (PM/WO)} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}16 giờ & Triển khai bảo trì phòng ngừa (PM): lịch bảo trì, lệnh công việc (WO) với máy trạng thái, checklist, nghiệm thu và đính kèm minh chứng. & Quy trình PM và Work Order hoạt động; đồng bộ trạng thái tài sản khi bảo trì. & Máy trạng thái; hàng đợi; lịch; nghiệp vụ bảo trì. & Chuẩn hóa trạng thái WO. & Cần tối ưu truy vấn danh sách. & SV / GVHD \\ \hline
+\textbf{Tuần 10: 18/05/2026 – 07/06/2026 — Kho – Mua sắm – NCC \& bắt đầu viết báo cáo} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}16 giờ & Triển khai Kho – Mua sắm – NCC: tồn kho, cảnh báo tồn thấp, quy trình PR $\rightarrow$ PO nhiều cấp, quản lý NCC/hợp đồng; bắt đầu viết thuyết minh ĐATN. & Quy trình mua sắm nhiều cấp chạy được; cảnh báo tồn kho; các chương đầu thuyết minh. & Thiết kế quy trình duyệt; giao dịch CSDL; viết báo cáo kỹ thuật. & Rà soát luồng duyệt nhiều cấp. & Cần bổ sung nhật ký thao tác. & SV / GVHD \\ \hline
+\textbf{Tuần 11: 08/06/2026 – 28/06/2026 — OCR hóa đơn \& viết báo cáo} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}16 giờ & Sinh dataset hóa đơn tổng hợp; huấn luyện \& đánh giá VietOCR, PaddleOCR; nối dịch vụ OCR với backend qua worker nền; tiếp tục viết thuyết minh. & Dịch vụ OCR chạy; PaddleOCR val-acc 99,64\%; bảng so sánh engine; chương OCR của báo cáo. & AI/OCR; PyTorch/Paddle; FastAPI; hàng đợi nền. & Cần thêm hóa đơn thật để cải thiện phát hiện. & Đánh giá khách quan giữa các engine. & SV / GVHD \\ \hline
+\textbf{Tuần 12: 29/06/2026 – 05/07/2026 — Sự cố \& SLA, tích hợp hệ thống} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}14 giờ & Triển khai Quản lý sự cố \& SLA: tạo ticket, phân công KTV, cấu hình \& nhật ký SLA, dashboard; tích hợp và hoàn thiện toàn hệ thống. & Phân hệ sự cố hoạt động; theo dõi SLA; hệ thống tích hợp hoàn chỉnh. & Sự kiện/thông báo; đo lường SLA; tích hợp hệ thống. & Chuẩn hóa mức ưu tiên và SLA. & Cần bổ sung báo cáo thống kê. & SV / GVHD \\ \hline
+\textbf{Tuần 13: 06/07/2026 – 12/07/2026 — Kiểm thử tổng thể \& hoàn thiện báo cáo} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}14 giờ & Kiểm thử tổng thể (E2E Playwright) và thử nghiệm các thành phần chính; ghi biên bản kiểm thử; hoàn thiện thuyết minh và dựng sơ đồ. & Bộ ca kiểm thử E2E; biên bản lỗi \& tổng hợp; bản thảo báo cáo hoàn chỉnh. & Kiểm thử tự động; viết tài liệu; trình bày trực quan. & Bổ sung ca kiểm thử biên. & Cần rà soát định dạng theo mẫu ĐATN. & SV / GVHD \\ \hline
+\textbf{Tuần 14: 13/07/2026 – 17/07/2026 — Hoàn thành báo cáo, GVHD duyệt \& phản biện} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}12 giờ & Hoàn thành báo cáo và gửi GVHD; GVHD đánh giá và duyệt; báo cáo và phản biện với GV phản biện; chỉnh sửa theo yêu cầu. & Báo cáo được GVHD duyệt; tiếp thu ý kiến phản biện và hoàn thiện. & Viết báo cáo; phản biện; tiếp thu phản hồi. & Chỉnh sửa theo yêu cầu phản biện. & Cần luyện phản hồi câu hỏi phản biện. & SV / GVHD \\ \hline
+\textbf{Tuần 15: 18/07/2026 – 20/07/2026 — Bảo vệ đồ án (Mốc M3)} &  &  &  &  &  &  &  \\ \hline
+Làm việc độc lập & \textasciitilde{}8 giờ & Chuẩn bị slide và demo; bảo vệ đồ án tốt nghiệp, thuyết trình và trả lời câu hỏi trước hội đồng. & Hoàn thành bảo vệ; nộp hồ sơ và minh chứng cuối. & Thuyết trình; trả lời phản biện; tổng hợp hồ sơ. & Hoàn thiện hồ sơ nộp lưu trữ. & Rút kinh nghiệm trình bày trước hội đồng. & SV / GVHD \\ \hline
+\end{longtable}}\end{landscape}
+\textit{Ghi chú: Nhật ký ghi theo tuần, bám khung 15 tuần của đề cương học phần ĐATN (mục 5.2) — Tuần 2: đề cương sơ bộ (Mốc M1); Tuần 7: báo cáo giữa kỳ (Mốc M2); Tuần 15: bảo vệ (Mốc M3). Đồ án được giao ngày 25/01/2026; toàn bộ tính năng hoàn thành ngày 01/07/2026; mỗi tuần có xác nhận của SV và GVHD.}
+
+\bigskip
+\textbf{Phụ lục. Bảng phân công công việc — Module Base (CORE), làm chung cả nhóm}
+
+Module Base (dùng chung cho cả ba phân hệ) do nhóm 03 sinh viên cùng xây dựng, phân chia theo vai trò Backend (BE) -- Frontend (FE) -- BA \& Design: \textbf{Nguyễn Xuân Thưởng} (tác giả báo cáo) phụ trách chính Backend; \textbf{Nguyễn Xuân Khải} phụ trách chính Frontend; \textbf{Lương Thanh Tài} phụ trách chính BA \& Design. Sau khi hoàn thiện Base, mỗi thành viên phát triển một phân hệ nghiệp vụ riêng chạy song song: Thưởng -- Quản lý tài sản; Khải -- Quản lý dịch vụ; Tài -- Quản lý dân cư. \textit{(Mốc thời gian trong kế hoạch chỉ mang tính tham khảo.)}
+
+\begin{center}{\small\singlespacing\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr0.19\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr0.33\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.16\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.16\linewidth-2\tabcolsep-\arrayrulewidth\relax}|>{\centering\arraybackslash}p{\dimexpr0.16\linewidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Nhóm chức năng} & \textbf{Chức năng} & \textbf{Backend} & \textbf{Frontend} & \textbf{BA \& Design} \\ \hline
+Auth \& Security & Đăng nhập, đăng xuất, quản lý phiên \& token & Thưởng & Khải & Tài \\ \hline
+ & Phân quyền theo vai trò (RBAC) & Thưởng & Thưởng & Thưởng \\ \hline
+User Management & Quản lý tài khoản (CRUD người dùng) & Khải & Khải & Tài \\ \hline
+ & Liên kết định danh (tài khoản $\leftrightarrow$ cư dân $\leftrightarrow$ căn hộ) & Thưởng & Tài & Tài \\ \hline
+ & Audit log (lịch sử hoạt động toàn hệ thống) & Tài & Khải & Khải \\ \hline
+Notification Engine & Gửi thông báo (push / email / SMS) & Khải & Khải & Khải \\ \hline
+ & Lịch sử thông báo đã gửi & Thưởng & Thưởng & Thưởng \\ \hline
+Configuration & Danh mục dùng chung (loại phí, loại tài sản\ldots{}) & Thưởng & Khải & Tài \\ \hline
+Reporting & Dashboard tổng quan toàn khu & Thưởng & Thưởng & Thưởng \\ \hline
+\end{tabular}}\end{center}
+\textit{Ghi chú: mỗi chức năng đều có sự tham gia của cả ba vai trò; cột ghi tên thành viên chịu trách nhiệm chính.}
+
+\input{frag_test_appendix}
+
+\input{frag_bug_tracker}
+
+\bigskip
+\textbf{Phụ lục. Hồ sơ minh chứng — Huấn luyện \& benchmark mô hình OCR}
+
+Toàn bộ số liệu OCR ở mục 4.2.7 (bảng so sánh và các Hình 4.18–4.22) không phải nhập tay mà được \textbf{sinh tự động và tái lập được} bằng script đánh giá \texttt{ocr-service/training/analyze.py}, chạy trên Google Colab sau khi fine-tune và xuất mô hình. Mục này ghi lại quy trình, lệnh chạy và các tệp minh chứng để có thể kiểm chứng lại.
+
+\textbf{a) Môi trường và dữ liệu.} Colab GPU (đánh giá độ trễ đo trên CPU cho công bằng); tập kiểm định \texttt{val.txt} gồm các dòng chữ cắt từ hóa đơn GTGT tổng hợp; bảng ký tự tiếng Việt \texttt{dict\_vi.txt}; trọng số sau fine-tune \texttt{vietocr\_invoice.pth} (VietOCR) và thư mục \texttt{rec\_vi} (PaddleOCR). Nhật ký huấn luyện PaddleOCR lưu ở \texttt{train.log}.
+
+\textbf{b) Lệnh tái lập.} Chạy đúng một lệnh sau sẽ sinh lại bảng số liệu (\texttt{metrics\_summary.csv}) và 17 biểu đồ minh chứng:
+\begin{quote}\footnotesize\ttfamily
+python analyze.py --data ./dataset/rec --label ./dataset/rec/val.txt \\
+\ \ --viet vietocr\_invoice.pth --rec ./inference/rec\_vi \\
+\ \ --dict dict\_vi.txt --log ./output\_rec\_vi/train.log --limit 500
+\end{quote}
+
+\textbf{c) Chỉ số đo.} \emph{Seq-acc}: tỉ lệ đọc đúng \emph{toàn bộ} chuỗi (khắt khe nhất). \emph{Char-acc} $= 1 - $ CER, với CER là khoảng cách Levenshtein chia độ dài nhãn. \emph{NED}: tương đồng mức ký tự. \emph{CER<0,1}: tỉ lệ mẫu có CER dưới 0,1. \emph{ms/ảnh}: độ trễ suy luận trung bình (đo trên CPU). Mỗi chỉ số được tính lại độc lập cho từng engine trên \emph{cùng một} tập kiểm định nên so sánh là công bằng.
+
+\textbf{d) Bảng kết quả (trích \texttt{metrics\_summary.csv}).} Số liệu gốc do \texttt{analyze.py} sinh ra chính là bảng so sánh bảy cấu hình engine (VietOCR/PaddleOCR trước–sau fine-tune, EasyOCR, Ensemble, Oracle) đã trình bày ở \textbf{mục 4.2.7.d}; không lặp lại ở đây để tránh trùng lặp.
+
+Hai biểu đồ dưới đây được sinh trực tiếp từ bảng số liệu đó (bằng \texttt{analyze.py}), minh họa trực quan hai kết luận chính: PaddleOCR nằm ở góc "nhanh mà vẫn chính xác cao" (Hình PL.1) và bức tranh tổng hợp các chỉ số của ba engine (Hình PL.2).
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{images/bench_acc_latency.png}
+\caption*{\small Hình PL.1. Đánh đổi chính xác $\leftrightarrow$ tốc độ: PaddleOCR nhanh nhất (65 ms) với độ chính xác cao (0,893); VietOCR chính xác tuyệt đối nhưng chậm hơn (317 ms)}
+\addcontentsline{lof}{figure}{Hình PL.1. Đánh đổi chính xác – tốc độ giữa ba engine OCR}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{images/bench_radar.png}
+\caption*{\small Hình PL.2. Radar tổng hợp ba engine trên 5 trục (Seq-acc, Char-acc, NED, Tốc độ, CER<0,1); mọi trục: càng ra ngoài càng tốt}
+\addcontentsline{lof}{figure}{Hình PL.2. Radar tổng hợp ba engine OCR}
+\end{figure}
+
+\textbf{e) Chốt số từ \texttt{train.log} (PaddleOCR rec).} Ngoài bảng trên (đánh giá mức chuỗi), trong quá trình huấn luyện PaddleOCR còn tự ghi độ chính xác trên tập val: \texttt{acc = 0,9964} và \texttt{norm\_edit\_dis = 0,9992} tại epoch 41. Với tầng phát hiện (det), \texttt{hmean} tốt nhất chỉ đạt 0,2298 — cho thấy phát hiện bố cục trên dữ liệu tổng hợp còn yếu (đã nêu hướng cải thiện ở mục 4.2.7.d).
+
+\textbf{f) Tệp minh chứng kèm theo.} Đã lưu ngay trong mã nguồn dự án tại \texttt{ocr-service/training/analysis/}: \texttt{metrics\_summary.csv} (bảng số liệu gốc) và các biểu đồ tổng hợp (Hình PL.1, PL.2 và các hình ở mục 4.2.7). Bộ đầy đủ gồm \texttt{train.log} (nhật ký huấn luyện gốc), toàn bộ 17 biểu đồ PNG do \texttt{analyze.py} sinh (đường cong huấn luyện, tác động fine-tune, so sánh engine, độ trễ, phân bố lỗi CER, cặp ký tự nhầm lẫn, giao tập đọc đúng\ldots{}), dataset hóa đơn tổng hợp và \texttt{dict\_vi.txt} — do dung lượng lớn nên lưu trong Hồ sơ minh chứng kèm theo (thư mục dự án trên Google Drive) và có thể sinh lại bằng lệnh ở mục b.

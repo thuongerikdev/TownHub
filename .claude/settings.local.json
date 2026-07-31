@@ -257,7 +257,11 @@
       "Read(//c/Program Files/LibreOffice/program/**)",
       "Bash(where soffice *)",
       "Bash(ls \"C:/Program Files/LibreOffice/program/soffice.exe\" \"C:/Program Files \\(x86\\)/LibreOffice/program/soffice.exe\" 2>&1; echo \"---miktex pdf via docx? skip---\")",
-      "Bash(markitdown --version)"
+      "Bash(markitdown --version)",
+      "Bash(python -c \"import PyPDF2,sys;r=PyPDF2.PdfReader\\('/d/DATN/TownHub/latex/main.pdf'\\);print\\('pages',len\\(r.pages\\)\\)\")",
+      "Bash(python -c \"import pypdf;r=pypdf.PdfReader\\('/d/DATN/TownHub/latex/main.pdf'\\);print\\('pages',len\\(r.pages\\)\\)\")",
+      "Read(//c/Program Files/draw.io/**)",
+      "Bash(py --version)"
     ]
   }
 }

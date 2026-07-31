@@ -1,0 +1,77 @@
+<mxfile host="Electron">
+  <diagram id="d1" name="Use case Vòng đời tài sản — Khấu hao, thanh lý &amp; sổ sách">
+    <mxGraphModel dx="1360" dy="1190" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;dashed=1;verticalAlign=top;fontSize=12;fontStyle=2;fontColor=#3b5b8c;" value="Khấu hao, thanh lý &amp; sổ sách kế toán" vertex="1">
+          <mxGeometry height="348" width="276" x="222" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Khấu hao định kỳ" vertex="1">
+          <mxGeometry height="46" width="220" x="261" y="342" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Thanh lý tài sản" vertex="1">
+          <mxGeometry height="46" width="220" x="239" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Tra cứu sổ sách &amp; chứng từ" vertex="1">
+          <mxGeometry height="46" width="220" x="255" y="181" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Báo cáo tài sản / bảng cân đối" vertex="1">
+          <mxGeometry height="46" width="220" x="255" y="269" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" value="Tính mức khấu hao" vertex="1">
+          <mxGeometry height="46" width="205" x="583" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="n6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" value="Dựng chứng từ khấu hao (Nợ 642 / Có 2141)" vertex="1">
+          <mxGeometry height="46" width="205" x="583" y="237" as="geometry" />
+        </mxCell>
+        <mxCell id="n7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" value="Dựng chứng từ thanh lý (811)" vertex="1">
+          <mxGeometry height="46" width="205" x="577" y="97" as="geometry" />
+        </mxCell>
+        <mxCell id="n8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=10;fillColor=#eef7ee;strokeColor=#82b366;" value="Tính lãi / lỗ thanh lý" vertex="1">
+          <mxGeometry height="46" width="205" x="588" y="167" as="geometry" />
+        </mxCell>
+        <mxCell id="n10" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" value="Kế toán" vertex="1">
+          <mxGeometry height="60" width="30" x="41" y="102" as="geometry" />
+        </mxCell>
+        <mxCell id="n11" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;" value="Ban quản lý" vertex="1">
+          <mxGeometry height="60" width="30" x="32" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="n12" edge="1" parent="1" source="n10" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" target="n1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n13" edge="1" parent="1" source="n10" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" target="n2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n14" edge="1" parent="1" source="n10" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" target="n3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n15" edge="1" parent="1" source="n10" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" target="n4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n16" edge="1" parent="1" source="n11" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" target="n1" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n17" edge="1" parent="1" source="n11" style="endArrow=none;html=1;strokeColor=#000000;rounded=0;edgeStyle=none;" target="n4" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n18" edge="1" parent="1" source="n1" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" target="n5" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n19" edge="1" parent="1" source="n1" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" target="n6" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n20" edge="1" parent="1" source="n2" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" target="n7" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n21" edge="1" parent="1" source="n2" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#6c8ebf;fontSize=9;fontStyle=2;fontColor=#3b5b8c;endSize=8;" target="n8" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

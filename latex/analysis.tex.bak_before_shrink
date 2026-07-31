@@ -66,14 +66,14 @@ Hệ thống có sáu vai trò người dùng (đúng danh sách vai trò khởi
 \multicolumn{3}{r}{\footnotesize\textit{Bảng 3.2. Phân tích use case tổng quát}}
 \end{longtable}}
 
-\figuc{images/fig_uc_overall.pdf}{Hình 3.3. Biểu đồ use case tổng quát toàn hệ thống (phân biệt phần chung/riêng)}{Hình 3.3. Biểu đồ use case tổng quát toàn hệ thống}
+\figland{images/fig_uc_overall.pdf}{Hình 3.3. Biểu đồ use case tổng quát toàn hệ thống (phân biệt phần chung/riêng)}{Hình 3.3. Biểu đồ use case tổng quát toàn hệ thống}
 
 \phantomsection
 \section*{3.3. Phân rã nền tảng chung (Base)}
 \addcontentsline{toc}{section}{3.3. Phân rã nền tảng chung (Base)}
 Trọng tâm của Base là \textbf{xác thực -- phân quyền} (schema \texttt{auth}) cùng các dịch vụ vận hành dùng chung (thông báo, cấu hình -- danh mục, nhật ký hoạt động). Để mỗi chức năng đủ rõ, biểu đồ use case của Base được \emph{phân rã} thành ba cụm, mỗi cụm một biểu đồ riêng với các use case nhỏ và quan hệ \guillemotleft include\guillemotright/\guillemotleft extend\guillemotright: (a) Xác thực, MFA \& phiên (Hình 3.4a); (b) Quản lý người dùng \& phân quyền RBAC (Hình 3.4b); (c) Vận hành, danh mục \& thông báo (Hình 3.4c). Dưới mỗi biểu đồ là bảng liệt kê use case kèm tác nhân và mô tả ngắn.
 
-\figuc{images/fig_uc_base_auth.pdf}{Hình 3.4a. Biểu đồ use case Base — Xác thực, MFA \& phiên}{Hình 3.4a. Use case Base — Xác thực, MFA \& phiên}
+\figland{images/fig_uc_base_auth.pdf}{Hình 3.4a. Biểu đồ use case Base — Xác thực, MFA \& phiên}{Hình 3.4a. Use case Base — Xác thực, MFA \& phiên}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.6cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.6cm}|}
@@ -87,7 +87,7 @@ Quên \& đặt lại mật khẩu & Người dùng & Đặt lại mật khẩu 
 Thu hồi phiên đăng nhập & Người dùng, QTV & Đăng xuất một/nhiều thiết bị; thu hồi refresh token. \\ \hline
 \end{longtable}}
 
-\figuc{images/fig_uc_base_rbac.pdf}{Hình 3.4b. Biểu đồ use case Base — Quản lý người dùng \& phân quyền RBAC}{Hình 3.4b. Use case Base — Quản lý người dùng \& RBAC}
+\figland{images/fig_uc_base_rbac.pdf}{Hình 3.4b. Biểu đồ use case Base — Quản lý người dùng \& phân quyền RBAC}{Hình 3.4b. Use case Base — Quản lý người dùng \& RBAC}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.6cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.6cm}|}
@@ -101,7 +101,7 @@ Gán quyền cho vai trò & QTV & \texttt{PermissionAssign} $\rightarrow$ \textt
 Quản lý phiên đăng nhập & QTV & Xem/thu hồi phiên theo thiết bị. \\ \hline
 \end{longtable}}
 
-\figuc{images/fig_uc_base_ops.pdf}{Hình 3.4c. Biểu đồ use case Base — Vận hành, danh mục \& thông báo}{Hình 3.4c. Use case Base — Vận hành, danh mục \& thông báo}
+\figland{images/fig_uc_base_ops.pdf}{Hình 3.4c. Biểu đồ use case Base — Vận hành, danh mục \& thông báo}{Hình 3.4c. Use case Base — Vận hành, danh mục \& thông báo}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.6cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.6cm}|}
@@ -243,7 +243,7 @@ Hình 3.5 đặc tả tương tác đăng nhập hai pha theo \texttt{AuthLoginS
 \addcontentsline{toc}{subsection}{3.3.3. Sơ đồ luồng: Xác thực \& phân quyền cho mỗi request}
 RBAC được \emph{thực thi} ở mỗi request (Hình 3.6): middleware xác thực JWT (HS256, còn hạn) $\rightarrow$ controller kiểm chính sách quyền (\texttt{[Authorize Policy=\ldots]}) $\rightarrow$ với thao tác giới hạn theo phân công còn kiểm \emph{quyền hàng} (\texttt{DenyIfNotAssigned}) $\rightarrow$ service. Cơ chế dựa trên mô hình RBAC chuẩn (NIST, \url{https://csrc.nist.gov/projects/role-based-access-control}), token JWT (RFC 7519, \url{https://datatracker.ietf.org/doc/html/rfc7519}) và TOTP (RFC 6238, \url{https://datatracker.ietf.org/doc/html/rfc6238}).
 
-\figuc{images/fig_flow_auth.pdf}{Hình 3.6. Sơ đồ luồng xác thực \& phân quyền RBAC cho mỗi request}{Hình 3.6. Sơ đồ luồng xác thực \& phân quyền RBAC}
+\figland{images/fig_flow_auth.pdf}{Hình 3.6. Sơ đồ luồng xác thực \& phân quyền RBAC cho mỗi request}{Hình 3.6. Sơ đồ luồng xác thực \& phân quyền RBAC}
 
 \notebox{\textbf{Mức độ hiện thực (trung thực).} Cơ chế JWT/MFA và ma trận RBAC đã hiện thực đầy đủ và enforce trên controller module Asset. Một số controller phía Base (thông báo, cấu hình, danh mục toà/tầng/căn hộ, phí) \emph{hiện chưa gắn} \texttt{[Authorize]} ở tầng controller (quyền đã seed nhưng chưa enforce) -- điểm cần hoàn thiện. Xác minh email khi đăng ký (bảng có) \emph{chưa có endpoint tiêu thụ}; không có tác vụ nền nào trong Auth/Base (worker duy nhất là OCR của module Asset); thông báo chỉ gửi email + hộp thư, chưa có cổng SMS/Push.}
 
@@ -291,7 +291,7 @@ Nhóm Mua sắm quản lý toàn bộ chuỗi cung ứng vật tư: kho và tồ
 \addcontentsline{toc}{subsection}{4.1.2. Biểu đồ use case và đặc tả}
 Use case nhóm Mua sắm được phân rã thành ba biểu đồ con để làm rõ từng chức năng: (a) Kho \& vật tư (Hình 4.1a); (b) Quy trình mua sắm P2P: PR $\rightarrow$ PO $\rightarrow$ hóa đơn/OCR $\rightarrow$ thanh toán (Hình 4.1b); (c) Nhà cung cấp (Hình 4.1c). Quan hệ kế thừa vai trò: Kỹ sư trưởng \emph{là một} Kỹ thuật viên đặc biệt. Mỗi biểu đồ kèm bảng liệt kê use case bên dưới.
 
-\figuc{images/fig_uc_ms_kho.pdf}{Hình 4.1a. Biểu đồ use case Mua sắm — Kho \& vật tư}{Hình 4.1a. Use case Mua sắm — Kho \& vật tư}
+\figland{images/fig_uc_ms_kho.pdf}{Hình 4.1a. Biểu đồ use case Mua sắm — Kho \& vật tư}{Hình 4.1a. Use case Mua sắm — Kho \& vật tư}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -320,7 +320,7 @@ OCR hóa đơn & Kế toán & \guillemotleft include\guillemotright{} tạo job 
 Đánh dấu thanh toán & Kế toán & \texttt{PAID}; \guillemotleft include\guillemotright{} ghi ngày \& mã giao dịch. \\ \hline
 \end{longtable}}
 
-\figuc{images/fig_uc_ms_ncc.pdf}{Hình 4.1c. Biểu đồ use case Mua sắm — Nhà cung cấp}{Hình 4.1c. Use case Mua sắm — Nhà cung cấp}
+\figland{images/fig_uc_ms_ncc.pdf}{Hình 4.1c. Biểu đồ use case Mua sắm — Nhà cung cấp}{Hình 4.1c. Use case Mua sắm — Nhà cung cấp}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -455,7 +455,7 @@ Nhóm Mua sắm được đặc tả bằng chín use case đầy đủ, đi the
 \addcontentsline{toc}{subsection}{4.1.3. Sơ đồ luồng và biểu đồ tuần tự}
 Sơ đồ luồng P2P (Hình 4.2): lập PR $\rightarrow$ duyệt $\rightarrow$ tạo PO + duyệt PO $\rightarrow$ nhận hàng \& nhập kho (giao dịch \texttt{IN}, tồn tăng) $\rightarrow$ nhập hóa đơn (có thể OCR) $\rightarrow$ đối chiếu PO $\leftrightarrow$ hóa đơn $\rightarrow$ đánh dấu thanh toán (\texttt{PAID}). Biểu đồ tuần tự OCR bất đồng bộ (Hình 4.3) làm rõ vai trò worker nền: nộp ảnh tạo job \texttt{QUEUED}, worker dequeue và gọi dịch vụ Python, lưu kết quả, kế toán đối chiếu.
 
-\figuc{images/fig_flow_p2p.pdf}{Hình 4.2. Sơ đồ luồng nghiệp vụ mua sắm (PR $\rightarrow$ PO $\rightarrow$ nhập kho $\rightarrow$ hóa đơn $\rightarrow$ thanh toán)}{Hình 4.2. Sơ đồ luồng nghiệp vụ mua sắm}
+\figland{images/fig_flow_p2p.pdf}{Hình 4.2. Sơ đồ luồng nghiệp vụ mua sắm (PR $\rightarrow$ PO $\rightarrow$ nhập kho $\rightarrow$ hóa đơn $\rightarrow$ thanh toán)}{Hình 4.2. Sơ đồ luồng nghiệp vụ mua sắm}
 
 \figland{images/fig_seq_ocr.pdf}{Hình 4.3. Biểu đồ tuần tự: OCR hóa đơn bất đồng bộ (worker nền)}{Hình 4.3. Biểu đồ tuần tự: OCR hóa đơn bất đồng bộ}
 
@@ -464,9 +464,9 @@ Sơ đồ luồng P2P (Hình 4.2): lập PR $\rightarrow$ duyệt $\rightarrow$ 
 \addcontentsline{toc}{subsection}{4.1.4. Sơ đồ trạng thái}
 Vòng đời đề nghị mua PR (Hình 4.4) và vòng đời job OCR (Hình 4.5) phản ánh đúng trạng thái trong mã.
 
-\figh{images/fig_state_pr.pdf}{0.26}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}
+\figh{images/fig_state_pr.pdf}{0.4}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}{Hình 4.4. Sơ đồ trạng thái đề nghị mua (PR)}
 
-\figh{images/fig_state_ocr.pdf}{0.32}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}
+\figh{images/fig_state_ocr.pdf}{0.52}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}{Hình 4.5. Sơ đồ trạng thái job OCR hóa đơn}
 
 \phantomsection
 \subsection*{4.1.5. Thiết kế cơ sở dữ liệu (ERD) nhóm Mua sắm}
@@ -492,7 +492,7 @@ Nhóm Vòng đời tài sản quản lý tài sản từ khi ghi tăng đến kh
 \addcontentsline{toc}{subsection}{4.2.2. Biểu đồ use case và đặc tả}
 Use case nhóm Vòng đời tài sản được phân rã thành hai biểu đồ con: (a) Danh mục, ghi tăng, QR \& điều chuyển (Hình 4.7a); (b) Khấu hao, thanh lý \& sổ sách kế toán (Hình 4.7b). Các use case sinh chứng từ được làm rõ bằng quan hệ \guillemotleft include\guillemotright{} tới bước dựng chứng từ định khoản.
 
-\figuc{images/fig_uc_vd_ghitang.pdf}{Hình 4.7a. Biểu đồ use case Vòng đời tài sản — Ghi tăng, QR \& điều chuyển}{Hình 4.7a. Use case Vòng đời — Ghi tăng, QR \& điều chuyển}
+\figland{images/fig_uc_vd_ghitang.pdf}{Hình 4.7a. Biểu đồ use case Vòng đời tài sản — Ghi tăng, QR \& điều chuyển}{Hình 4.7a. Use case Vòng đời — Ghi tăng, QR \& điều chuyển}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -504,7 +504,7 @@ Sinh \& in mã QR & KST & \texttt{asset\_qr\_codes}, phục vụ check-in bảo 
 Điều chuyển tài sản & KST & \texttt{asset\_transfers}, đổi vị trí quản lý. \\ \hline
 \end{longtable}}
 
-\figuc{images/fig_uc_vd_ketoan.pdf}{Hình 4.7b. Biểu đồ use case Vòng đời tài sản — Khấu hao, thanh lý \& sổ sách}{Hình 4.7b. Use case Vòng đời — Khấu hao, thanh lý \& sổ sách}
+\figland{images/fig_uc_vd_ketoan.pdf}{Hình 4.7b. Biểu đồ use case Vòng đời tài sản — Khấu hao, thanh lý \& sổ sách}{Hình 4.7b. Use case Vòng đời — Khấu hao, thanh lý \& sổ sách}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -611,7 +611,7 @@ Nhóm Vòng đời tài sản được đặc tả bằng bảy use case, trải
 \addcontentsline{toc}{subsection}{4.2.3. Sơ đồ luồng, tuần tự và trạng thái}
 Sơ đồ luồng vòng đời + kế toán (Hình 4.8): ghi tăng (chứng từ \texttt{GHI\_TANG}) $\rightarrow$ khấu hao định kỳ lặp lại (chứng từ \texttt{KHAU\_HAO}) $\rightarrow$ khi cần thì thanh lý (chứng từ \texttt{THANH\_LY}, tài sản $\rightarrow$ \texttt{DISPOSED}). Biểu đồ tuần tự ghi tăng (Hình 4.9) cho thấy service sinh mã, tạo tài sản rồi dựng chứng từ + định khoản trong cùng giao dịch. Sơ đồ trạng thái tài sản (Hình 4.10): \texttt{ACTIVE} $\leftrightarrow$ \texttt{MAINTENANCE} (theo Work Order), \texttt{ACTIVE} $\rightarrow$ \texttt{DISPOSED} (thanh lý).
 
-\figuc{images/fig_flow_asset.pdf}{Hình 4.8. Sơ đồ luồng nghiệp vụ vòng đời tài sản và kế toán}{Hình 4.8. Sơ đồ luồng nghiệp vụ vòng đời tài sản và kế toán}
+\figland{images/fig_flow_asset.pdf}{Hình 4.8. Sơ đồ luồng nghiệp vụ vòng đời tài sản và kế toán}{Hình 4.8. Sơ đồ luồng nghiệp vụ vòng đời tài sản và kế toán}
 
 \figland{images/fig_seq_ghitang.pdf}{Hình 4.9. Biểu đồ tuần tự: Ghi tăng tài sản kèm chứng từ kế toán}{Hình 4.9. Biểu đồ tuần tự: Ghi tăng tài sản}
 
@@ -640,7 +640,7 @@ Nhóm Bảo trì \& Sự cố gộp toàn bộ công việc hiện trường c�
 \addcontentsline{toc}{subsection}{4.3.2. Biểu đồ use case và đặc tả}
 Use case nhóm Bảo trì \& Sự cố được phân rã thành hai biểu đồ con theo hai dòng công việc hiện trường: (a) Sự cố \& giám sát SLA (Hình 4.12a); (b) Bảo trì phòng ngừa / Work Order (Hình 4.12b). Quan hệ kế thừa vai trò: Kỹ sư trưởng \emph{là một} Kỹ thuật viên đặc biệt.
 
-\figuc{images/fig_uc_bt_suco.pdf}{Hình 4.12a. Biểu đồ use case Sự cố \& giám sát SLA}{Hình 4.12a. Use case Sự cố \& giám sát SLA}
+\figland{images/fig_uc_bt_suco.pdf}{Hình 4.12a. Biểu đồ use case Sự cố \& giám sát SLA}{Hình 4.12a. Use case Sự cố \& giám sát SLA}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -655,7 +655,7 @@ Cấu hình SLA \& leo thang & BQL & \texttt{sla\_configs}, mốc L1$<$L2$<$L3. 
 Dashboard SLA & BQL & Theo dõi quá hạn, nhật ký leo thang. \\ \hline
 \end{longtable}}
 
-\figuc{images/fig_uc_bt_wo.pdf}{Hình 4.12b. Biểu đồ use case Bảo trì phòng ngừa / Work Order}{Hình 4.12b. Use case Bảo trì phòng ngừa / Work Order}
+\figland{images/fig_uc_bt_wo.pdf}{Hình 4.12b. Biểu đồ use case Bảo trì phòng ngừa / Work Order}{Hình 4.12b. Use case Bảo trì phòng ngừa / Work Order}
 
 {\small\singlespacing\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.7cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -778,7 +778,7 @@ Nhóm Bảo trì \& Sự cố được đặc tả bằng tám use case, tách t
 \addcontentsline{toc}{subsection}{4.3.3. Bảo trì phòng ngừa: luồng, trạng thái, tuần tự}
 Sơ đồ luồng bảo trì phòng ngừa (Hình 4.13): Kỹ sư trưởng xem lịch đến hạn, tạo WO (\texttt{DRAFT}) và phân công (\texttt{ASSIGNED}); KTV check-in, thực hiện (\texttt{IN\_PROGRESS}) + checklist, xuất kho vật tư nếu cần, gửi nghiệm thu (\texttt{PENDING\_REVIEW}); Kỹ sư trưởng nghiệm thu \texttt{COMPLETED}/\texttt{REJECTED}. Vòng đời trạng thái WO (Hình 4.14) ràng buộc chặt bởi \texttt{WorkOrderState}. Biểu đồ tuần tự đầy đủ vòng đời WO ở Hình 4.15.
 
-\figuc{images/fig_flow_pm.pdf}{Hình 4.13. Sơ đồ luồng nghiệp vụ Bảo trì phòng ngừa}{Hình 4.13. Sơ đồ luồng nghiệp vụ Bảo trì phòng ngừa}
+\figland{images/fig_flow_pm.pdf}{Hình 4.13. Sơ đồ luồng nghiệp vụ Bảo trì phòng ngừa}{Hình 4.13. Sơ đồ luồng nghiệp vụ Bảo trì phòng ngừa}
 
 \figh{images/fig_state_wo.pdf}{0.6}{Hình 4.14. Sơ đồ trạng thái vòng đời Work Order}{Hình 4.14. Sơ đồ trạng thái vòng đời Work Order}
 
@@ -789,7 +789,7 @@ Sơ đồ luồng bảo trì phòng ngừa (Hình 4.13): Kỹ sư trưởng xem 
 \addcontentsline{toc}{subsection}{4.3.4. Xử lý sự cố \& giám sát SLA: luồng, tuần tự, trạng thái}
 Sơ đồ luồng xử lý sự cố (Hình 4.16): Cư dân báo (\texttt{NEW}) $\rightarrow$ Kỹ sư trưởng phân công (\texttt{ASSIGNED}) $\rightarrow$ KTV xử lý (\texttt{IN\_PROGRESS}), xuất kho/tạo PR nếu cần $\rightarrow$ hoàn tất (\texttt{RESOLVED}) $\rightarrow$ đóng (\texttt{CLOSED}) $\rightarrow$ đánh giá. Biểu đồ tuần tự đầy đủ (Hình 4.17) cho thấy \emph{việc phân công là thao tác của Kỹ sư trưởng} (không phải service tự chọn) và create không tính SLA/tự phân công. Sơ đồ trạng thái ticket ở Hình 4.18.
 
-\figuc{images/fig_flow_sla.pdf}{Hình 4.16. Sơ đồ luồng nghiệp vụ Xử lý sự cố}{Hình 4.16. Sơ đồ luồng nghiệp vụ Xử lý sự cố}
+\figland{images/fig_flow_sla.pdf}{Hình 4.16. Sơ đồ luồng nghiệp vụ Xử lý sự cố}{Hình 4.16. Sơ đồ luồng nghiệp vụ Xử lý sự cố}
 
 \figland{images/fig_seq_incident_full.pdf}{Hình 4.17. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố}{Hình 4.17. Biểu đồ tuần tự đầy đủ: Vòng đời ticket sự cố}
 
