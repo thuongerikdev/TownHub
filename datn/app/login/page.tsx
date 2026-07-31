@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [mfaTicket, setMfaTicket] = useState("");
+  const [mfaIsResident, setMfaIsResident] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -43,6 +44,7 @@ export default function LoginPage() {
       }
       if (result.requiresMfa && result.mfaTicket) {
         setMfaTicket(result.mfaTicket);
+        setMfaIsResident(Boolean(result.isResident));
         setStep("mfa");
         setTimeout(() => mfaRef.current?.focus(), 200);
         return;
@@ -69,7 +71,7 @@ export default function LoginPage() {
       setError(result.error);
       return;
     }
-    router.replace("/");
+    router.replace(mfaIsResident ? "/portal" : "/");
   }
 
   return (

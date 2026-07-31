@@ -219,6 +219,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!loading && !user) router.push("/login");
   }, [loading, user, router]);
 
+  // Cư dân không được vào khu vực nhân viên — luôn đẩy về cổng cư dân.
+  useEffect(() => {
+    if (loading || !user) return;
+    if (isResident || hasResidentProfile) router.replace("/portal");
+  }, [loading, user, isResident, hasResidentProfile, router]);
+
   async function handleLogout() {
     setLoggingOut(true);
     await logout();

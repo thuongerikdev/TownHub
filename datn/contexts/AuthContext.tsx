@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const d = res.data;
 
         if (d.requiresMfa) {
-          return { requiresMfa: true, mfaTicket: d.mfaTicket };
+          return { requiresMfa: true, mfaTicket: d.mfaTicket, isResident };
         }
 
         setToken(d.token);
